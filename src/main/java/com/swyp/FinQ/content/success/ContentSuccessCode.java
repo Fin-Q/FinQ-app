@@ -9,7 +9,8 @@ import org.springframework.http.HttpStatus;
 public enum ContentSuccessCode implements SuccessCode {
 
     KNOWLEDGE_MAP_RETRIEVED(HttpStatus.OK, "지식맵 조회에 성공했습니다."),
-    CATEGORY_DETAIL_RETRIEVED(HttpStatus.OK, "카테고리 상세 조회에 성공했습니다.");
+    CATEGORY_DETAIL_RETRIEVED(HttpStatus.OK, "카테고리 상세 조회에 성공했습니다."),
+    CONTENT_DETAIL_RETRIEVED(HttpStatus.OK, "학습 콘텐츠 조회에 성공했습니다.");
 
     private final HttpStatus status;
     private final String message;

@@ -3,10 +3,16 @@ package com.swyp.FinQ.content.service;
 import com.swyp.FinQ.content.domain.Category;
 import com.swyp.FinQ.content.domain.CategoryCode;
 import com.swyp.FinQ.content.domain.Content;
+import com.swyp.FinQ.content.domain.ContentQuestion;
+import com.swyp.FinQ.content.domain.ContentStage;
+import com.swyp.FinQ.content.domain.QuestionType;
 import com.swyp.FinQ.content.dto.res.CategoryDetailResponse;
+import com.swyp.FinQ.content.dto.res.ContentDetailResponse;
+import com.swyp.FinQ.content.dto.res.ContentDetailResponse.BlockResponse;
 import com.swyp.FinQ.content.dto.res.KnowledgeMapResponse;
 import com.swyp.FinQ.content.repository.CategoryContentCount;
 import com.swyp.FinQ.content.repository.CategoryRepository;
+import com.swyp.FinQ.content.repository.ContentQuestionRepository;
 import com.swyp.FinQ.content.repository.ContentRepository;
 import com.swyp.FinQ.global.exception.BaseException;
 import com.swyp.FinQ.learning.service.LearningProgressService;
@@ -19,6 +25,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -39,6 +46,9 @@ class ContentQueryServiceTest {
 
     @Mock
     private ContentRepository contentRepository;
+
+    @Mock
+    private ContentQuestionRepository contentQuestionRepository;
 
     @Mock
     private LearningProgressService learningProgressService;
@@ -186,6 +196,214 @@ class ContentQueryServiceTest {
             given(categoryRepository.findByCategoryCode(CategoryCode.SAL)).willReturn(Optional.empty());
 
             assertThatThrownBy(() -> contentQueryService.getCategoryDetail(CategoryCode.SAL, 1L))
+                    .isInstanceOf(BaseException.class);
+        }
+    }
+
+    @Nested
+    @DisplayName("콘텐츠 상세 조회")
+    class GetContentDetail {
+
+        private ContentQuestion createQuestion(Long id, Content content, ContentStage stage,
+                                                QuestionType type, String body,
+                                                String optionA, String optionB,
+                                                String optionC, String optionD, String answer) {
+            return ContentQuestion.builder()
+                    .id(id)
+                    .questionCode("Q-" + id)
+                    .content(content)
+                    .contentStage(stage)
+                    .questionType(type)
+                    .questionBody(body)
+                    .explanation("해설")
+                    .optionA(optionA)
+                    .optionB(optionB)
+                    .optionC(optionC)
+                    .optionD(optionD)
+                    .correctAnswer(answer)
+                    .build();
+        }
+
+        @Test
+        @DisplayName("BODY, SUMMARY, QUESTION 블록이 order 순으로 정렬된다")
+        void getContentDetail_blocksOrderedCorrectly() {
+            Category category = createCategory(1L, CategoryCode.SAL, "월급 관리");
+            Content content = Content.builder()
+                    .id(1L)
+                    .contentCode("SAL-01")
+                    .title("월급 관리의 시작")
+                    .category(category)
+                    .source("금융감독원")
+                    .displayOrder(1)
+                    .isPremium(false)
+                    .bodyData("[{\"bodyType\":\"EXPLANATION\",\"order\":1,\"title\":\"제목\",\"description\":\"설명\"}]")
+                    .summaryContent("핵심 정리 내용")
+                    .build();
+
+            ContentQuestion question = createQuestion(1L, content, ContentStage.P1, QuestionType.OX,
+                    "문제입니다", "맞다", "틀리다", null, null, "O");
+
+            given(contentRepository.findByIdWithCategory(1L)).willReturn(Optional.of(content));
+            given(contentRepository.countByCategoryAndIsPremiumFalse(category)).willReturn(4);
+            given(contentQuestionRepository.findByContent(content)).willReturn(List.of(question));
+
+            ContentDetailResponse response = contentQueryService.getContentDetail(1L);
+
+            assertThat(response.blocks()).hasSize(3);
+            assertThat(response.blocks().get(0).blockType()).isEqualTo("BODY");
+            assertThat(response.blocks().get(0).order()).isEqualTo(1);
+            assertThat(response.blocks().get(1).blockType()).isEqualTo("QUESTION");
+            assertThat(response.blocks().get(1).order()).isEqualTo(2);
+            assertThat(response.blocks().get(2).blockType()).isEqualTo("SUMMARY");
+            assertThat(response.blocks().get(2).order()).isEqualTo(5);
+        }
+
+        @Test
+        @DisplayName("EXPLANATION 타입은 description과 additionalDescription을 포함한다")
+        void getContentDetail_explanationBody() {
+            Category category = createCategory(1L, CategoryCode.SAL, "월급 관리");
+            Content content = Content.builder()
+                    .id(1L)
+                    .contentCode("SAL-01")
+                    .title("제목")
+                    .category(category)
+                    .displayOrder(1)
+                    .isPremium(false)
+                    .bodyData("[{\"bodyType\":\"EXPLANATION\",\"order\":1,\"title\":\"본문 제목\",\"description\":\"본문 설명\",\"additionalDescription\":\"추가 설명\"}]")
+                    .build();
+
+            given(contentRepository.findByIdWithCategory(1L)).willReturn(Optional.of(content));
+            given(contentRepository.countByCategoryAndIsPremiumFalse(category)).willReturn(1);
+            given(contentQuestionRepository.findByContent(content)).willReturn(List.of());
+
+            ContentDetailResponse response = contentQueryService.getContentDetail(1L);
+
+            assertThat(response.blocks()).hasSize(1);
+            BlockResponse block = response.blocks().get(0);
+            assertThat(block.bodyType()).isEqualTo("EXPLANATION");
+            Map<String, Object> body = (Map<String, Object>) block.body();
+            assertThat(body.get("title")).isEqualTo("본문 제목");
+            assertThat(body.get("description")).isEqualTo("본문 설명");
+            assertThat(body.get("additionalDescription")).isEqualTo("추가 설명");
+        }
+
+        @Test
+        @DisplayName("CASE 타입은 imageUrl과 description을 포함한다")
+        void getContentDetail_caseBody() {
+            Category category = createCategory(1L, CategoryCode.SAL, "월급 관리");
+            Content content = Content.builder()
+                    .id(1L)
+                    .contentCode("SAL-01")
+                    .title("제목")
+                    .category(category)
+                    .displayOrder(1)
+                    .isPremium(false)
+                    .bodyData("[{\"bodyType\":\"CASE\",\"order\":1,\"title\":\"사례\",\"description\":\"사례 설명\",\"imageUrl\":\"https://img.com/case.png\"}]")
+                    .build();
+
+            given(contentRepository.findByIdWithCategory(1L)).willReturn(Optional.of(content));
+            given(contentRepository.countByCategoryAndIsPremiumFalse(category)).willReturn(1);
+            given(contentQuestionRepository.findByContent(content)).willReturn(List.of());
+
+            ContentDetailResponse response = contentQueryService.getContentDetail(1L);
+
+            Map<String, Object> body = (Map<String, Object>) response.blocks().get(0).body();
+            assertThat(body.get("title")).isEqualTo("사례");
+            assertThat(body.get("imageUrl")).isEqualTo("https://img.com/case.png");
+            assertThat(body.get("description")).isEqualTo("사례 설명");
+            assertThat(body).doesNotContainKey("additionalDescription");
+        }
+
+        @Test
+        @DisplayName("COMPARISON 타입은 tableImageUrl과 imageUrl을 포함한다")
+        void getContentDetail_comparisonBody() {
+            Category category = createCategory(1L, CategoryCode.SAL, "월급 관리");
+            Content content = Content.builder()
+                    .id(1L)
+                    .contentCode("SAL-01")
+                    .title("제목")
+                    .category(category)
+                    .displayOrder(1)
+                    .isPremium(false)
+                    .bodyData("[{\"bodyType\":\"COMPARISON\",\"order\":1,\"title\":\"비교\",\"description\":\"비교 설명\",\"tableImageUrl\":\"https://img.com/table.png\",\"imageUrl\":\"https://img.com/img.png\"}]")
+                    .build();
+
+            given(contentRepository.findByIdWithCategory(1L)).willReturn(Optional.of(content));
+            given(contentRepository.countByCategoryAndIsPremiumFalse(category)).willReturn(1);
+            given(contentQuestionRepository.findByContent(content)).willReturn(List.of());
+
+            ContentDetailResponse response = contentQueryService.getContentDetail(1L);
+
+            Map<String, Object> body = (Map<String, Object>) response.blocks().get(0).body();
+            assertThat(body.get("tableImageUrl")).isEqualTo("https://img.com/table.png");
+            assertThat(body.get("imageUrl")).isEqualTo("https://img.com/img.png");
+            assertThat(body.get("description")).isEqualTo("비교 설명");
+        }
+
+        @Test
+        @DisplayName("OX 문제는 O, X 두 개의 선택지를 반환한다")
+        void getContentDetail_oxOptions() {
+            Category category = createCategory(1L, CategoryCode.SAL, "월급 관리");
+            Content content = Content.builder()
+                    .id(1L)
+                    .contentCode("SAL-01")
+                    .title("제목")
+                    .category(category)
+                    .displayOrder(1)
+                    .isPremium(false)
+                    .build();
+
+            ContentQuestion oxQuestion = createQuestion(1L, content, ContentStage.P1, QuestionType.OX,
+                    "OX 문제입니다", "맞다", "틀리다", null, null, "O");
+
+            given(contentRepository.findByIdWithCategory(1L)).willReturn(Optional.of(content));
+            given(contentRepository.countByCategoryAndIsPremiumFalse(category)).willReturn(1);
+            given(contentQuestionRepository.findByContent(content)).willReturn(List.of(oxQuestion));
+
+            ContentDetailResponse response = contentQueryService.getContentDetail(1L);
+
+            BlockResponse questionBlock = response.blocks().get(0);
+            assertThat(questionBlock.questionType()).isEqualTo("OX");
+            assertThat(questionBlock.options()).hasSize(2);
+            assertThat(questionBlock.options().get(0).optionId()).isEqualTo("O");
+            assertThat(questionBlock.options().get(1).optionId()).isEqualTo("X");
+        }
+
+        @Test
+        @DisplayName("SINGLE_CHOICE 문제는 A, B, C, D 네 개의 선택지를 반환한다")
+        void getContentDetail_singleChoiceOptions() {
+            Category category = createCategory(1L, CategoryCode.SAL, "월급 관리");
+            Content content = Content.builder()
+                    .id(1L)
+                    .contentCode("SAL-01")
+                    .title("제목")
+                    .category(category)
+                    .displayOrder(1)
+                    .isPremium(false)
+                    .build();
+
+            ContentQuestion scQuestion = createQuestion(1L, content, ContentStage.P2, QuestionType.SINGLE_CHOICE,
+                    "객관식 문제입니다", "보기A", "보기B", "보기C", "보기D", "A");
+
+            given(contentRepository.findByIdWithCategory(1L)).willReturn(Optional.of(content));
+            given(contentRepository.countByCategoryAndIsPremiumFalse(category)).willReturn(1);
+            given(contentQuestionRepository.findByContent(content)).willReturn(List.of(scQuestion));
+
+            ContentDetailResponse response = contentQueryService.getContentDetail(1L);
+
+            BlockResponse questionBlock = response.blocks().get(0);
+            assertThat(questionBlock.questionType()).isEqualTo("SINGLE_CHOICE");
+            assertThat(questionBlock.options()).hasSize(4);
+            assertThat(questionBlock.options().get(0).optionId()).isEqualTo("A");
+            assertThat(questionBlock.options().get(3).optionId()).isEqualTo("D");
+        }
+
+        @Test
+        @DisplayName("존재하지 않는 콘텐츠 ID이면 예외가 발생한다")
+        void getContentDetail_notFound() {
+            given(contentRepository.findByIdWithCategory(999L)).willReturn(Optional.empty());
+
+            assertThatThrownBy(() -> contentQueryService.getContentDetail(999L))
                     .isInstanceOf(BaseException.class);
         }
     }

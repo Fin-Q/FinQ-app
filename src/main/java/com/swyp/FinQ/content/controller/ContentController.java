@@ -2,6 +2,7 @@ package com.swyp.FinQ.content.controller;
 
 import com.swyp.FinQ.content.domain.CategoryCode;
 import com.swyp.FinQ.content.dto.res.CategoryDetailResponse;
+import com.swyp.FinQ.content.dto.res.ContentDetailResponse;
 import com.swyp.FinQ.content.dto.res.KnowledgeMapResponse;
 import com.swyp.FinQ.content.service.ContentQueryService;
 import com.swyp.FinQ.content.success.ContentSuccessCode;
@@ -39,5 +40,14 @@ public class ContentController {
     ) {
         CategoryDetailResponse response = contentQueryService.getCategoryDetail(categoryCode, TEMP_USER_ID);
         return SuccessResponse.of(ContentSuccessCode.CATEGORY_DETAIL_RETRIEVED, response);
+    }
+
+    @Operation(summary = "학습 콘텐츠 전체 조회", description = "본문, 핵심정리, 문제를 블록 배열로 한 번에 조회합니다.")
+    @GetMapping("/contents/{contentId}")
+    public ResponseEntity<SuccessResponse<ContentDetailResponse>> getContentDetail(
+            @Parameter(description = "콘텐츠 ID") @PathVariable Long contentId
+    ) {
+        ContentDetailResponse response = contentQueryService.getContentDetail(contentId);
+        return SuccessResponse.of(ContentSuccessCode.CONTENT_DETAIL_RETRIEVED, response);
     }
 }
