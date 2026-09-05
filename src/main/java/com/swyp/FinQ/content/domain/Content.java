@@ -53,10 +53,10 @@ public class Content extends BaseTimeEntity {
     @Column(name = "display_order", nullable = false)
     private Integer displayOrder;
 
-    // JSON 구조: {title, description, additionalDescription, imageUrl, tableData}
+    // JSON 구조: {title, description, additionalDescription, imageUrl, tableImageUrl}
     /* additionalDescription - SUMMARY
        imageUrl - CASE, COMPARISON
-       tableData - COMPARISON */
+       tableImageUrl - COMPARISON */
     @Column(name = "body_data", columnDefinition = "json")
     private String bodyData;
 
@@ -64,5 +64,5 @@ public class Content extends BaseTimeEntity {
     private String summaryContent;
 
     @Column(name = "is_premium", nullable = false)
-    private Boolean isPremium;
+    private boolean isPremium;
 }

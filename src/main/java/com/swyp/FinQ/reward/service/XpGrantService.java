@@ -6,6 +6,7 @@ import com.swyp.FinQ.reward.domain.XpType;
 import com.swyp.FinQ.reward.dto.info.XpResultInfo;
 import com.swyp.FinQ.reward.repository.XpHistoryRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -54,9 +55,14 @@ public class XpGrantService {
                 .xpType(xpType)
                 .referenceId(referenceId)
                 .build();
-        xpHistoryRepository.save(xpHistory);
 
-        int newTotalXp = totalXp + xpAmount;
+        try {
+            xpHistoryRepository.saveAndFlush(xpHistory);
+        } catch (DataIntegrityViolationException e) {
+            return XpResultInfo.skipped(totalXp, currentLevel);
+        }
+
+        int newTotalXp = xpHistoryRepository.calculateTotalXpByUserId(userId);
         Level newLevel = Level.from(newTotalXp);
 
         return XpResultInfo.granted(xpAmount, newTotalXp, currentLevel, newLevel);
