@@ -10,6 +10,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Index;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -23,6 +24,8 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "xp_history", indexes = {
         @Index(name = "idx_xp_history_user", columnList = "user_id")
+}, uniqueConstraints = {
+        @UniqueConstraint(name = "uk_xp_history_user_type_ref", columnNames = {"user_id", "xp_type", "reference_id"})
 })
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
