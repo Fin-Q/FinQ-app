@@ -22,7 +22,10 @@ public class SecurityConfig {
 
   private static final String[] PUBLIC_URLS = {
     "/api/auth/**",
-    "/actuator/health"
+    "/actuator/health",
+    "/swagger-ui/**",
+    "/swagger-ui.html",
+    "/api-docs/**"
   };
 
   @Value("${cors.allowed-origins:http://localhost:3000}")
