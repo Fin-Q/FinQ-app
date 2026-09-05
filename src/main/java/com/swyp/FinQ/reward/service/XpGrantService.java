@@ -38,6 +38,7 @@ public class XpGrantService {
 
     /**
      * XP 지급 공통 처리: 중복 체크 → 이력 저장 → 레벨업 판정
+     * TODO: User 도메인 구현 후 SUM 쿼리 → user.getTotalXp()로 전환, 이력 저장 시 user.addXp() 호출 추가
      */
     private XpResultInfo grantXp(Long userId, int xpAmount, XpType xpType, String referenceId) {
         int totalXp = xpHistoryRepository.calculateTotalXpByUserId(userId);
