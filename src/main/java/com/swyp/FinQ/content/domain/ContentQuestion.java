@@ -21,6 +21,8 @@ import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
 
 @Entity
 @Table(name = "content_question")
@@ -75,4 +77,20 @@ public class ContentQuestion {
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
+
+    public List<Map.Entry<String, String>> getOptions() {
+        return questionType.getValidOptions().stream()
+                .map(optionId -> Map.entry(optionId, getOptionText(optionId)))
+                .toList();
+    }
+
+    private String getOptionText(String optionId) {
+        return switch (optionId) {
+            case "O", "A" -> optionA;
+            case "X", "B" -> optionB;
+            case "C" -> optionC;
+            case "D" -> optionD;
+            default -> throw new IllegalArgumentException("Unknown optionId: " + optionId);
+        };
+    }
 }

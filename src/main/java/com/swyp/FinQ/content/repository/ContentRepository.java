@@ -11,8 +11,6 @@ import java.util.Optional;
 
 public interface ContentRepository extends JpaRepository<Content, Long> {
 
-    Optional<Content> findByContentCode(String contentCode);
-
     List<Content> findByCategoryOrderByDisplayOrder(Category category);
 
     @Query("SELECT c.category.id AS categoryId, COUNT(c) AS contentCount " +

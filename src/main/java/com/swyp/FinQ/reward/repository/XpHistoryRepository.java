@@ -10,8 +10,6 @@ import java.util.List;
 
 public interface XpHistoryRepository extends JpaRepository<XpHistory, Long> {
 
-    List<XpHistory> findByUserIdOrderByCreatedAtDesc(Long userId);
-
     boolean existsByUserIdAndXpTypeAndReferenceId(Long userId, XpType xpType, String referenceId);
 
     // TODO: User 도메인 구현 후 서비스에서의 직접 호출 제거, 정합성 검증용으로만 유지

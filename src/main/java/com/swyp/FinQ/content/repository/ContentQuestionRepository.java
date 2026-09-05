@@ -10,7 +10,5 @@ import java.util.Optional;
 
 public interface ContentQuestionRepository extends JpaRepository<ContentQuestion, Long> {
 
-    Optional<ContentQuestion> findByContentAndContentStage(Content content, ContentStage contentStage);
-
     List<ContentQuestion> findByContent(Content content);
 }

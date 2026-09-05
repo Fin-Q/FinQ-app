@@ -11,10 +11,6 @@ import java.util.Set;
 
 public interface UserCategoryCompletionRepository extends JpaRepository<UserCategoryCompletion, Long> {
 
-    Optional<UserCategoryCompletion> findByUserIdAndCategoryId(Long userId, Long categoryId);
-
-    List<UserCategoryCompletion> findByUserId(Long userId);
-
     boolean existsByUserIdAndCategoryId(Long userId, Long categoryId);
 
     @Query("SELECT ucc.category.id FROM UserCategoryCompletion ucc WHERE ucc.userId = :userId")

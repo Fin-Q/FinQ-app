@@ -8,8 +8,9 @@ import com.swyp.FinQ.content.domain.CategoryCode;
 import com.swyp.FinQ.content.domain.CompletionStatus;
 import com.swyp.FinQ.content.domain.Content;
 import com.swyp.FinQ.content.domain.ContentQuestion;
-import com.swyp.FinQ.content.domain.QuestionType;
+import com.swyp.FinQ.content.domain.ContentStage;
 import com.swyp.FinQ.content.dto.info.BodyBlockDataInfo;
+
 import com.swyp.FinQ.content.dto.res.CategoryDetailResponse;
 import com.swyp.FinQ.content.dto.res.ContentDetailResponse;
 import com.swyp.FinQ.content.dto.res.ContentDetailResponse.BlockResponse;
@@ -29,7 +30,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -45,9 +45,7 @@ public class ContentQueryService {
     private final ContentRepository contentRepository;
     private final ContentQuestionRepository contentQuestionRepository;
     private final LearningProgressService learningProgressService;
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
-
-    private static final int SUMMARY_ORDER = 5;
+    private final ObjectMapper objectMapper;
 
     public KnowledgeMapResponse getKnowledgeMap(Long userId) {
         List<Category> categories = categoryRepository.findAllByOrderByDisplayOrder();
@@ -80,16 +78,17 @@ public class ContentQueryService {
                 .orElseThrow(() -> BaseException.of(ContentErrorCode.CATEGORY_NOT_FOUND));
 
         List<Content> allContents = contentRepository.findByCategoryOrderByDisplayOrder(category);
+        List<Content> freeContents = allContents.stream().filter(c -> !c.isPremium()).toList();
+        List<Content> premiumContents = allContents.stream().filter(Content::isPremium).toList();
         Set<Long> completedContentIds = learningProgressService.getCompletedContentIds(userId, allContents);
 
-        List<CategoryDetailResponse.ContentSummary> contentSummaries = buildContentSummaries(allContents, completedContentIds);
-        List<CategoryDetailResponse.PremiumContentSummary> premiumSummaries = buildPremiumSummaries(allContents);
+        List<CategoryDetailResponse.ContentSummary> contentSummaries = buildContentSummaries(freeContents, completedContentIds);
+        List<CategoryDetailResponse.PremiumContentSummary> premiumSummaries = buildPremiumSummaries(premiumContents);
 
-        int completedCount = (int) allContents.stream()
-                .filter(c -> !c.isPremium())
+        int completedCount = (int) freeContents.stream()
                 .filter(c -> completedContentIds.contains(c.getId()))
                 .count();
-        int totalCount = contentSummaries.size();
+        int totalCount = freeContents.size();
         boolean categoryCompleted = learningProgressService.isCategoryCompleted(userId, category.getId());
 
         return new CategoryDetailResponse(
@@ -115,9 +114,8 @@ public class ContentQueryService {
     }
 
     private List<CategoryDetailResponse.ContentSummary> buildContentSummaries(
-            List<Content> allContents, Set<Long> completedContentIds) {
-        return allContents.stream()
-                .filter(c -> !c.isPremium())
+            List<Content> freeContents, Set<Long> completedContentIds) {
+        return freeContents.stream()
                 .map(content -> new CategoryDetailResponse.ContentSummary(
                         content.getId(),
                         content.getContentCode(),
@@ -141,13 +139,13 @@ public class ContentQueryService {
         // BODY 블록 조립
         List<BodyBlockDataInfo> bodyBlocks = parseBodyData(content.getBodyData());
         for (BodyBlockDataInfo bd : bodyBlocks) {
-            Object body = buildBodyMap(bd);
+            ContentDetailResponse.BodyBlockResponse body = buildBodyBlock(bd);
             blocks.add(BlockResponse.ofBody(bd.order(), bd.bodyType(), body));
         }
 
         // SUMMARY 블록 조립
         if (content.getSummaryContent() != null) {
-            blocks.add(BlockResponse.ofSummary(SUMMARY_ORDER, content.getSummaryContent()));
+            blocks.add(BlockResponse.ofSummary(ContentStage.SUMMARY_BLOCK_ORDER, content.getSummaryContent()));
         }
 
         // QUESTION 블록 조립
@@ -180,60 +178,33 @@ public class ContentQueryService {
             return List.of();
         }
         try {
-            return OBJECT_MAPPER.readValue(bodyData, new TypeReference<>() {});
+            return objectMapper.readValue(bodyData, new TypeReference<>() {});
         } catch (Exception e) {
             log.warn("body_data JSON 파싱 실패: {}", e.getMessage());
             return List.of();
         }
     }
 
-    private Object buildBodyMap(BodyBlockDataInfo bd) {
-        Map<String, Object> body = new LinkedHashMap<>();
-        body.put("title", bd.title());
+    private ContentDetailResponse.BodyBlockResponse buildBodyBlock(BodyBlockDataInfo bd) {
+        BodyType type = BodyType.valueOf(bd.bodyType());
 
-        switch (BodyType.valueOf(bd.bodyType())) {
-            case EXPLANATION -> {
-                body.put("description", bd.description());
-                if (bd.additionalDescription() != null) {
-                    body.put("additionalDescription", bd.additionalDescription());
-                }
-            }
-            case CASE -> {
-                body.put("imageUrl", bd.imageUrl());
-                body.put("description", bd.description());
-            }
-            case COMPARISON -> {
-                if (bd.tableImageUrl() != null) {
-                    body.put("tableImageUrl", bd.tableImageUrl());
-                }
-                if (bd.imageUrl() != null) {
-                    body.put("imageUrl", bd.imageUrl());
-                }
-                body.put("description", bd.description());
-            }
-        }
-
-        return body;
-    }
-
-    private List<OptionResponse> buildOptions(ContentQuestion q) {
-        if (q.getQuestionType() == QuestionType.OX) {
-            return List.of(
-                    new OptionResponse("O", q.getOptionA()),
-                    new OptionResponse("X", q.getOptionB())
-            );
-        }
-        return List.of(
-                new OptionResponse("A", q.getOptionA()),
-                new OptionResponse("B", q.getOptionB()),
-                new OptionResponse("C", q.getOptionC()),
-                new OptionResponse("D", q.getOptionD())
+        return new ContentDetailResponse.BodyBlockResponse(
+                bd.title(),
+                type.includes(BodyType.BodyField.DESC) ? bd.description() : null,
+                type.includes(BodyType.BodyField.ADD_DESC) ? bd.additionalDescription() : null,
+                type.includes(BodyType.BodyField.IMG) ? bd.imageUrl() : null,
+                type.includes(BodyType.BodyField.TABLE_IMG) ? bd.tableImageUrl() : null
         );
     }
 
-    private List<CategoryDetailResponse.PremiumContentSummary> buildPremiumSummaries(List<Content> allContents) {
-        return allContents.stream()
-                .filter(Content::isPremium)
+    private List<OptionResponse> buildOptions(ContentQuestion q) {
+        return q.getOptions().stream()
+                .map(opt -> new OptionResponse(opt.getKey(), opt.getValue()))
+                .toList();
+    }
+
+    private List<CategoryDetailResponse.PremiumContentSummary> buildPremiumSummaries(List<Content> premiumContents) {
+        return premiumContents.stream()
                 .map(content -> new CategoryDetailResponse.PremiumContentSummary(
                         content.getId(),
                         content.getTitle()

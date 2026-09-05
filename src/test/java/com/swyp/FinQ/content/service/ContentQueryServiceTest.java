@@ -9,6 +9,7 @@ import com.swyp.FinQ.content.domain.QuestionType;
 import com.swyp.FinQ.content.dto.res.CategoryDetailResponse;
 import com.swyp.FinQ.content.dto.res.ContentDetailResponse;
 import com.swyp.FinQ.content.dto.res.ContentDetailResponse.BlockResponse;
+import com.swyp.FinQ.content.dto.res.ContentDetailResponse.BodyBlockResponse;
 import com.swyp.FinQ.content.dto.res.KnowledgeMapResponse;
 import com.swyp.FinQ.content.repository.CategoryContentCount;
 import com.swyp.FinQ.content.repository.CategoryRepository;
@@ -16,16 +17,18 @@ import com.swyp.FinQ.content.repository.ContentQuestionRepository;
 import com.swyp.FinQ.content.repository.ContentRepository;
 import com.swyp.FinQ.global.exception.BaseException;
 import com.swyp.FinQ.learning.service.LearningProgressService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
-import java.util.Map;
+
 import java.util.Optional;
 import java.util.Set;
 
@@ -52,6 +55,9 @@ class ContentQueryServiceTest {
 
     @Mock
     private LearningProgressService learningProgressService;
+
+    @Spy
+    private ObjectMapper objectMapper = new ObjectMapper();
 
     private Category createCategory(Long id, CategoryCode code, String name) {
         return Category.builder()
@@ -281,10 +287,10 @@ class ContentQueryServiceTest {
             assertThat(response.blocks()).hasSize(1);
             BlockResponse block = response.blocks().get(0);
             assertThat(block.bodyType()).isEqualTo("EXPLANATION");
-            Map<String, Object> body = (Map<String, Object>) block.body();
-            assertThat(body.get("title")).isEqualTo("본문 제목");
-            assertThat(body.get("description")).isEqualTo("본문 설명");
-            assertThat(body.get("additionalDescription")).isEqualTo("추가 설명");
+            BodyBlockResponse body = block.body();
+            assertThat(body.title()).isEqualTo("본문 제목");
+            assertThat(body.description()).isEqualTo("본문 설명");
+            assertThat(body.additionalDescription()).isEqualTo("추가 설명");
         }
 
         @Test
@@ -307,11 +313,11 @@ class ContentQueryServiceTest {
 
             ContentDetailResponse response = contentQueryService.getContentDetail(1L);
 
-            Map<String, Object> body = (Map<String, Object>) response.blocks().get(0).body();
-            assertThat(body.get("title")).isEqualTo("사례");
-            assertThat(body.get("imageUrl")).isEqualTo("https://img.com/case.png");
-            assertThat(body.get("description")).isEqualTo("사례 설명");
-            assertThat(body).doesNotContainKey("additionalDescription");
+            BodyBlockResponse body = response.blocks().get(0).body();
+            assertThat(body.title()).isEqualTo("사례");
+            assertThat(body.imageUrl()).isEqualTo("https://img.com/case.png");
+            assertThat(body.description()).isEqualTo("사례 설명");
+            assertThat(body.additionalDescription()).isNull();
         }
 
         @Test
@@ -334,10 +340,10 @@ class ContentQueryServiceTest {
 
             ContentDetailResponse response = contentQueryService.getContentDetail(1L);
 
-            Map<String, Object> body = (Map<String, Object>) response.blocks().get(0).body();
-            assertThat(body.get("tableImageUrl")).isEqualTo("https://img.com/table.png");
-            assertThat(body.get("imageUrl")).isEqualTo("https://img.com/img.png");
-            assertThat(body.get("description")).isEqualTo("비교 설명");
+            BodyBlockResponse body = response.blocks().get(0).body();
+            assertThat(body.tableImageUrl()).isEqualTo("https://img.com/table.png");
+            assertThat(body.imageUrl()).isEqualTo("https://img.com/img.png");
+            assertThat(body.description()).isEqualTo("비교 설명");
         }
 
         @Test
@@ -365,8 +371,9 @@ class ContentQueryServiceTest {
             BlockResponse questionBlock = response.blocks().get(0);
             assertThat(questionBlock.questionType()).isEqualTo("OX");
             assertThat(questionBlock.options()).hasSize(2);
-            assertThat(questionBlock.options().get(0).optionId()).isEqualTo("O");
-            assertThat(questionBlock.options().get(1).optionId()).isEqualTo("X");
+            assertThat(questionBlock.options())
+                    .extracting(ContentDetailResponse.OptionResponse::optionId)
+                    .containsExactlyInAnyOrder("O", "X");
         }
 
         @Test
@@ -394,8 +401,9 @@ class ContentQueryServiceTest {
             BlockResponse questionBlock = response.blocks().get(0);
             assertThat(questionBlock.questionType()).isEqualTo("SINGLE_CHOICE");
             assertThat(questionBlock.options()).hasSize(4);
-            assertThat(questionBlock.options().get(0).optionId()).isEqualTo("A");
-            assertThat(questionBlock.options().get(3).optionId()).isEqualTo("D");
+            assertThat(questionBlock.options())
+                    .extracting(ContentDetailResponse.OptionResponse::optionId)
+                    .containsExactlyInAnyOrder("A", "B", "C", "D");
         }
 
         @Test
