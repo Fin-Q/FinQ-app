@@ -13,6 +13,7 @@ public class XpQueryService {
 
     private final XpHistoryRepository xpHistoryRepository;
 
+    // TODO: User 도메인 구현 후 user.getTotalXp()로 전환
     public int getTotalXp(Long userId) {
         return xpHistoryRepository.calculateTotalXpByUserId(userId);
     }
