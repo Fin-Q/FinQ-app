@@ -6,19 +6,16 @@ spring:
   application:
     name: FinQ
 
-  datasource:
-    url: ${DB_URL:jdbc:mysql://localhost:3306/finq}
-    username: ${DB_USERNAME:root}
-    password: ${DB_PASSWORD:}
-    driver-class-name: com.mysql.cj.jdbc.Driver
+  profiles:
+    default: local
 
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate
     open-in-view: false
 
   flyway:
-    baseline-on-migrate: true
+    baseline-on-migrate: false
 
 springdoc:
   swagger-ui:
@@ -27,6 +24,3 @@ springdoc:
     path: /api-docs
   model-converters:
     enum-as-ref: true
-
-cors:
-  allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000}
