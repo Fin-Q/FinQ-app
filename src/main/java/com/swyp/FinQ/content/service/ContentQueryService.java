@@ -101,6 +101,7 @@ public class ContentQueryService {
                 learningProgressService.calculateProgressRate(completedCount, totalCount),
                 categoryCompleted,
                 CompletionStatus.of(categoryCompleted).name(),
+                categoryCompleted ? "COMPLETED" : "INCOMPLETE",
                 contentSummaries,
                 premiumSummaries
         );
@@ -124,6 +125,7 @@ public class ContentQueryService {
                         content.getTitle(),
                         content.getDescription(),
                         CompletionStatus.of(completedContentIds.contains(content.getId())).name(),
+                        completedContentIds.contains(content.getId()) ? "COMPLETED" : "INCOMPLETE",
                         content.getDisplayOrder()
                 ))
                 .toList();
