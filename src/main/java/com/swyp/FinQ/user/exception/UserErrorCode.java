@@ -14,6 +14,16 @@ public enum UserErrorCode implements ErrorCode {
             "USER_INTEREST_ALREADY_SELECTED",
             "관심 주제가 이미 등록되어 있습니다."
     ),
+    INTEREST_NOT_SELECTED(
+            HttpStatus.CONFLICT,
+            "USER_INTEREST_NOT_SELECTED",
+            "관심 주제를 먼저 등록해야 합니다."
+    ),
+    ONBOARDING_INTEREST_REQUIRED(
+            HttpStatus.CONFLICT,
+            "USER_ONBOARDING_INTEREST_REQUIRED",
+            "관심 주제 선택을 완료해야 합니다."
+    ),
     DUPLICATE_INTEREST_CATEGORY(
             HttpStatus.BAD_REQUEST,
             "USER_DUPLICATE_INTEREST_CATEGORY",

@@ -13,7 +13,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -46,6 +48,29 @@ public class UserController {
         return SuccessResponse.of(
                 UserSuccessCode.INTERESTS_CREATED,
                 onboardingService.selectInterests(Long.valueOf(jwt.getSubject()), request)
+        );
+    }
+
+    @Operation(summary = "관심 주제 수정")
+    @PutMapping("/interests")
+    public ResponseEntity<SuccessResponse<OnboardingResponse>> updateInterests(
+            @AuthenticationPrincipal Jwt jwt,
+            @Valid @RequestBody InterestSelectionRequest request
+    ) {
+        return SuccessResponse.of(
+                UserSuccessCode.INTERESTS_UPDATED,
+                onboardingService.updateInterests(Long.valueOf(jwt.getSubject()), request)
+        );
+    }
+
+    @Operation(summary = "온보딩 완료 처리")
+    @PatchMapping("/onboarding/complete")
+    public ResponseEntity<SuccessResponse<OnboardingResponse>> completeOnboarding(
+            @AuthenticationPrincipal Jwt jwt
+    ) {
+        return SuccessResponse.of(
+                UserSuccessCode.ONBOARDING_COMPLETED,
+                onboardingService.completeOnboarding(Long.valueOf(jwt.getSubject()))
         );
     }
 }

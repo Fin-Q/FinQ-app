@@ -2,6 +2,7 @@ package com.swyp.FinQ.user.repository;
 
 import com.swyp.FinQ.user.domain.UserInterest;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -22,5 +23,7 @@ public interface UserInterestRepository extends JpaRepository<UserInterest, Long
 
     boolean existsByUserId(Long userId);
 
-    void deleteAllByUserId(Long userId);
+    @Modifying(flushAutomatically = true)
+    @Query("DELETE FROM UserInterest interest WHERE interest.user.id = :userId")
+    void deleteAllByUserId(@Param("userId") Long userId);
 }

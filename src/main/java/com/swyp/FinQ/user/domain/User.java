@@ -77,4 +77,9 @@ public class User extends BaseTimeEntity {
     public void moveToCharacterGuide() {
         this.onboardingStatus = OnboardingStatus.CHARACTER_GUIDE;
     }
+
+    public void completeOnboarding(LocalDateTime completedAt) {
+        this.onboardingStatus = OnboardingStatus.COMPLETED;
+        this.onboardingCompletedAt = completedAt;
+    }
 }
