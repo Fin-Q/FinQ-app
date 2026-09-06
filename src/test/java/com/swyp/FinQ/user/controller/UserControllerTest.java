@@ -3,6 +3,9 @@ package com.swyp.FinQ.user.controller;
 import com.swyp.FinQ.content.domain.CategoryCode;
 import com.swyp.FinQ.global.security.token.IssuedTokenPair;
 import com.swyp.FinQ.global.security.token.JwtTokenProvider;
+import com.swyp.FinQ.reward.domain.XpHistory;
+import com.swyp.FinQ.reward.domain.XpType;
+import com.swyp.FinQ.reward.repository.XpHistoryRepository;
 import com.swyp.FinQ.support.MySqlContainerSupport;
 import com.swyp.FinQ.user.domain.OnboardingStatus;
 import com.swyp.FinQ.user.domain.ProfileImageCode;
@@ -42,6 +45,9 @@ class UserControllerTest extends MySqlContainerSupport {
 
     @Autowired
     private JwtTokenProvider jwtTokenProvider;
+
+    @Autowired
+    private XpHistoryRepository xpHistoryRepository;
 
     @Test
     void getsOnboardingStatusAndInterests() throws Exception {
@@ -199,6 +205,100 @@ class UserControllerTest extends MySqlContainerSupport {
     }
 
     @Test
+    void getsMyPageWithProfileAndLearningSummary() throws Exception {
+        User user = saveUser();
+        selectInterests(user.getId(), "[\"SAL\"]");
+        xpHistoryRepository.save(XpHistory.builder()
+                .userId(user.getId())
+                .xpAmount(80)
+                .xpType(XpType.CONTENT_COMPLETE)
+                .referenceId("content:my-page-test")
+                .build());
+
+        mockMvc.perform(get("/users/me")
+                        .header(HttpHeaders.AUTHORIZATION, bearerToken(user.getId())))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("마이페이지 조회에 성공했습니다."))
+                .andExpect(jsonPath("$.data.userId").value(String.valueOf(user.getId())))
+                .andExpect(jsonPath("$.data.email").value("onboarding@example.com"))
+                .andExpect(jsonPath("$.data.nickname").value("Minter"))
+                .andExpect(jsonPath("$.data.profileImageCode").value("PROFILE_01"))
+                .andExpect(jsonPath("$.data.totalXp").value(80))
+                .andExpect(jsonPath("$.data.level").value("LV2"))
+                .andExpect(jsonPath("$.data.currentStreakDays").value(3))
+                .andExpect(jsonPath("$.data.notificationEnabled").value(true))
+                .andExpect(jsonPath("$.data.interests[0].categoryCode").value("SAL"));
+    }
+
+    @Test
+    void updatesNicknameAndProfileImage() throws Exception {
+        User user = saveUser();
+
+        mockMvc.perform(patch("/users/me/profile")
+                        .header(HttpHeaders.AUTHORIZATION, bearerToken(user.getId()))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "nickname": "  핀큐  ",
+                                  "profileImageCode": "PROFILE_04"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("프로필 수정에 성공했습니다."))
+                .andExpect(jsonPath("$.data.nickname").value("핀큐"))
+                .andExpect(jsonPath("$.data.profileImageCode").value("PROFILE_04"));
+
+        User updatedUser = userRepository.findById(user.getId()).orElseThrow();
+        assertThat(updatedUser.getNickname()).isEqualTo("핀큐");
+        assertThat(updatedUser.getProfileImageCode()).isEqualTo(ProfileImageCode.PROFILE_04);
+    }
+
+    @Test
+    void updatesOnlyRequestedProfileField() throws Exception {
+        User user = saveUser();
+
+        mockMvc.perform(patch("/users/me/profile")
+                        .header(HttpHeaders.AUTHORIZATION, bearerToken(user.getId()))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "nickname": "새 닉네임"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.nickname").value("새 닉네임"))
+                .andExpect(jsonPath("$.data.profileImageCode").value("PROFILE_01"));
+    }
+
+    @Test
+    void rejectsEmptyProfileUpdate() throws Exception {
+        User user = saveUser();
+
+        mockMvc.perform(patch("/users/me/profile")
+                        .header(HttpHeaders.AUTHORIZATION, bearerToken(user.getId()))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errorCode").value("USER_PROFILE_UPDATE_EMPTY"));
+    }
+
+    @Test
+    void rejectsBlankNickname() throws Exception {
+        User user = saveUser();
+
+        mockMvc.perform(patch("/users/me/profile")
+                        .header(HttpHeaders.AUTHORIZATION, bearerToken(user.getId()))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "nickname": "   "
+                                }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errorCode").value("COMMON_VALIDATION_ERROR"));
+    }
+
+    @Test
     void rejectsOnboardingRequestWithoutAccessToken() throws Exception {
         mockMvc.perform(get("/users/me/onboarding"))
                 .andExpect(status().isUnauthorized())
@@ -212,6 +312,7 @@ class UserControllerTest extends MySqlContainerSupport {
                 .nickname("Minter")
                 .profileImageCode(ProfileImageCode.PROFILE_01)
                 .onboardingStatus(OnboardingStatus.INTEREST_SECTION)
+                .currentStreak(3)
                 .build());
     }
 

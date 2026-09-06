@@ -82,4 +82,13 @@ public class User extends BaseTimeEntity {
         this.onboardingStatus = OnboardingStatus.COMPLETED;
         this.onboardingCompletedAt = completedAt;
     }
+
+    public void updateProfile(String nickname, ProfileImageCode profileImageCode) {
+        if (nickname != null) {
+            this.nickname = nickname;
+        }
+        if (profileImageCode != null) {
+            this.profileImageCode = profileImageCode;
+        }
+    }
 }

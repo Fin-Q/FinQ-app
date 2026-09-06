@@ -24,6 +24,11 @@ public enum UserErrorCode implements ErrorCode {
             "USER_ONBOARDING_INTEREST_REQUIRED",
             "관심 주제 선택을 완료해야 합니다."
     ),
+    PROFILE_UPDATE_EMPTY(
+            HttpStatus.BAD_REQUEST,
+            "USER_PROFILE_UPDATE_EMPTY",
+            "수정할 프로필 정보를 입력해야 합니다."
+    ),
     DUPLICATE_INTEREST_CATEGORY(
             HttpStatus.BAD_REQUEST,
             "USER_DUPLICATE_INTEREST_CATEGORY",
