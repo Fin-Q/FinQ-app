@@ -73,4 +73,8 @@ public class User extends BaseTimeEntity {
     public void updateLastLoginAt(LocalDateTime loginAt) {
         this.lastLoginAt = loginAt;
     }
+
+    public void moveToCharacterGuide() {
+        this.onboardingStatus = OnboardingStatus.CHARACTER_GUIDE;
+    }
 }
