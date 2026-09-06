@@ -38,7 +38,7 @@ public record ContentDetailResponse(
             @Schema(description = "본문 유형 (BODY 전용)", example = "EXPLANATION", allowableValues = {"EXPLANATION", "CASE", "COMPARISON"})
             String bodyType,
             @Schema(description = "본문 데이터 (BODY 전용)")
-            Object body,
+            BodyBlockResponse body,
             @Schema(description = "핵심 정리 내용 (SUMMARY 전용)")
             String summaryContent,
             @Schema(description = "문제 ID (QUESTION 전용)", example = "1")
@@ -53,7 +53,7 @@ public record ContentDetailResponse(
             List<OptionResponse> options
     ) {
 
-        public static BlockResponse ofBody(int order, String bodyType, Object body) {
+        public static BlockResponse ofBody(int order, String bodyType, BodyBlockResponse body) {
             return new BlockResponse(order, "BODY", bodyType, body, null, null, null, null, null, null);
         }
 
@@ -67,6 +67,22 @@ public record ContentDetailResponse(
             return new BlockResponse(order, "QUESTION", null, null, null,
                     questionId, questionStage, questionType, questionBody, options);
         }
+    }
+
+    @Schema(description = "본문 블록 데이터")
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record BodyBlockResponse(
+            @Schema(description = "본문 제목", example = "월급 관리란?")
+            String title,
+            @Schema(description = "설명", example = "월급을 효율적으로 관리하는 방법입니다.")
+            String description,
+            @Schema(description = "추가 설명 (EXPLANATION 전용)")
+            String additionalDescription,
+            @Schema(description = "이미지 URL (CASE, COMPARISON 전용)")
+            String imageUrl,
+            @Schema(description = "표 이미지 URL (COMPARISON 전용)")
+            String tableImageUrl
+    ) {
     }
 
     @Schema(description = "선택지")

@@ -21,6 +21,8 @@ import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
 
 @Entity
 @Table(name = "advanced_quiz", uniqueConstraints = {
@@ -72,4 +74,13 @@ public class AdvancedQuiz {
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
+
+    public List<Map.Entry<String, String>> getOptions() {
+        return List.of(
+                Map.entry("A", optionA),
+                Map.entry("B", optionB),
+                Map.entry("C", optionC),
+                Map.entry("D", optionD)
+        );
+    }
 }

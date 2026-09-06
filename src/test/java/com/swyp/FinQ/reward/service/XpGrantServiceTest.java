@@ -37,18 +37,16 @@ class XpGrantServiceTest {
             Long userId = 1L;
             Long contentId = 5L;
 
+            given(xpHistoryRepository.calculateTotalXpByUserId(userId)).willReturn(0);
             given(xpHistoryRepository.existsByUserIdAndXpTypeAndReferenceId(
                     userId, XpType.CONTENT_COMPLETE, "content:5")).willReturn(false);
-            given(xpHistoryRepository.calculateTotalXpByUserId(userId))
-                    .willReturn(0)
-                    .willReturn(10);
-            given(xpHistoryRepository.saveAndFlush(any())).willAnswer(inv -> inv.getArgument(0));
+            given(xpHistoryRepository.save(any())).willAnswer(inv -> inv.getArgument(0));
 
             XpResultInfo result = xpGrantServiceService.grantContentCompletionXp(userId, contentId);
 
             assertThat(result.xpEarned()).isEqualTo(10);
             assertThat(result.totalXp()).isEqualTo(10);
-            verify(xpHistoryRepository).saveAndFlush(any());
+            verify(xpHistoryRepository).save(any());
         }
 
         @Test
@@ -80,18 +78,16 @@ class XpGrantServiceTest {
             Long userId = 1L;
             Long categoryId = 2L;
 
+            given(xpHistoryRepository.calculateTotalXpByUserId(userId)).willReturn(70);
             given(xpHistoryRepository.existsByUserIdAndXpTypeAndReferenceId(
                     userId, XpType.QUIZ_COMPLETE, "category:2")).willReturn(false);
-            given(xpHistoryRepository.calculateTotalXpByUserId(userId))
-                    .willReturn(70)
-                    .willReturn(100);
-            given(xpHistoryRepository.saveAndFlush(any())).willAnswer(inv -> inv.getArgument(0));
+            given(xpHistoryRepository.save(any())).willAnswer(inv -> inv.getArgument(0));
 
             XpResultInfo result = xpGrantServiceService.grantQuizCompletionXp(userId, categoryId);
 
             assertThat(result.xpEarned()).isEqualTo(30);
             assertThat(result.totalXp()).isEqualTo(100);
-            verify(xpHistoryRepository).saveAndFlush(any());
+            verify(xpHistoryRepository).save(any());
         }
 
         @Test
@@ -122,12 +118,10 @@ class XpGrantServiceTest {
             Long userId = 1L;
             Long contentId = 10L;
 
+            given(xpHistoryRepository.calculateTotalXpByUserId(userId)).willReturn(70);
             given(xpHistoryRepository.existsByUserIdAndXpTypeAndReferenceId(
                     userId, XpType.CONTENT_COMPLETE, "content:10")).willReturn(false);
-            given(xpHistoryRepository.calculateTotalXpByUserId(userId))
-                    .willReturn(70)
-                    .willReturn(80);
-            given(xpHistoryRepository.saveAndFlush(any())).willAnswer(inv -> inv.getArgument(0));
+            given(xpHistoryRepository.save(any())).willAnswer(inv -> inv.getArgument(0));
 
             XpResultInfo result = xpGrantServiceService.grantContentCompletionXp(userId, contentId);
 
@@ -142,12 +136,10 @@ class XpGrantServiceTest {
             Long userId = 1L;
             Long contentId = 10L;
 
+            given(xpHistoryRepository.calculateTotalXpByUserId(userId)).willReturn(0);
             given(xpHistoryRepository.existsByUserIdAndXpTypeAndReferenceId(
                     userId, XpType.CONTENT_COMPLETE, "content:10")).willReturn(false);
-            given(xpHistoryRepository.calculateTotalXpByUserId(userId))
-                    .willReturn(0)
-                    .willReturn(10);
-            given(xpHistoryRepository.saveAndFlush(any())).willAnswer(inv -> inv.getArgument(0));
+            given(xpHistoryRepository.save(any())).willAnswer(inv -> inv.getArgument(0));
 
             XpResultInfo result = xpGrantServiceService.grantContentCompletionXp(userId, contentId);
 
