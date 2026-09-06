@@ -23,5 +23,6 @@ public abstract class MySqlContainerSupport {
         registry.add("spring.datasource.driver-class-name", MYSQL::getDriverClassName);
         registry.add("spring.flyway.enabled", () -> true);
         registry.add("spring.jpa.hibernate.ddl-auto", () -> "validate");
+        registry.add("jwt.secret", () -> "ZmlucS10ZXN0LWp3dC1zZWNyZXQta2V5LTMyaXRlcyE=");
     }
 }
