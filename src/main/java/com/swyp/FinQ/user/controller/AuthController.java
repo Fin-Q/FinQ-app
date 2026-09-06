@@ -1,8 +1,11 @@
 package com.swyp.FinQ.user.controller;
 
 import com.swyp.FinQ.global.success.SuccessResponse;
+import com.swyp.FinQ.user.dto.req.LoginRequest;
 import com.swyp.FinQ.user.dto.req.SignUpRequest;
+import com.swyp.FinQ.user.dto.res.LoginResponse;
 import com.swyp.FinQ.user.dto.res.SignUpResponse;
+import com.swyp.FinQ.user.service.LoginService;
 import com.swyp.FinQ.user.service.SignUpService;
 import com.swyp.FinQ.user.success.AuthSuccessCode;
 import io.swagger.v3.oas.annotations.Operation;
@@ -22,6 +25,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthController {
 
     private final SignUpService signUpService;
+    private final LoginService loginService;
 
     @Operation(summary = "회원가입")
     @PostMapping("/sign-up")
@@ -29,5 +33,13 @@ public class AuthController {
             @Valid @RequestBody SignUpRequest request
     ) {
         return SuccessResponse.of(AuthSuccessCode.SIGN_UP, signUpService.signUp(request));
+    }
+
+    @Operation(summary = "일반 로그인")
+    @PostMapping("/login")
+    public ResponseEntity<SuccessResponse<LoginResponse>> login(
+            @Valid @RequestBody LoginRequest request
+    ) {
+        return SuccessResponse.of(AuthSuccessCode.LOGIN, loginService.login(request));
     }
 }

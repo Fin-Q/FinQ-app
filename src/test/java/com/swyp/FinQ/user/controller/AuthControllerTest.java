@@ -23,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.EnumSet;
 import java.util.List;
+import java.time.LocalDateTime;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -158,6 +159,82 @@ class AuthControllerTest extends MySqlContainerSupport {
                         .content(request))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.errorCode").value("AUTH_REQUIRED_AGREEMENT_NOT_ACCEPTED"));
+    }
+
+    @Test
+    void logsInWithEmailAndPassword() throws Exception {
+        User user = saveUser("user@example.com", "Password123!");
+        LocalDateTime previousLoginAt = user.getLastLoginAt();
+
+        String responseBody = mockMvc.perform(post("/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(validLoginRequest()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("SUCCESS"))
+                .andExpect(jsonPath("$.message").value("로그인에 성공했습니다."))
+                .andExpect(jsonPath("$.data.userId").value(String.valueOf(user.getId())))
+                .andExpect(jsonPath("$.data.nickname").value("Minter"))
+                .andExpect(jsonPath("$.data.tokenType").value("Bearer"))
+                .andExpect(jsonPath("$.data.accessTokenExpiresIn").value(3600))
+                .andExpect(jsonPath("$.data.onboardingStatus").value("INTEREST_SECTION"))
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        JsonNode data = objectMapper.readTree(responseBody).get("data");
+        User loggedInUser = userRepository.findById(user.getId()).orElseThrow();
+        RefreshToken refreshToken = refreshTokenRepository.findAll().getFirst();
+
+        assertThat(loggedInUser.getLastLoginAt()).isAfter(previousLoginAt);
+        assertThat(refreshToken.getUser().getId()).isEqualTo(user.getId());
+        assertThat(refreshToken.getTokenHash())
+                .isEqualTo(tokenHashEncoder.encode(data.get("refreshToken").asText()));
+    }
+
+    @Test
+    void rejectsLoginWithUnknownEmail() throws Exception {
+        mockMvc.perform(post("/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(validLoginRequest()))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.status").value("ERROR"))
+                .andExpect(jsonPath("$.errorCode").value("AUTH_INVALID_CREDENTIALS"));
+    }
+
+    @Test
+    void rejectsLoginWithWrongPassword() throws Exception {
+        saveUser("user@example.com", "Password123!");
+
+        mockMvc.perform(post("/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "email": "user@example.com",
+                                  "password": "WrongPassword!"
+                                }
+                                """))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.errorCode").value("AUTH_INVALID_CREDENTIALS"));
+    }
+
+    private User saveUser(String email, String password) {
+        return userRepository.saveAndFlush(User.builder()
+                .email(email)
+                .password(passwordEncoder.encode(password))
+                .nickname("Minter")
+                .profileImageCode(ProfileImageCode.PROFILE_01)
+                .onboardingStatus(OnboardingStatus.INTEREST_SECTION)
+                .lastLoginAt(LocalDateTime.now().minusDays(1))
+                .build());
+    }
+
+    private String validLoginRequest() {
+        return """
+                {
+                  "email": "user@example.com",
+                  "password": "Password123!"
+                }
+                """;
     }
 
     private String validSignUpRequest() {

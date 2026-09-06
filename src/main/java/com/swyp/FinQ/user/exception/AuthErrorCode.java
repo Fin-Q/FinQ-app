@@ -22,6 +22,11 @@ public enum AuthErrorCode implements ErrorCode {
             HttpStatus.BAD_REQUEST,
             "AUTH_REQUIRED_AGREEMENT_NOT_ACCEPTED",
             "모든 필수 약관에 동의해야 합니다."
+    ),
+    INVALID_CREDENTIALS(
+            HttpStatus.UNAUTHORIZED,
+            "AUTH_INVALID_CREDENTIALS",
+            "이메일 또는 비밀번호가 올바르지 않습니다."
     );
 
     private final HttpStatus status;
