@@ -3,10 +3,13 @@ package com.swyp.FinQ.user.controller;
 import com.swyp.FinQ.global.success.SuccessResponse;
 import com.swyp.FinQ.user.dto.req.LoginRequest;
 import com.swyp.FinQ.user.dto.req.SignUpRequest;
+import com.swyp.FinQ.user.dto.req.TokenRefreshRequest;
 import com.swyp.FinQ.user.dto.res.LoginResponse;
 import com.swyp.FinQ.user.dto.res.SignUpResponse;
+import com.swyp.FinQ.user.dto.res.TokenRefreshResponse;
 import com.swyp.FinQ.user.service.LoginService;
 import com.swyp.FinQ.user.service.SignUpService;
+import com.swyp.FinQ.user.service.TokenRefreshService;
 import com.swyp.FinQ.user.success.AuthSuccessCode;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -26,6 +29,7 @@ public class AuthController {
 
     private final SignUpService signUpService;
     private final LoginService loginService;
+    private final TokenRefreshService tokenRefreshService;
 
     @Operation(summary = "회원가입")
     @PostMapping("/sign-up")
@@ -41,5 +45,13 @@ public class AuthController {
             @Valid @RequestBody LoginRequest request
     ) {
         return SuccessResponse.of(AuthSuccessCode.LOGIN, loginService.login(request));
+    }
+
+    @Operation(summary = "토큰 재발급")
+    @PostMapping("/token/refresh")
+    public ResponseEntity<SuccessResponse<TokenRefreshResponse>> refresh(
+            @Valid @RequestBody TokenRefreshRequest request
+    ) {
+        return SuccessResponse.of(AuthSuccessCode.TOKEN_REFRESH, tokenRefreshService.refresh(request));
     }
 }

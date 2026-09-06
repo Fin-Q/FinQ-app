@@ -217,6 +217,67 @@ class AuthControllerTest extends MySqlContainerSupport {
                 .andExpect(jsonPath("$.errorCode").value("AUTH_INVALID_CREDENTIALS"));
     }
 
+    @Test
+    void rotatesRefreshToken() throws Exception {
+        saveUser("user@example.com", "Password123!");
+        String loginResponse = mockMvc.perform(post("/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(validLoginRequest()))
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+        String oldRefreshToken = objectMapper.readTree(loginResponse)
+                .path("data")
+                .path("refreshToken")
+                .asText();
+
+        String refreshResponse = mockMvc.perform(post("/auth/token/refresh")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new RefreshTokenBody(oldRefreshToken))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("SUCCESS"))
+                .andExpect(jsonPath("$.message").value("토큰 재발급에 성공했습니다."))
+                .andExpect(jsonPath("$.data.tokenType").value("Bearer"))
+                .andExpect(jsonPath("$.data.accessTokenExpiresIn").value(3600))
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        JsonNode data = objectMapper.readTree(refreshResponse).path("data");
+        String newRefreshToken = data.path("refreshToken").asText();
+
+        assertThat(newRefreshToken).isNotEqualTo(oldRefreshToken);
+        assertThat(refreshTokenRepository.findByTokenHash(tokenHashEncoder.encode(oldRefreshToken))).isEmpty();
+        assertThat(refreshTokenRepository.findByTokenHash(tokenHashEncoder.encode(newRefreshToken))).isPresent();
+    }
+
+    @Test
+    void rejectsReusedRefreshToken() throws Exception {
+        saveUser("user@example.com", "Password123!");
+        String loginResponse = mockMvc.perform(post("/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(validLoginRequest()))
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+        String refreshToken = objectMapper.readTree(loginResponse)
+                .path("data")
+                .path("refreshToken")
+                .asText();
+        String request = objectMapper.writeValueAsString(new RefreshTokenBody(refreshToken));
+
+        mockMvc.perform(post("/auth/token/refresh")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(request))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/auth/token/refresh")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(request))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.errorCode").value("AUTH_INVALID_REFRESH_TOKEN"));
+    }
+
     private User saveUser(String email, String password) {
         return userRepository.saveAndFlush(User.builder()
                 .email(email)
@@ -257,5 +318,8 @@ class AuthControllerTest extends MySqlContainerSupport {
                   ]
                 }
                 """;
+    }
+
+    private record RefreshTokenBody(String refreshToken) {
     }
 }
