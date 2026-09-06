@@ -25,6 +25,7 @@ import java.util.List;
 public class SecurityConfig {
 
   private static final String[] PUBLIC_URLS = {
+    "/auth/agreements",
     "/auth/sign-up",
     "/auth/login",
     "/auth/social/**",
