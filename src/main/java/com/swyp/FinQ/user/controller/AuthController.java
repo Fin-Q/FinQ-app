@@ -5,9 +5,11 @@ import com.swyp.FinQ.global.security.token.JwtClaimNames;
 import com.swyp.FinQ.user.dto.req.LoginRequest;
 import com.swyp.FinQ.user.dto.req.SignUpRequest;
 import com.swyp.FinQ.user.dto.req.TokenRefreshRequest;
+import com.swyp.FinQ.user.dto.res.AgreementListResponse;
 import com.swyp.FinQ.user.dto.res.LoginResponse;
 import com.swyp.FinQ.user.dto.res.SignUpResponse;
 import com.swyp.FinQ.user.dto.res.TokenRefreshResponse;
+import com.swyp.FinQ.user.service.AgreementQueryService;
 import com.swyp.FinQ.user.service.LoginService;
 import com.swyp.FinQ.user.service.LogoutService;
 import com.swyp.FinQ.user.service.SignUpService;
@@ -20,6 +22,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -31,10 +34,20 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class AuthController {
 
+    private final AgreementQueryService agreementQueryService;
     private final SignUpService signUpService;
     private final LoginService loginService;
     private final TokenRefreshService tokenRefreshService;
     private final LogoutService logoutService;
+
+    @Operation(summary = "현재 적용 중인 필수 약관 목록 조회")
+    @GetMapping("/agreements")
+    public ResponseEntity<SuccessResponse<AgreementListResponse>> getAgreements() {
+        return SuccessResponse.of(
+                AuthSuccessCode.AGREEMENTS_RETRIEVED,
+                agreementQueryService.getCurrentAgreements()
+        );
+    }
 
     @Operation(summary = "회원가입")
     @PostMapping("/sign-up")

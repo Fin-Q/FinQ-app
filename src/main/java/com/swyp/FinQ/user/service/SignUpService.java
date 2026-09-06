@@ -2,6 +2,7 @@ package com.swyp.FinQ.user.service;
 
 import com.swyp.FinQ.global.exception.BaseException;
 import com.swyp.FinQ.global.security.token.IssuedTokenPair;
+import com.swyp.FinQ.user.domain.AgreementPolicy;
 import com.swyp.FinQ.user.domain.OnboardingStatus;
 import com.swyp.FinQ.user.domain.ProfileImageCode;
 import com.swyp.FinQ.user.domain.User;
@@ -18,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -26,10 +28,10 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class SignUpService {
 
-    private static final Set<String> REQUIRED_AGREEMENT_CODES = Set.of(
-            "TERMS_OF_SERVICE",
-            "PRIVACY_POLICY"
-    );
+    private static final Set<String> REQUIRED_AGREEMENT_CODES = Arrays.stream(AgreementPolicy.values())
+            .filter(AgreementPolicy::isRequired)
+            .map(Enum::name)
+            .collect(Collectors.toUnmodifiableSet());
 
     private final UserRepository userRepository;
     private final UserAgreementRepository userAgreementRepository;

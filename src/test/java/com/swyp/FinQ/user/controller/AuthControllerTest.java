@@ -26,6 +26,7 @@ import java.util.List;
 import java.time.LocalDateTime;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -55,6 +56,21 @@ class AuthControllerTest extends MySqlContainerSupport {
 
     @Autowired
     private TokenHashEncoder tokenHashEncoder;
+
+    @Test
+    void getsCurrentAgreementsWithoutAuthentication() throws Exception {
+        mockMvc.perform(get("/auth/agreements"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("SUCCESS"))
+                .andExpect(jsonPath("$.message").value("약관 목록 조회에 성공했습니다."))
+                .andExpect(jsonPath("$.data.agreements.length()").value(2))
+                .andExpect(jsonPath("$.data.agreements[0].agreementCode").value("TERMS_OF_SERVICE"))
+                .andExpect(jsonPath("$.data.agreements[0].version").value("1.0"))
+                .andExpect(jsonPath("$.data.agreements[0].required").value(true))
+                .andExpect(jsonPath("$.data.agreements[1].agreementCode").value("PRIVACY_POLICY"))
+                .andExpect(jsonPath("$.data.agreements[1].version").value("1.0"))
+                .andExpect(jsonPath("$.data.agreements[1].required").value(true));
+    }
 
     @Test
     void signsUpWithAgreementsAndTokens() throws Exception {
