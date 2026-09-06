@@ -22,6 +22,7 @@ public enum GlobalErrorCode implements ErrorCode {
    * 401, 403: 인증/인가 오류
    */
   AUTH_UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "AUTH_UNAUTHORIZED", "로그인이 필요한 요청입니다."),
+  AUTH_FORBIDDEN(HttpStatus.FORBIDDEN, "AUTH_FORBIDDEN", "요청한 작업을 수행할 권한이 없습니다."),
 
   /**
    * 500: 응답 실패 - 서버 오류

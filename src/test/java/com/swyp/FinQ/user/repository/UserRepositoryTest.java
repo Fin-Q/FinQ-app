@@ -57,7 +57,7 @@ class UserRepositoryTest extends MySqlContainerSupport {
         User found = userRepository.findByEmail(user.getEmail()).orElseThrow();
 
         assertThat(found.getId()).isEqualTo(user.getId());
-        assertThat(found.getOnboardingStatus()).isEqualTo(OnboardingStatus.INTEREST_SELECTION);
+        assertThat(found.getOnboardingStatus()).isEqualTo(OnboardingStatus.INTEREST_SECTION);
         assertThat(userRepository.existsByEmail(user.getEmail())).isTrue();
     }
 
@@ -72,17 +72,21 @@ class UserRepositoryTest extends MySqlContainerSupport {
                 .build());
         RefreshToken refreshToken = refreshTokenRepository.save(RefreshToken.builder()
                 .user(user)
-                .token("refresh-token")
+                .sessionId("session-id")
+                .tokenHash("refresh-token-hash")
                 .expiresAt(LocalDateTime.now().plusDays(14))
                 .build());
 
         SocialAccount foundSocialAccount = socialAccountRepository
                 .findByProviderAndProviderUserId(SocialProvider.APPLE, "apple-user-id")
                 .orElseThrow();
-        RefreshToken foundRefreshToken = refreshTokenRepository.findByToken("refresh-token").orElseThrow();
+        RefreshToken foundRefreshToken = refreshTokenRepository
+                .findByTokenHash("refresh-token-hash")
+                .orElseThrow();
 
         assertThat(foundSocialAccount.getId()).isEqualTo(socialAccount.getId());
         assertThat(foundRefreshToken.getId()).isEqualTo(refreshToken.getId());
+        assertThat(refreshTokenRepository.findBySessionId("session-id")).contains(refreshToken);
         assertThat(socialAccountRepository.existsByUserIdAndProvider(user.getId(), SocialProvider.APPLE)).isTrue();
     }
 

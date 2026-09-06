@@ -23,25 +23,13 @@ public record ErrorResponse(
   public static ResponseEntity<ErrorResponse> of(ErrorCode code) {
     return ResponseEntity
       .status(code.status())
-      .body(new ErrorResponse(
-        "ERROR",
-        code.errorCode(),
-        code.message(),
-        List.of(),
-        generateTraceId()
-      ));
+      .body(from(code));
   }
 
   public static ResponseEntity<ErrorResponse> of(ErrorCode code, String message) {
     return ResponseEntity
       .status(code.status())
-      .body(new ErrorResponse(
-        "ERROR",
-        code.errorCode(),
-        message,
-        List.of(),
-        generateTraceId()
-      ));
+      .body(from(code, message));
   }
 
   public static ResponseEntity<ErrorResponse> of(ErrorCode code, String message, List<FieldDetail> details) {
@@ -54,6 +42,20 @@ public record ErrorResponse(
         details,
         generateTraceId()
       ));
+  }
+
+  public static ErrorResponse from(ErrorCode code) {
+    return from(code, code.message());
+  }
+
+  public static ErrorResponse from(ErrorCode code, String message) {
+    return new ErrorResponse(
+      "ERROR",
+      code.errorCode(),
+      message,
+      List.of(),
+      generateTraceId()
+    );
   }
 
   private static String generateTraceId() {

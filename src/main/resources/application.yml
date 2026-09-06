@@ -24,3 +24,9 @@ springdoc:
     path: /api-docs
   model-converters:
     enum-as-ref: true
+
+jwt:
+  secret: ${JWT_SECRET:}
+  issuer: finq
+  access-token-expiration: 1h
+  refresh-token-expiration: 14d
