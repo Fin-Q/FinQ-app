@@ -278,6 +278,54 @@ class AuthControllerTest extends MySqlContainerSupport {
                 .andExpect(jsonPath("$.errorCode").value("AUTH_INVALID_REFRESH_TOKEN"));
     }
 
+    @Test
+    void logsOutCurrentSession() throws Exception {
+        saveUser("user@example.com", "Password123!");
+        JsonNode loginData = login();
+        String accessToken = loginData.path("accessToken").asText();
+        String refreshToken = loginData.path("refreshToken").asText();
+
+        mockMvc.perform(post("/auth/logout")
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("SUCCESS"))
+                .andExpect(jsonPath("$.message").value("로그아웃에 성공했습니다."))
+                .andExpect(jsonPath("$.data").doesNotExist());
+
+        assertThat(refreshTokenRepository.findByTokenHash(tokenHashEncoder.encode(refreshToken))).isEmpty();
+
+        mockMvc.perform(post("/auth/token/refresh")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new RefreshTokenBody(refreshToken))))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.errorCode").value("AUTH_INVALID_REFRESH_TOKEN"));
+    }
+
+    @Test
+    void preservesOtherSessionOnLogout() throws Exception {
+        saveUser("user@example.com", "Password123!");
+        JsonNode firstSession = login();
+        JsonNode secondSession = login();
+
+        mockMvc.perform(post("/auth/logout")
+                        .header("Authorization", "Bearer " + firstSession.path("accessToken").asText()))
+                .andExpect(status().isOk());
+
+        assertThat(refreshTokenRepository.findByTokenHash(
+                tokenHashEncoder.encode(firstSession.path("refreshToken").asText())
+        )).isEmpty();
+        assertThat(refreshTokenRepository.findByTokenHash(
+                tokenHashEncoder.encode(secondSession.path("refreshToken").asText())
+        )).isPresent();
+    }
+
+    @Test
+    void rejectsLogoutWithoutAccessToken() throws Exception {
+        mockMvc.perform(post("/auth/logout"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.errorCode").value("AUTH_UNAUTHORIZED"));
+    }
+
     private User saveUser(String email, String password) {
         return userRepository.saveAndFlush(User.builder()
                 .email(email)
@@ -296,6 +344,17 @@ class AuthControllerTest extends MySqlContainerSupport {
                   "password": "Password123!"
                 }
                 """;
+    }
+
+    private JsonNode login() throws Exception {
+        String response = mockMvc.perform(post("/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(validLoginRequest()))
+                .andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+        return objectMapper.readTree(response).path("data");
     }
 
     private String validSignUpRequest() {
