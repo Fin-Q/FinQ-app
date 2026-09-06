@@ -21,10 +21,15 @@ public interface ContentRepository extends JpaRepository<Content, Long> {
             "GROUP BY c.category.id")
     List<CategoryContentCount> countContentPerCategory();
 
-    @Query("SELECT c.category.id AS categoryId, COUNT(ucc) AS contentCount " +
+    @Query("SELECT c.category.id AS categoryId, COUNT(c) AS contentCount " +
             "FROM Content c " +
-            "LEFT JOIN UserContentCompletion ucc ON ucc.content = c AND ucc.userId = :userId " +
+            "JOIN UserContentCompletion ucc ON ucc.content = c AND ucc.userId = :userId " +
             "WHERE c.isPremium = false " +
             "GROUP BY c.category.id")
     List<CategoryContentCount> countCompletedContentPerCategory(@Param("userId") Long userId);
+
+    int countByCategoryAndIsPremiumFalse(Category category);
+
+    @Query("SELECT c FROM Content c JOIN FETCH c.category WHERE c.id = :contentId")
+    Optional<Content> findByIdWithCategory(@Param("contentId") Long contentId);
 }
