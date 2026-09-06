@@ -11,6 +11,7 @@ import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -22,10 +23,17 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "refresh_token", indexes = {
-        @Index(name = "idx_refresh_token_user", columnList = "user_id"),
-        @Index(name = "idx_refresh_token_expires_at", columnList = "expires_at")
-})
+@Table(
+        name = "refresh_token",
+        uniqueConstraints = {
+                @UniqueConstraint(name = "uk_refresh_token_session_id", columnNames = "session_id"),
+                @UniqueConstraint(name = "uk_refresh_token_token_hash", columnNames = "token_hash")
+        },
+        indexes = {
+                @Index(name = "idx_refresh_token_user", columnList = "user_id"),
+                @Index(name = "idx_refresh_token_expires_at", columnList = "expires_at")
+        }
+)
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
@@ -42,8 +50,11 @@ public class RefreshToken {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @Column(name = "token", nullable = false, unique = true, length = 500)
-    private String token;
+    @Column(name = "session_id", nullable = false, length = 36)
+    private String sessionId;
+
+    @Column(name = "token_hash", nullable = false, length = 64)
+    private String tokenHash;
 
     @Column(name = "expires_at", nullable = false)
     private LocalDateTime expiresAt;

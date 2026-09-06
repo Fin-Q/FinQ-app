@@ -47,7 +47,7 @@ public class User extends BaseTimeEntity {
     @Builder.Default
     @Enumerated(EnumType.STRING)
     @Column(name = "onboarding_status", nullable = false, length = 30)
-    private OnboardingStatus onboardingStatus = OnboardingStatus.INTEREST_SELECTION;
+    private OnboardingStatus onboardingStatus = OnboardingStatus.INTEREST_SECTION;
 
     @Column(name = "onboarding_completed_at")
     private LocalDateTime onboardingCompletedAt;
@@ -69,4 +69,8 @@ public class User extends BaseTimeEntity {
 
     @Column(name = "last_login_at")
     private LocalDateTime lastLoginAt;
+
+    public void updateLastLoginAt(LocalDateTime loginAt) {
+        this.lastLoginAt = loginAt;
+    }
 }
