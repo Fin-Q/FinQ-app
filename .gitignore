@@ -13,7 +13,6 @@ out/
 *.log
 
 ### Secrets ###
-application-local.yml
 .env
 
 ### OS ###
