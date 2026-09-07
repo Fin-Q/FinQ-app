@@ -3,15 +3,18 @@ package com.swyp.FinQ.user.controller;
 import com.swyp.FinQ.global.success.SuccessResponse;
 import com.swyp.FinQ.global.security.token.JwtClaimNames;
 import com.swyp.FinQ.user.dto.req.LoginRequest;
+import com.swyp.FinQ.user.dto.req.PasswordResetEmailRequest;
 import com.swyp.FinQ.user.dto.req.SignUpRequest;
 import com.swyp.FinQ.user.dto.req.TokenRefreshRequest;
 import com.swyp.FinQ.user.dto.res.AgreementListResponse;
 import com.swyp.FinQ.user.dto.res.LoginResponse;
+import com.swyp.FinQ.user.dto.res.PasswordResetRequestResponse;
 import com.swyp.FinQ.user.dto.res.SignUpResponse;
 import com.swyp.FinQ.user.dto.res.TokenRefreshResponse;
 import com.swyp.FinQ.user.service.AgreementQueryService;
 import com.swyp.FinQ.user.service.LoginService;
 import com.swyp.FinQ.user.service.LogoutService;
+import com.swyp.FinQ.user.service.PasswordResetRequestService;
 import com.swyp.FinQ.user.service.SignUpService;
 import com.swyp.FinQ.user.service.TokenRefreshService;
 import com.swyp.FinQ.user.success.AuthSuccessCode;
@@ -39,6 +42,7 @@ public class AuthController {
     private final LoginService loginService;
     private final TokenRefreshService tokenRefreshService;
     private final LogoutService logoutService;
+    private final PasswordResetRequestService passwordResetRequestService;
 
     @Operation(summary = "현재 적용 중인 필수 약관 목록 조회")
     @GetMapping("/agreements")
@@ -81,5 +85,16 @@ public class AuthController {
                 jwt.getClaimAsString(JwtClaimNames.SESSION_ID)
         );
         return SuccessResponse.of(AuthSuccessCode.LOGOUT, null);
+    }
+
+    @Operation(summary = "비밀번호 재설정 인증번호 전송")
+    @PostMapping("/password-reset/verifications")
+    public ResponseEntity<SuccessResponse<PasswordResetRequestResponse>> requestPasswordReset(
+            @Valid @RequestBody PasswordResetEmailRequest request
+    ) {
+        return SuccessResponse.of(
+                AuthSuccessCode.PASSWORD_RESET_CODE_SENT,
+                passwordResetRequestService.request(request.loginId())
+        );
     }
 }

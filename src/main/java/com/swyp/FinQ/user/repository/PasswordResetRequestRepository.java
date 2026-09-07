@@ -11,5 +11,7 @@ public interface PasswordResetRequestRepository extends JpaRepository<PasswordRe
 
     Optional<PasswordResetRequest> findByPasswordResetTokenHash(String passwordResetTokenHash);
 
+    Optional<PasswordResetRequest> findTopByUserIdOrderByCreatedAtDesc(Long userId);
+
     void deleteAllByUserId(Long userId);
 }

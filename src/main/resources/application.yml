@@ -30,3 +30,12 @@ jwt:
   issuer: finq
   access-token-expiration: 1h
   refresh-token-expiration: 14d
+
+password-reset:
+  code-expiration: 5m
+  resend-cooldown: ${PASSWORD_RESET_RESEND_COOLDOWN:1m}
+
+mail:
+  ses:
+    region: ${AWS_REGION:ap-northeast-2}
+    from-address: ${SES_FROM_ADDRESS:}
