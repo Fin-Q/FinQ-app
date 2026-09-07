@@ -1,7 +1,6 @@
 package com.swyp.FinQ.user.service;
 
 import com.swyp.FinQ.global.exception.BaseException;
-import com.swyp.FinQ.reward.service.XpQueryService;
 import com.swyp.FinQ.user.domain.User;
 import com.swyp.FinQ.user.dto.req.ProfileUpdateRequest;
 import com.swyp.FinQ.user.dto.res.MyPageResponse;
@@ -18,7 +17,6 @@ public class UserProfileService {
 
     private final UserRepository userRepository;
     private final UserInterestRepository userInterestRepository;
-    private final XpQueryService xpQueryService;
 
     @Transactional(readOnly = true)
     public MyPageResponse getMyPage(Long userId) {
@@ -48,7 +46,7 @@ public class UserProfileService {
     private MyPageResponse toResponse(User user) {
         return MyPageResponse.of(
                 user,
-                xpQueryService.getTotalXp(user.getId()),
+                user.getTotalXp(),
                 userInterestRepository.findAllWithCategoryByUserId(user.getId())
         );
     }
