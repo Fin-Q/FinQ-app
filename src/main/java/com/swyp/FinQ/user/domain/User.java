@@ -83,6 +83,10 @@ public class User extends BaseTimeEntity {
         this.onboardingCompletedAt = completedAt;
     }
 
+    public void addXp(int amount) {
+        this.totalXp += amount;
+    }
+
     public void updateProfile(String nickname, ProfileImageCode profileImageCode) {
         if (nickname != null) {
             this.nickname = nickname;

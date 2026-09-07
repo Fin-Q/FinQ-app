@@ -14,8 +14,9 @@ import com.swyp.FinQ.learning.dto.res.ContentAnswerResponse;
 import com.swyp.FinQ.learning.dto.res.ContentAnswerResponse.ContentResult;
 import com.swyp.FinQ.learning.dto.res.QuizAnswerResponse;
 import com.swyp.FinQ.learning.dto.res.QuizAnswerResponse.CategoryResult;
-import com.swyp.FinQ.learning.exception.LearningErrorCode;
 import com.swyp.FinQ.learning.repository.AdvancedQuizRepository;
+import com.swyp.FinQ.user.domain.User;
+import com.swyp.FinQ.user.repository.UserRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -28,6 +29,7 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
@@ -51,7 +53,19 @@ class LearningGradeServiceTest {
     @Mock
     private LearningCompletionService learningCompletionService;
 
+    @Mock
+    private UserRepository userRepository;
+
     private static final Long USER_ID = 1L;
+
+    private User createUser() {
+        return User.builder()
+                .id(USER_ID)
+                .email("test@test.com")
+                .nickname("테스트")
+                .totalXp(0)
+                .build();
+    }
 
     private Content createContent(Long id) {
         return Content.builder()
@@ -166,6 +180,7 @@ class LearningGradeServiceTest {
         @Test
         @DisplayName("마지막 문제(F) 정답 시 콘텐츠 완료 처리가 실행된다")
         void correct_final_stage_triggers_completion() {
+            User user = createUser();
             Content content = createContent(1L);
             ContentQuestion question = createQuestion(1L, content, ContentStage.F,
                     QuestionType.SINGLE_CHOICE, "A");
@@ -173,7 +188,8 @@ class LearningGradeServiceTest {
 
             given(contentRepository.findById(1L)).willReturn(Optional.of(content));
             given(contentQuestionRepository.findById(1L)).willReturn(Optional.of(question));
-            given(learningCompletionService.handleContentCompletion(USER_ID, content))
+            given(userRepository.findById(USER_ID)).willReturn(Optional.of(user));
+            given(learningCompletionService.handleContentCompletion(user, content))
                     .willReturn(Optional.of(contentResult));
 
             ContentAnswerResponse response = learningGradeService.gradeContentAnswer(
@@ -188,13 +204,15 @@ class LearningGradeServiceTest {
         @Test
         @DisplayName("이미 완료한 콘텐츠의 마지막 문제를 다시 풀면 contentResult가 null이다")
         void correct_final_stage_already_completed() {
+            User user = createUser();
             Content content = createContent(1L);
             ContentQuestion question = createQuestion(1L, content, ContentStage.F,
                     QuestionType.SINGLE_CHOICE, "A");
 
             given(contentRepository.findById(1L)).willReturn(Optional.of(content));
             given(contentQuestionRepository.findById(1L)).willReturn(Optional.of(question));
-            given(learningCompletionService.handleContentCompletion(USER_ID, content))
+            given(userRepository.findById(USER_ID)).willReturn(Optional.of(user));
+            given(learningCompletionService.handleContentCompletion(user, content))
                     .willReturn(Optional.empty());
 
             ContentAnswerResponse response = learningGradeService.gradeContentAnswer(
@@ -336,13 +354,15 @@ class LearningGradeServiceTest {
         @Test
         @DisplayName("F(마지막) 정답 시 CONTENT_COMPLETED를 반환한다")
         void f_correct_returns_content_completed() {
+            User user = createUser();
             Content content = createContent(1L);
             ContentQuestion question = createQuestion(1L, content, ContentStage.F,
                     QuestionType.SINGLE_CHOICE, "A");
 
             given(contentRepository.findById(1L)).willReturn(Optional.of(content));
             given(contentQuestionRepository.findById(1L)).willReturn(Optional.of(question));
-            given(learningCompletionService.handleContentCompletion(USER_ID, content))
+            given(userRepository.findById(USER_ID)).willReturn(Optional.of(user));
+            given(learningCompletionService.handleContentCompletion(user, content))
                     .willReturn(Optional.empty());
 
             ContentAnswerResponse response = learningGradeService.gradeContentAnswer(
@@ -394,13 +414,15 @@ class LearningGradeServiceTest {
         @Test
         @DisplayName("마지막 문제(3번째)를 정답으로 제출하면 isLastQuestion이 true이다")
         void last_question_correct() {
+            User user = createUser();
             Category category = createCategory(1L);
             AdvancedQuiz quiz = createQuiz(1L, category, 3, "B");
             CategoryResult categoryResult = new CategoryResult(30, false, null);
 
             given(categoryRepository.findById(1L)).willReturn(Optional.of(category));
             given(advancedQuizRepository.findById(1L)).willReturn(Optional.of(quiz));
-            given(learningCompletionService.handleCategoryCompletion(USER_ID, category))
+            given(userRepository.findById(USER_ID)).willReturn(Optional.of(user));
+            given(learningCompletionService.handleCategoryCompletion(user, category))
                     .willReturn(Optional.of(categoryResult));
 
             QuizAnswerResponse response = learningGradeService.gradeQuizAnswer(

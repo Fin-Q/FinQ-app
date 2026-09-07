@@ -209,7 +209,7 @@ class UserControllerTest extends MySqlContainerSupport {
         User user = saveUser();
         selectInterests(user.getId(), "[\"SAL\"]");
         xpHistoryRepository.save(XpHistory.builder()
-                .userId(user.getId())
+                .user(user)
                 .xpAmount(80)
                 .xpType(XpType.CONTENT_COMPLETE)
                 .referenceId("content:my-page-test")

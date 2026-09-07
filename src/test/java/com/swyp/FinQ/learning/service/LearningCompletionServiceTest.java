@@ -9,6 +9,7 @@ import com.swyp.FinQ.learning.repository.UserContentCompletionRepository;
 import com.swyp.FinQ.reward.domain.Level;
 import com.swyp.FinQ.reward.dto.info.XpResultInfo;
 import com.swyp.FinQ.reward.service.XpGrantService;
+import com.swyp.FinQ.user.domain.User;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -47,6 +48,15 @@ class LearningCompletionServiceTest {
 
     private static final Long USER_ID = 1L;
 
+    private User createUser() {
+        return User.builder()
+                .id(USER_ID)
+                .email("test@test.com")
+                .nickname("테스트")
+                .totalXp(0)
+                .build();
+    }
+
     private Content createContent(Long id) {
         return Content.builder()
                 .id(id)
@@ -71,6 +81,7 @@ class LearningCompletionServiceTest {
         @Test
         @DisplayName("최초 완료 시 XP가 지급되고 ContentResult가 반환된다")
         void first_completion_grants_xp() {
+            User user = createUser();
             Content content = createContent(1L);
             XpResultInfo xpResult = XpResultInfo.granted(10, 50, Level.LV1, Level.LV1);
 
@@ -81,9 +92,9 @@ class LearningCompletionServiceTest {
             given(userContentCompletionRepository.existsByUserIdAndContentId(USER_ID, 1L))
                     .willReturn(false);
             given(userContentCompletionRepository.save(any())).willAnswer(inv -> inv.getArgument(0));
-            given(xpGrantService.grantContentCompletionXp(USER_ID, 1L)).willReturn(xpResult);
+            given(xpGrantService.grantContentCompletionXp(user, 1L)).willReturn(xpResult);
 
-            Optional<ContentResult> result = learningCompletionService.handleContentCompletion(USER_ID, content);
+            Optional<ContentResult> result = learningCompletionService.handleContentCompletion(user, content);
 
             assertThat(result).isPresent();
             assertThat(result.get().earnedXp()).isEqualTo(10);
@@ -94,6 +105,7 @@ class LearningCompletionServiceTest {
         @Test
         @DisplayName("최초 완료 시 레벨업하면 newLevel이 반환된다")
         void first_completion_with_level_up() {
+            User user = createUser();
             Content content = createContent(1L);
             XpResultInfo xpResult = XpResultInfo.granted(10, 80, Level.LV1, Level.LV2);
 
@@ -104,9 +116,9 @@ class LearningCompletionServiceTest {
             given(userContentCompletionRepository.existsByUserIdAndContentId(USER_ID, 1L))
                     .willReturn(false);
             given(userContentCompletionRepository.save(any())).willAnswer(inv -> inv.getArgument(0));
-            given(xpGrantService.grantContentCompletionXp(USER_ID, 1L)).willReturn(xpResult);
+            given(xpGrantService.grantContentCompletionXp(user, 1L)).willReturn(xpResult);
 
-            Optional<ContentResult> result = learningCompletionService.handleContentCompletion(USER_ID, content);
+            Optional<ContentResult> result = learningCompletionService.handleContentCompletion(user, content);
 
             assertThat(result).isPresent();
             assertThat(result.get().levelUp()).isTrue();
@@ -116,6 +128,7 @@ class LearningCompletionServiceTest {
         @Test
         @DisplayName("이미 완료한 콘텐츠이면 빈 Optional을 반환한다")
         void already_completed_returns_empty() {
+            User user = createUser();
             Content content = createContent(1L);
 
             given(transactionTemplate.execute(any())).willAnswer(invocation -> {
@@ -125,21 +138,22 @@ class LearningCompletionServiceTest {
             given(userContentCompletionRepository.existsByUserIdAndContentId(USER_ID, 1L))
                     .willReturn(true);
 
-            Optional<ContentResult> result = learningCompletionService.handleContentCompletion(USER_ID, content);
+            Optional<ContentResult> result = learningCompletionService.handleContentCompletion(user, content);
 
             assertThat(result).isEmpty();
-            verify(xpGrantService, never()).grantContentCompletionXp(any(), any());
+            verify(xpGrantService, never()).grantContentCompletionXp(any(User.class), any());
         }
 
         @Test
         @DisplayName("동시 요청으로 DataIntegrityViolationException 발생 시 빈 Optional을 반환한다")
         void concurrent_request_returns_empty() {
+            User user = createUser();
             Content content = createContent(1L);
 
             given(transactionTemplate.execute(any()))
                     .willThrow(new DataIntegrityViolationException("Duplicate entry"));
 
-            Optional<ContentResult> result = learningCompletionService.handleContentCompletion(USER_ID, content);
+            Optional<ContentResult> result = learningCompletionService.handleContentCompletion(user, content);
 
             assertThat(result).isEmpty();
         }
@@ -152,6 +166,7 @@ class LearningCompletionServiceTest {
         @Test
         @DisplayName("최초 완료 시 XP가 지급되고 CategoryResult가 반환된다")
         void first_completion_grants_xp() {
+            User user = createUser();
             Category category = createCategory(1L);
             XpResultInfo xpResult = XpResultInfo.granted(30, 100, Level.LV1, Level.LV2);
 
@@ -162,9 +177,9 @@ class LearningCompletionServiceTest {
             given(userCategoryCompletionRepository.existsByUserIdAndCategoryId(USER_ID, 1L))
                     .willReturn(false);
             given(userCategoryCompletionRepository.save(any())).willAnswer(inv -> inv.getArgument(0));
-            given(xpGrantService.grantQuizCompletionXp(USER_ID, 1L)).willReturn(xpResult);
+            given(xpGrantService.grantQuizCompletionXp(user, 1L)).willReturn(xpResult);
 
-            Optional<CategoryResult> result = learningCompletionService.handleCategoryCompletion(USER_ID, category);
+            Optional<CategoryResult> result = learningCompletionService.handleCategoryCompletion(user, category);
 
             assertThat(result).isPresent();
             assertThat(result.get().earnedXp()).isEqualTo(30);
@@ -175,6 +190,7 @@ class LearningCompletionServiceTest {
         @Test
         @DisplayName("이미 완료한 카테고리이면 빈 Optional을 반환한다")
         void already_completed_returns_empty() {
+            User user = createUser();
             Category category = createCategory(1L);
 
             given(transactionTemplate.execute(any())).willAnswer(invocation -> {
@@ -184,21 +200,22 @@ class LearningCompletionServiceTest {
             given(userCategoryCompletionRepository.existsByUserIdAndCategoryId(USER_ID, 1L))
                     .willReturn(true);
 
-            Optional<CategoryResult> result = learningCompletionService.handleCategoryCompletion(USER_ID, category);
+            Optional<CategoryResult> result = learningCompletionService.handleCategoryCompletion(user, category);
 
             assertThat(result).isEmpty();
-            verify(xpGrantService, never()).grantQuizCompletionXp(any(), any());
+            verify(xpGrantService, never()).grantQuizCompletionXp(any(User.class), any());
         }
 
         @Test
         @DisplayName("동시 요청으로 DataIntegrityViolationException 발생 시 빈 Optional을 반환한다")
         void concurrent_request_returns_empty() {
+            User user = createUser();
             Category category = createCategory(1L);
 
             given(transactionTemplate.execute(any()))
                     .willThrow(new DataIntegrityViolationException("Duplicate entry"));
 
-            Optional<CategoryResult> result = learningCompletionService.handleCategoryCompletion(USER_ID, category);
+            Optional<CategoryResult> result = learningCompletionService.handleCategoryCompletion(user, category);
 
             assertThat(result).isEmpty();
         }
