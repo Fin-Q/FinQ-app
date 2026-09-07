@@ -32,6 +32,21 @@ public enum AuthErrorCode implements ErrorCode {
             HttpStatus.UNAUTHORIZED,
             "AUTH_INVALID_REFRESH_TOKEN",
             "유효하지 않은 Refresh Token입니다."
+    ),
+    INVALID_PASSWORD_RESET_REQUEST(
+            HttpStatus.BAD_REQUEST,
+            "AUTH_INVALID_PASSWORD_RESET_REQUEST",
+            "유효하지 않은 비밀번호 재설정 요청입니다."
+    ),
+    PASSWORD_RESET_RESEND_TOO_EARLY(
+            HttpStatus.TOO_MANY_REQUESTS,
+            "AUTH_PASSWORD_RESET_RESEND_TOO_EARLY",
+            "인증번호 재전송 대기시간이 지나지 않았습니다."
+    ),
+    PASSWORD_RESET_EMAIL_SEND_FAILED(
+            HttpStatus.SERVICE_UNAVAILABLE,
+            "AUTH_PASSWORD_RESET_EMAIL_SEND_FAILED",
+            "인증번호 이메일 발송에 실패했습니다."
     );
 
     private final HttpStatus status;

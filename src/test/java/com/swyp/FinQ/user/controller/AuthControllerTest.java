@@ -6,12 +6,15 @@ import com.swyp.FinQ.support.MySqlContainerSupport;
 import com.swyp.FinQ.user.domain.OnboardingStatus;
 import com.swyp.FinQ.user.domain.ProfileImageCode;
 import com.swyp.FinQ.user.domain.RefreshToken;
+import com.swyp.FinQ.user.domain.PasswordResetRequest;
 import com.swyp.FinQ.user.domain.User;
 import com.swyp.FinQ.user.domain.UserAgreement;
 import com.swyp.FinQ.user.repository.RefreshTokenRepository;
+import com.swyp.FinQ.user.repository.PasswordResetRequestRepository;
 import com.swyp.FinQ.user.repository.UserAgreementRepository;
 import com.swyp.FinQ.user.repository.UserRepository;
 import com.swyp.FinQ.user.service.TokenHashEncoder;
+import com.swyp.FinQ.user.service.PasswordResetMailSender;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -19,6 +22,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.EnumSet;
@@ -26,6 +30,9 @@ import java.util.List;
 import java.time.LocalDateTime;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -52,10 +59,16 @@ class AuthControllerTest extends MySqlContainerSupport {
     private RefreshTokenRepository refreshTokenRepository;
 
     @Autowired
+    private PasswordResetRequestRepository passwordResetRequestRepository;
+
+    @Autowired
     private PasswordEncoder passwordEncoder;
 
     @Autowired
     private TokenHashEncoder tokenHashEncoder;
+
+    @MockitoBean
+    private PasswordResetMailSender passwordResetMailSender;
 
     @Test
     void getsCurrentAgreementsWithoutAuthentication() throws Exception {
@@ -340,6 +353,136 @@ class AuthControllerTest extends MySqlContainerSupport {
         mockMvc.perform(post("/auth/logout"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.errorCode").value("AUTH_UNAUTHORIZED"));
+    }
+
+    @Test
+    void requestsPasswordResetCodeWithoutAuthentication() throws Exception {
+        User user = saveUser("user@example.com", "Password123!");
+
+        String responseBody = mockMvc.perform(post("/auth/password-reset/verifications")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "loginId": "user@example.com"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("SUCCESS"))
+                .andExpect(jsonPath("$.message").value("인증번호를 전송했습니다."))
+                .andExpect(jsonPath("$.data.verificationId").isString())
+                .andExpect(jsonPath("$.data.expiresIn").value(300))
+                .andExpect(jsonPath("$.data.resendAvailableIn").value(60))
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        String verificationId = objectMapper.readTree(responseBody)
+                .path("data")
+                .path("verificationId")
+                .asText();
+        PasswordResetRequest resetRequest = passwordResetRequestRepository
+                .findByVerificationId(verificationId)
+                .orElseThrow();
+
+        assertThat(resetRequest.getUser().getId()).isEqualTo(user.getId());
+        assertThat(resetRequest.getVerificationCodeHash()).isNotBlank();
+        verify(passwordResetMailSender).sendVerificationCode(
+                eq("user@example.com"),
+                org.mockito.ArgumentMatchers.matches("\\d{6}"),
+                eq(java.time.Duration.ofMinutes(5))
+        );
+    }
+
+    @Test
+    void returnsSamePasswordResetResponseForUnknownEmail() throws Exception {
+        mockMvc.perform(post("/auth/password-reset/verifications")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "loginId": "unknown@example.com"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("인증번호를 전송했습니다."))
+                .andExpect(jsonPath("$.data.verificationId").isString())
+                .andExpect(jsonPath("$.data.expiresIn").value(300))
+                .andExpect(jsonPath("$.data.resendAvailableIn").value(60));
+
+        assertThat(passwordResetRequestRepository.count()).isZero();
+        verify(passwordResetMailSender, never()).sendVerificationCode(
+                org.mockito.ArgumentMatchers.anyString(),
+                org.mockito.ArgumentMatchers.anyString(),
+                org.mockito.ArgumentMatchers.any()
+        );
+    }
+
+    @Test
+    void rejectsPasswordResetResendBeforeCooldown() throws Exception {
+        User user = saveUser("user@example.com", "Password123!");
+        PasswordResetRequest request = passwordResetRequestRepository.saveAndFlush(PasswordResetRequest.builder()
+                .user(user)
+                .verificationId("verification-id")
+                .verificationCodeHash("encoded-code")
+                .codeExpiresAt(LocalDateTime.now().plusMinutes(5))
+                .resendAvailableAt(LocalDateTime.now().plusMinutes(1))
+                .build());
+
+        mockMvc.perform(post("/auth/password-reset/verifications")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "loginId": "user@example.com"
+                                }
+                                """))
+                .andExpect(status().isTooManyRequests())
+                .andExpect(jsonPath("$.errorCode").value("AUTH_PASSWORD_RESET_RESEND_TOO_EARLY"));
+
+        assertThat(request.getVerificationCodeHash()).isEqualTo("encoded-code");
+    }
+
+    @Test
+    void resendsPasswordResetCodeAfterCooldown() throws Exception {
+        User user = saveUser("user@example.com", "Password123!");
+        passwordResetRequestRepository.saveAndFlush(PasswordResetRequest.builder()
+                .user(user)
+                .verificationId("verification-id")
+                .verificationCodeHash("old-code-hash")
+                .codeExpiresAt(LocalDateTime.now().minusMinutes(1))
+                .resendAvailableAt(LocalDateTime.now().minusSeconds(1))
+                .failedAttemptCount(2)
+                .build());
+
+        String responseBody = mockMvc.perform(post("/auth/password-reset/verifications")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "loginId": "user@example.com"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.verificationId").isString())
+                .andExpect(jsonPath("$.data.expiresIn").value(300))
+                .andExpect(jsonPath("$.data.resendAvailableIn").value(60))
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        String renewedVerificationId = objectMapper.readTree(responseBody)
+                .path("data")
+                .path("verificationId")
+                .asText();
+        assertThat(renewedVerificationId).isNotEqualTo("verification-id");
+        assertThat(passwordResetRequestRepository.findByVerificationId("verification-id")).isEmpty();
+        PasswordResetRequest renewedRequest = passwordResetRequestRepository
+                .findByVerificationId(renewedVerificationId)
+                .orElseThrow();
+        assertThat(renewedRequest.getFailedAttemptCount()).isZero();
+        assertThat(renewedRequest.getCodeExpiresAt()).isAfter(LocalDateTime.now().plusMinutes(4));
+        verify(passwordResetMailSender).sendVerificationCode(
+                eq("user@example.com"),
+                org.mockito.ArgumentMatchers.matches("\\d{6}"),
+                eq(java.time.Duration.ofMinutes(5))
+        );
     }
 
     private User saveUser(String email, String password) {
