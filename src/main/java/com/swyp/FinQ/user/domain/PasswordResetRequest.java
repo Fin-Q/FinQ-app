@@ -74,4 +74,52 @@ public class PasswordResetRequest {
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
+
+    public boolean isVerificationCodeExpired(LocalDateTime now) {
+        return !now.isBefore(codeExpiresAt);
+    }
+
+    public boolean isResendAvailable(LocalDateTime now) {
+        return !now.isBefore(resendAvailableAt);
+    }
+
+    public void recordFailedAttempt() {
+        this.failedAttemptCount++;
+    }
+
+    public boolean hasReachedFailedAttemptLimit(int maximumFailedAttempts) {
+        return failedAttemptCount >= maximumFailedAttempts;
+    }
+
+    public void issueResetToken(String tokenHash, LocalDateTime verifiedAt, LocalDateTime tokenExpiresAt) {
+        this.verifiedAt = verifiedAt;
+        this.passwordResetTokenHash = tokenHash;
+        this.tokenExpiresAt = tokenExpiresAt;
+    }
+
+    public boolean isResetTokenAvailable(LocalDateTime now) {
+        return passwordResetTokenHash != null
+                && tokenExpiresAt != null
+                && now.isBefore(tokenExpiresAt)
+                && consumedAt == null;
+    }
+
+    public void consumeResetToken(LocalDateTime consumedAt) {
+        this.consumedAt = consumedAt;
+    }
+
+    public void renewVerification(
+            String verificationCodeHash,
+            LocalDateTime codeExpiresAt,
+            LocalDateTime resendAvailableAt
+    ) {
+        this.verificationCodeHash = verificationCodeHash;
+        this.codeExpiresAt = codeExpiresAt;
+        this.resendAvailableAt = resendAvailableAt;
+        this.failedAttemptCount = 0;
+        this.verifiedAt = null;
+        this.passwordResetTokenHash = null;
+        this.tokenExpiresAt = null;
+        this.consumedAt = null;
+    }
 }
