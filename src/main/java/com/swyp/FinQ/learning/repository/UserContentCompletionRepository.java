@@ -13,6 +13,6 @@ public interface UserContentCompletionRepository extends JpaRepository<UserConte
 
     boolean existsByUserIdAndContentId(Long userId, Long contentId);
 
-    @Query("SELECT ucc.content.id FROM UserContentCompletion ucc WHERE ucc.userId = :userId AND ucc.content IN :contents")
+    @Query("SELECT ucc.content.id FROM UserContentCompletion ucc WHERE ucc.user.id = :userId AND ucc.content IN :contents")
     Set<Long> findCompletedContentIdsByUserIdAndContentIn(@Param("userId") Long userId, @Param("contents") List<Content> contents);
 }

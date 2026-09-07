@@ -11,6 +11,7 @@ import com.swyp.FinQ.learning.repository.UserContentCompletionRepository;
 import com.swyp.FinQ.reward.domain.XpConstants;
 import com.swyp.FinQ.reward.dto.info.XpResultInfo;
 import com.swyp.FinQ.reward.service.XpGrantService;
+import com.swyp.FinQ.user.domain.User;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -33,22 +34,22 @@ public class LearningCompletionService {
     /**
      * 콘텐츠 최초 완료 처리: 완료 기록 + XP 지급
      */
-    public Optional<ContentResult> handleContentCompletion(Long userId, Content content) {
+    public Optional<ContentResult> handleContentCompletion(User user, Content content) {
         try {
             return Optional.ofNullable(transactionTemplate.execute(status -> {
-                if (userContentCompletionRepository.existsByUserIdAndContentId(userId, content.getId())) {
+                if (userContentCompletionRepository.existsByUserIdAndContentId(user.getId(), content.getId())) {
                     return null;
                 }
 
                 UserContentCompletion completion = UserContentCompletion.builder()
-                        .userId(userId)
+                        .user(user)
                         .content(content)
                         .completedAt(LocalDateTime.now())
                         .xpEarned(XpConstants.CONTENT_COMPLETE_XP)
                         .build();
                 userContentCompletionRepository.save(completion);
 
-                XpResultInfo xpResult = xpGrantService.grantContentCompletionXp(userId, content.getId());
+                XpResultInfo xpResult = xpGrantService.grantContentCompletionXp(user, content.getId());
 
                 // TODO: StreakService 구현 후 스트릭 인정 처리 및 스트릭 보너스 XP 합산
                 int totalEarnedXp = xpResult.xpEarned();
@@ -60,7 +61,7 @@ public class LearningCompletionService {
                 );
             }));
         } catch (DataIntegrityViolationException e) {
-            log.warn("콘텐츠 완료 중복 요청 무시: userId={}, contentId={}", userId, content.getId());
+            log.warn("콘텐츠 완료 중복 요청 무시: userId={}, contentId={}", user.getId(), content.getId());
             return Optional.empty();
         }
     }
@@ -68,22 +69,22 @@ public class LearningCompletionService {
     /**
      * 카테고리 최초 완료 처리 (심화퀴즈 통과): 완료 기록 + XP 지급
      */
-    public Optional<CategoryResult> handleCategoryCompletion(Long userId, Category category) {
+    public Optional<CategoryResult> handleCategoryCompletion(User user, Category category) {
         try {
             return Optional.ofNullable(transactionTemplate.execute(status -> {
-                if (userCategoryCompletionRepository.existsByUserIdAndCategoryId(userId, category.getId())) {
+                if (userCategoryCompletionRepository.existsByUserIdAndCategoryId(user.getId(), category.getId())) {
                     return null;
                 }
 
                 UserCategoryCompletion completion = UserCategoryCompletion.builder()
-                        .userId(userId)
+                        .user(user)
                         .category(category)
                         .completedAt(LocalDateTime.now())
                         .xpEarned(XpConstants.QUIZ_COMPLETE_XP)
                         .build();
                 userCategoryCompletionRepository.save(completion);
 
-                XpResultInfo xpResult = xpGrantService.grantQuizCompletionXp(userId, category.getId());
+                XpResultInfo xpResult = xpGrantService.grantQuizCompletionXp(user, category.getId());
 
                 // TODO: StreakService 구현 후 스트릭 인정 처리 및 스트릭 보너스 XP 합산
                 int totalEarnedXp = xpResult.xpEarned();
@@ -95,7 +96,7 @@ public class LearningCompletionService {
                 );
             }));
         } catch (DataIntegrityViolationException e) {
-            log.warn("카테고리 완료 중복 요청 무시: userId={}, categoryId={}", userId, category.getId());
+            log.warn("카테고리 완료 중복 요청 무시: userId={}, categoryId={}", user.getId(), category.getId());
             return Optional.empty();
         }
     }

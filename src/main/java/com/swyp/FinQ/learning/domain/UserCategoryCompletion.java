@@ -1,6 +1,7 @@
 package com.swyp.FinQ.learning.domain;
 
 import com.swyp.FinQ.content.domain.Category;
+import com.swyp.FinQ.user.domain.User;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -40,9 +41,9 @@ public class UserCategoryCompletion {
     @Column(name = "user_category_completion_id")
     private Long id;
 
-    // TODO: User 도메인 생성 후 ManyToOne 연결
-    @Column(name = "user_id", nullable = false)
-    private Long userId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id", nullable = false)

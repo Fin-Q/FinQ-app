@@ -1,7 +1,11 @@
 package com.swyp.FinQ.reward.service;
 
 import com.swyp.FinQ.reward.domain.Level;
-import com.swyp.FinQ.reward.repository.XpHistoryRepository;
+import com.swyp.FinQ.reward.dto.res.RewardStatusResponse;
+import com.swyp.FinQ.user.domain.User;
+import com.swyp.FinQ.user.repository.UserRepository;
+import com.swyp.FinQ.global.exception.BaseException;
+import com.swyp.FinQ.user.exception.UserErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -11,14 +15,16 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class XpQueryService {
 
-    private final XpHistoryRepository xpHistoryRepository;
+    private final UserRepository userRepository;
 
-    // TODO: User 도메인 구현 후 user.getTotalXp()로 전환
-    public int getTotalXp(Long userId) {
-        return xpHistoryRepository.calculateTotalXpByUserId(userId);
-    }
-
-    public Level getLevel(Long userId) {
-        return Level.from(getTotalXp(userId));
+    public RewardStatusResponse getRewardStatus(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> BaseException.of(UserErrorCode.USER_NOT_FOUND));
+        Level level = Level.from(user.getTotalXp());
+        return new RewardStatusResponse(
+                user.getTotalXp(),
+                level.getValue(),
+                level.getValue()
+        );
     }
 }

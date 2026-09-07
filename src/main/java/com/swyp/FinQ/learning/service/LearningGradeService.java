@@ -18,6 +18,9 @@ import com.swyp.FinQ.learning.dto.res.QuizAnswerResponse;
 import com.swyp.FinQ.learning.dto.res.QuizAnswerResponse.CategoryResult;
 import com.swyp.FinQ.learning.exception.LearningErrorCode;
 import com.swyp.FinQ.learning.repository.AdvancedQuizRepository;
+import com.swyp.FinQ.user.domain.User;
+import com.swyp.FinQ.user.exception.UserErrorCode;
+import com.swyp.FinQ.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -30,6 +33,7 @@ public class LearningGradeService {
     private final CategoryRepository categoryRepository;
     private final AdvancedQuizRepository advancedQuizRepository;
     private final LearningCompletionService learningCompletionService;
+    private final UserRepository userRepository;
 
     /**
      * 콘텐츠 문제 채점
@@ -60,7 +64,9 @@ public class LearningGradeService {
         ContentResult contentResult = null;
 
         if (question.getContentStage() == ContentStage.F) {
-            contentResult = learningCompletionService.handleContentCompletion(userId, content).orElse(null);
+            User user = userRepository.findById(userId)
+                    .orElseThrow(() -> BaseException.of(UserErrorCode.USER_NOT_FOUND));
+            contentResult = learningCompletionService.handleContentCompletion(user, content).orElse(null);
         }
 
         return ContentAnswerResponse.correct(
@@ -97,7 +103,9 @@ public class LearningGradeService {
         CategoryResult categoryResult = null;
 
         if (isLastQuestion) {
-            categoryResult = learningCompletionService.handleCategoryCompletion(userId, quiz.getCategory()).orElse(null);
+            User user = userRepository.findById(userId)
+                    .orElseThrow(() -> BaseException.of(UserErrorCode.USER_NOT_FOUND));
+            categoryResult = learningCompletionService.handleCategoryCompletion(user, quiz.getCategory()).orElse(null);
         }
 
         return QuizAnswerResponse.correct(
