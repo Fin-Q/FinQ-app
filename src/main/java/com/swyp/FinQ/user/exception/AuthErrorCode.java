@@ -47,6 +47,16 @@ public enum AuthErrorCode implements ErrorCode {
             HttpStatus.SERVICE_UNAVAILABLE,
             "AUTH_PASSWORD_RESET_EMAIL_SEND_FAILED",
             "인증번호 이메일 발송에 실패했습니다."
+    ),
+    INVALID_KAKAO_ACCESS_TOKEN(
+            HttpStatus.UNAUTHORIZED,
+            "AUTH_INVALID_KAKAO_ACCESS_TOKEN",
+            "유효하지 않은 Kakao Access Token입니다."
+    ),
+    KAKAO_AUTH_SERVER_UNAVAILABLE(
+            HttpStatus.SERVICE_UNAVAILABLE,
+            "AUTH_KAKAO_AUTH_SERVER_UNAVAILABLE",
+            "Kakao 인증 서버를 일시적으로 사용할 수 없습니다."
     );
 
     private final HttpStatus status;
