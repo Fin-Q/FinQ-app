@@ -14,6 +14,8 @@ import org.springframework.util.StringUtils;
 @Component
 public class AppleIdentityTokenClient implements AppleIdentityTokenVerifier {
 
+    private static final int RAW_NONCE_LENGTH = 32;
+
     private final JwtDecoder jwtDecoder;
     private final AppleNonceHasher nonceHasher;
     private final String clientId;
@@ -31,7 +33,9 @@ public class AppleIdentityTokenClient implements AppleIdentityTokenVerifier {
     @Override
     public AppleUserIdentity verify(String identityToken, String nonce) {
         validateConfiguration();
-        if (!StringUtils.hasText(identityToken) || !StringUtils.hasText(nonce)) {
+        if (!StringUtils.hasText(identityToken)
+                || !StringUtils.hasText(nonce)
+                || nonce.length() != RAW_NONCE_LENGTH) {
             throw BaseException.of(AuthErrorCode.INVALID_APPLE_IDENTITY_TOKEN);
         }
 

@@ -51,6 +51,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Transactional
 class AuthControllerTest extends MySqlContainerSupport {
 
+    private static final String APPLE_RAW_NONCE = "0123456789abcdef0123456789abcdef";
+
     @Autowired
     private MockMvc mockMvc;
 
@@ -367,7 +369,7 @@ class AuthControllerTest extends MySqlContainerSupport {
 
     @Test
     void 신규_Apple_회원가입과_로그인에_성공한다() throws Exception {
-        given(appleIdentityTokenVerifier.verify("valid-apple-identity-token", "raw-nonce"))
+        given(appleIdentityTokenVerifier.verify("valid-apple-identity-token", APPLE_RAW_NONCE))
                 .willReturn(new AppleUserIdentity("apple-user-id"));
 
         String responseBody = mockMvc.perform(post("/auth/social/apple")
@@ -399,14 +401,14 @@ class AuthControllerTest extends MySqlContainerSupport {
         assertThat(refreshTokenRepository.findAll()).hasSize(1);
         verify(appleAuthorizationCodeVerifier).verify(
                 "valid-apple-authorization-code",
-                "raw-nonce",
+                APPLE_RAW_NONCE,
                 new AppleUserIdentity("apple-user-id")
         );
     }
 
     @Test
     void 기존_Apple_회원은_닉네임과_약관_없이_로그인한다() throws Exception {
-        given(appleIdentityTokenVerifier.verify("valid-apple-identity-token", "raw-nonce"))
+        given(appleIdentityTokenVerifier.verify("valid-apple-identity-token", APPLE_RAW_NONCE))
                 .willReturn(new AppleUserIdentity("apple-user-id"));
         mockMvc.perform(post("/auth/social/apple")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -419,9 +421,9 @@ class AuthControllerTest extends MySqlContainerSupport {
                                 {
                                   "identityToken": "valid-apple-identity-token",
                                   "authorizationCode": "valid-apple-authorization-code",
-                                  "nonce": "raw-nonce"
+                                  "nonce": "%s"
                                 }
-                                """))
+                                """.formatted(APPLE_RAW_NONCE)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.message").value("Apple 로그인에 성공했습니다."))
                 .andExpect(jsonPath("$.data.nickname").value("Minter"))
@@ -446,6 +448,27 @@ class AuthControllerTest extends MySqlContainerSupport {
                                 }
                                 """))
                 .andExpect(status().isBadRequest());
+
+        verify(appleIdentityTokenVerifier, never()).verify(
+                org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.any()
+        );
+    }
+
+    @Test
+    void Apple_raw_nonce가_32자가_아니면_요청을_거부한다() throws Exception {
+        for (String invalidNonce : List.of("a".repeat(31), "a".repeat(33))) {
+            mockMvc.perform(post("/auth/social/apple")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("""
+                                    {
+                                      "identityToken": "valid-apple-identity-token",
+                                      "authorizationCode": "valid-apple-authorization-code",
+                                      "nonce": "%s"
+                                    }
+                                    """.formatted(invalidNonce)))
+                    .andExpect(status().isBadRequest());
+        }
 
         verify(appleIdentityTokenVerifier, never()).verify(
                 org.mockito.ArgumentMatchers.any(),
@@ -781,7 +804,7 @@ class AuthControllerTest extends MySqlContainerSupport {
                 {
                   "identityToken": "valid-apple-identity-token",
                   "authorizationCode": "valid-apple-authorization-code",
-                  "nonce": "raw-nonce",
+                  "nonce": "%s",
                   "nickname": "Minter",
                   "agreements": [
                     {
@@ -796,7 +819,7 @@ class AuthControllerTest extends MySqlContainerSupport {
                     }
                   ]
                 }
-                """;
+                """.formatted(APPLE_RAW_NONCE);
     }
 
     private record RefreshTokenBody(String refreshToken) {

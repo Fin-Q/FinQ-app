@@ -37,7 +37,7 @@ class AppleIdentityTokenClientTest {
 
     private static final String CLIENT_ID = "com.finq.app";
     private static final String ISSUER = "https://appleid.apple.com";
-    private static final String RAW_NONCE = "one-time-raw-nonce";
+    private static final String RAW_NONCE = "0123456789abcdef0123456789abcdef";
     private static final String SUBJECT = "apple-user-id";
 
     private AppleNonceHasher nonceHasher;
@@ -126,7 +126,15 @@ class AppleIdentityTokenClientTest {
     void rejectsTokenWhenNonceDoesNotMatch() {
         String identityToken = identityToken(signingKey, ISSUER, CLIENT_ID, RAW_NONCE, validExpiration());
 
-        assertInvalidToken(identityToken, "different-raw-nonce");
+        assertInvalidToken(identityToken, "fedcba9876543210fedcba9876543210");
+    }
+
+    @Test
+    void rejectsNonceThatIsNotExactly32Characters() {
+        String identityToken = identityToken(signingKey, ISSUER, CLIENT_ID, RAW_NONCE, validExpiration());
+
+        assertInvalidToken(identityToken, "a".repeat(31));
+        assertInvalidToken(identityToken, "a".repeat(33));
     }
 
     @Test

@@ -29,7 +29,7 @@ import static org.springframework.test.web.client.response.MockRestResponseCreat
 class AppleAuthorizationCodeClientTest {
 
     private static final String AUTHORIZATION_CODE = "single-use-code";
-    private static final String NONCE = "raw-nonce";
+    private static final String NONCE = "0123456789abcdef0123456789abcdef";
     private static final AppleUserIdentity EXPECTED_IDENTITY = new AppleUserIdentity("apple-user-id");
 
     private MockRestServiceServer server;

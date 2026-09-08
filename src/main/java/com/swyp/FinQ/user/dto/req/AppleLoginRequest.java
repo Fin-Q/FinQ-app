@@ -20,8 +20,12 @@ public record AppleLoginRequest(
         @NotBlank(message = "Apple Authorization Code는 필수입니다")
         String authorizationCode,
 
-        @Schema(description = "Apple 인증 요청에 사용한 원본 nonce", example = "one-time-raw-nonce")
+        @Schema(
+                description = "Apple 인증 요청에 사용한 32자 원본 nonce",
+                example = "0123456789abcdef0123456789abcdef"
+        )
         @NotBlank(message = "Apple nonce는 필수입니다")
+        @Size(min = 32, max = 32, message = "Apple nonce는 32자여야 합니다")
         String nonce,
 
         @Schema(description = "신규 회원 닉네임. 기존 회원은 생략 가능", example = "Minter")

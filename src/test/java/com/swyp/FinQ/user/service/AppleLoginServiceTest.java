@@ -40,7 +40,7 @@ class AppleLoginServiceTest {
     private static final String PROVIDER_USER_ID = "apple-user-id";
     private static final String IDENTITY_TOKEN = "apple-identity-token";
     private static final String AUTHORIZATION_CODE = "apple-authorization-code";
-    private static final String NONCE = "raw-nonce";
+    private static final String NONCE = "0123456789abcdef0123456789abcdef";
 
     @Mock
     private AppleIdentityTokenVerifier appleIdentityTokenVerifier;
