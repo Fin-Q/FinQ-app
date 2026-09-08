@@ -2,8 +2,11 @@ package com.swyp.FinQ.notification.controller;
 
 import com.swyp.FinQ.global.security.token.JwtClaimNames;
 import com.swyp.FinQ.global.success.SuccessResponse;
+import com.swyp.FinQ.notification.dto.req.NotificationSettingUpdateRequest;
 import com.swyp.FinQ.notification.dto.req.PushTokenRegistrationRequest;
+import com.swyp.FinQ.notification.dto.res.NotificationSettingResponse;
 import com.swyp.FinQ.notification.dto.res.PushTokenRegistrationResponse;
+import com.swyp.FinQ.notification.service.NotificationSettingService;
 import com.swyp.FinQ.notification.service.PushTokenService;
 import com.swyp.FinQ.notification.success.NotificationSuccessCode;
 import io.swagger.v3.oas.annotations.Operation;
@@ -17,6 +20,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -30,6 +34,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class NotificationController {
 
     private final PushTokenService pushTokenService;
+    private final NotificationSettingService notificationSettingService;
 
     @Operation(summary = "FCM 푸시 토큰 등록 또는 갱신")
     @PostMapping("/push-tokens/{deviceId}")
@@ -46,6 +51,18 @@ public class NotificationController {
                         deviceId,
                         request
                 )
+        );
+    }
+
+    @Operation(summary = "알림 수신 설정 변경")
+    @PatchMapping("/notification-settings")
+    public ResponseEntity<SuccessResponse<NotificationSettingResponse>> updateNotificationSetting(
+            @AuthenticationPrincipal Jwt jwt,
+            @Valid @RequestBody NotificationSettingUpdateRequest request
+    ) {
+        return SuccessResponse.of(
+                NotificationSuccessCode.NOTIFICATION_SETTING_UPDATED,
+                notificationSettingService.update(Long.valueOf(jwt.getSubject()), request)
         );
     }
 }

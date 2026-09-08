@@ -8,7 +8,8 @@ import org.springframework.http.HttpStatus;
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 public enum NotificationSuccessCode implements SuccessCode {
 
-    PUSH_TOKEN_REGISTERED(HttpStatus.OK, "푸시 토큰이 저장되었습니다.");
+    PUSH_TOKEN_REGISTERED(HttpStatus.OK, "푸시 토큰이 저장되었습니다."),
+    NOTIFICATION_SETTING_UPDATED(HttpStatus.OK, "알림 설정이 변경되었습니다.");
 
     private final HttpStatus status;
     private final String message;

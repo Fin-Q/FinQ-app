@@ -92,6 +92,10 @@ public class User extends BaseTimeEntity {
         this.lastStreakDate = lastStreakDate;
     }
 
+    public void updateNotificationEnabled(boolean notificationEnabled) {
+        this.notificationEnabled = notificationEnabled;
+    }
+
     public void updateProfile(String nickname, ProfileImageCode profileImageCode) {
         if (nickname != null) {
             this.nickname = nickname;

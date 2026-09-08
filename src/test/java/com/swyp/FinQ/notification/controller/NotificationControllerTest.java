@@ -19,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -107,6 +108,55 @@ class NotificationControllerTest extends MySqlContainerSupport {
                                 {
                                   "fcmToken": "fcm-token",
                                   "platform": "IOS"
+                                }
+                                """))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void updatesNotificationSetting() throws Exception {
+        User user = saveUser("setting@example.com");
+
+        mockMvc.perform(patch("/users/me/notification-settings")
+                        .header(HttpHeaders.AUTHORIZATION, bearerToken(user.getId()))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "notificationEnabled": false
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("SUCCESS"))
+                .andExpect(jsonPath("$.message").value("알림 설정이 변경되었습니다."))
+                .andExpect(jsonPath("$.data.notificationEnabled").value(false))
+                .andExpect(jsonPath("$.data.updatedAt").exists());
+
+        assertThat(userRepository.findById(user.getId()).orElseThrow().isNotificationEnabled())
+                .isFalse();
+    }
+
+    @Test
+    void rejectsMissingNotificationSetting() throws Exception {
+        User user = saveUser("missing-setting@example.com");
+
+        mockMvc.perform(patch("/users/me/notification-settings")
+                        .header(HttpHeaders.AUTHORIZATION, bearerToken(user.getId()))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errorCode").value("COMMON_VALIDATION_ERROR"));
+
+        assertThat(userRepository.findById(user.getId()).orElseThrow().isNotificationEnabled())
+                .isTrue();
+    }
+
+    @Test
+    void rejectsNotificationSettingWithoutAccessToken() throws Exception {
+        mockMvc.perform(patch("/users/me/notification-settings")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "notificationEnabled": false
                                 }
                                 """))
                 .andExpect(status().isUnauthorized());
