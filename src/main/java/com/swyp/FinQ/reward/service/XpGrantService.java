@@ -10,6 +10,8 @@ import com.swyp.FinQ.user.domain.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
+
 @Service
 @RequiredArgsConstructor
 public class XpGrantService {
@@ -30,6 +32,14 @@ public class XpGrantService {
     public XpResultInfo grantQuizCompletionXp(User user, Long categoryId) {
         String referenceId = "category:" + categoryId;
         return grantXp(user, XpConstants.QUIZ_COMPLETE_XP, XpType.QUIZ_COMPLETE, referenceId);
+    }
+
+    /**
+     * 스트릭 달성일 보너스 XP 지급
+     */
+    public XpResultInfo grantStreakBonusXp(User user, LocalDate streakDate, int xpAmount) {
+        String referenceId = "streak:" + streakDate;
+        return grantXp(user, xpAmount, XpType.STREAK_BONUS, referenceId);
     }
 
     /**

@@ -87,6 +87,11 @@ public class User extends BaseTimeEntity {
         this.totalXp += amount;
     }
 
+    public void updateStreak(int currentStreak, LocalDate lastStreakDate) {
+        this.currentStreak = currentStreak;
+        this.lastStreakDate = lastStreakDate;
+    }
+
     public void updateProfile(String nickname, ProfileImageCode profileImageCode) {
         if (nickname != null) {
             this.nickname = nickname;
