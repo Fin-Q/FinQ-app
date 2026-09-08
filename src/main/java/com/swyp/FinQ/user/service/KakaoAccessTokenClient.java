@@ -17,10 +17,8 @@ public class KakaoAccessTokenClient implements KakaoAccessTokenVerifier {
     private final RestClient restClient;
     private final String expectedAppId;
 
-    public KakaoAccessTokenClient(RestClient.Builder restClientBuilder, KakaoProperties properties) {
-        this.restClient = restClientBuilder
-                .baseUrl(properties.apiBaseUrl().toString())
-                .build();
+    public KakaoAccessTokenClient(RestClient kakaoRestClient, KakaoProperties properties) {
+        this.restClient = kakaoRestClient;
         this.expectedAppId = properties.appId();
     }
 

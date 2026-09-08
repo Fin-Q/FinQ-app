@@ -53,6 +53,11 @@ public enum AuthErrorCode implements ErrorCode {
             "AUTH_INVALID_KAKAO_ACCESS_TOKEN",
             "유효하지 않은 Kakao Access Token입니다."
     ),
+    INVALID_KAKAO_SIGN_UP_INFO(
+            HttpStatus.BAD_REQUEST,
+            "AUTH_INVALID_KAKAO_SIGN_UP_INFO",
+            "신규 Kakao 사용자의 닉네임은 필수이며 50자 이하여야 합니다."
+    ),
     KAKAO_AUTH_SERVER_UNAVAILABLE(
             HttpStatus.SERVICE_UNAVAILABLE,
             "AUTH_KAKAO_AUTH_SERVER_UNAVAILABLE",
