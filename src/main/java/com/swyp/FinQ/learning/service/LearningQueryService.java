@@ -6,8 +6,11 @@ import com.swyp.FinQ.content.repository.CategoryRepository;
 import com.swyp.FinQ.global.exception.BaseException;
 import com.swyp.FinQ.content.domain.QuestionType;
 import com.swyp.FinQ.learning.domain.AdvancedQuiz;
+import com.swyp.FinQ.learning.domain.AdvancedQuizInfo;
 import com.swyp.FinQ.reward.domain.XpConstants;
 import com.swyp.FinQ.learning.dto.res.QuizListResponse;
+import com.swyp.FinQ.learning.exception.LearningErrorCode;
+import com.swyp.FinQ.learning.repository.AdvancedQuizInfoRepository;
 import com.swyp.FinQ.learning.repository.AdvancedQuizRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -22,6 +25,7 @@ public class LearningQueryService {
 
     private final CategoryRepository categoryRepository;
     private final AdvancedQuizRepository advancedQuizRepository;
+    private final AdvancedQuizInfoRepository advancedQuizInfoRepository;
 
     /**
      * 심화퀴즈 조회
@@ -29,6 +33,9 @@ public class LearningQueryService {
     public QuizListResponse getQuizList(Long categoryId) {
         Category category = categoryRepository.findById(categoryId)
                 .orElseThrow(() -> BaseException.of(ContentErrorCode.CATEGORY_NOT_FOUND));
+
+        AdvancedQuizInfo quizInfo = advancedQuizInfoRepository.findByCategoryId(categoryId)
+                .orElseThrow(() -> BaseException.of(LearningErrorCode.QUIZ_NOT_FOUND));
 
         List<AdvancedQuiz> quizzes = advancedQuizRepository.findByCategoryIdOrderByQuizOrder(categoryId);
 
@@ -48,6 +55,10 @@ public class LearningQueryService {
                 category.getId(),
                 category.getCategoryName(),
                 XpConstants.QUIZ_COMPLETE_XP,
+                quizInfo.getIntroTitle(),
+                quizInfo.getIntroDescription(),
+                quizInfo.getCompletionTitle(),
+                quizInfo.getCompletionDescription(),
                 questions
         );
     }

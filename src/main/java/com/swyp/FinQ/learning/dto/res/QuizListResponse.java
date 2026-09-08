@@ -12,6 +12,14 @@ public record QuizListResponse(
         String categoryName,
         @Schema(description = "퀴즈 완료 시 획득 XP", example = "30")
         int rewardXp,
+        @Schema(description = "심화퀴즈 안내 제목", example = "월급관리·저축, 얼마나 이해했을까요?")
+        String introTitle,
+        @Schema(description = "심화퀴즈 안내 설명")
+        String introDescription,
+        @Schema(description = "심화퀴즈 완료 제목", example = "월급관리·저축 심화퀴즈 완료!")
+        String completionTitle,
+        @Schema(description = "심화퀴즈 완료 설명")
+        String completionDescription,
         @Schema(description = "퀴즈 문제 목록")
         List<QuizQuestion> questions
 ) {
