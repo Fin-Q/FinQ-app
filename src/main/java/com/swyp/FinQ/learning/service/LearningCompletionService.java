@@ -11,6 +11,8 @@ import com.swyp.FinQ.learning.repository.UserContentCompletionRepository;
 import com.swyp.FinQ.reward.domain.XpConstants;
 import com.swyp.FinQ.reward.dto.info.XpResultInfo;
 import com.swyp.FinQ.reward.service.XpGrantService;
+import com.swyp.FinQ.streak.dto.info.StreakRecordResult;
+import com.swyp.FinQ.streak.service.StreakService;
 import com.swyp.FinQ.user.domain.User;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,6 +31,7 @@ public class LearningCompletionService {
     private final UserContentCompletionRepository userContentCompletionRepository;
     private final UserCategoryCompletionRepository userCategoryCompletionRepository;
     private final XpGrantService xpGrantService;
+    private final StreakService streakService;
     private final TransactionTemplate transactionTemplate;
 
     /**
@@ -50,14 +53,15 @@ public class LearningCompletionService {
                 userContentCompletionRepository.save(completion);
 
                 XpResultInfo xpResult = xpGrantService.grantContentCompletionXp(user, content.getId());
-
-                // TODO: StreakService 구현 후 스트릭 인정 처리 및 스트릭 보너스 XP 합산
-                int totalEarnedXp = xpResult.xpEarned();
+                StreakRecordResult streakResult = streakService.recordDailyStreak(user);
+                XpResultInfo streakBonusResult = streakResult.bonusXpResult();
+                int totalEarnedXp = xpResult.xpEarned() + streakBonusResult.xpEarned();
+                boolean leveledUp = xpResult.leveledUp() || streakBonusResult.leveledUp();
 
                 return new ContentResult(
                         totalEarnedXp,
-                        xpResult.leveledUp(),
-                        xpResult.leveledUp() ? xpResult.currentLevel().getValue() : null
+                        leveledUp,
+                        leveledUp ? streakBonusResult.currentLevel().getValue() : null
                 );
             }));
         } catch (DataIntegrityViolationException e) {
@@ -85,14 +89,15 @@ public class LearningCompletionService {
                 userCategoryCompletionRepository.save(completion);
 
                 XpResultInfo xpResult = xpGrantService.grantQuizCompletionXp(user, category.getId());
-
-                // TODO: StreakService 구현 후 스트릭 인정 처리 및 스트릭 보너스 XP 합산
-                int totalEarnedXp = xpResult.xpEarned();
+                StreakRecordResult streakResult = streakService.recordDailyStreak(user);
+                XpResultInfo streakBonusResult = streakResult.bonusXpResult();
+                int totalEarnedXp = xpResult.xpEarned() + streakBonusResult.xpEarned();
+                boolean leveledUp = xpResult.leveledUp() || streakBonusResult.leveledUp();
 
                 return new CategoryResult(
                         totalEarnedXp,
-                        xpResult.leveledUp(),
-                        xpResult.leveledUp() ? xpResult.currentLevel().getValue() : null
+                        leveledUp,
+                        leveledUp ? streakBonusResult.currentLevel().getValue() : null
                 );
             }));
         } catch (DataIntegrityViolationException e) {

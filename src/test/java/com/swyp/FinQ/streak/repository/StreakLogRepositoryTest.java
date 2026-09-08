@@ -76,6 +76,20 @@ class StreakLogRepositoryTest extends MySqlContainerSupport {
     }
 
     @Test
+    @DisplayName("멱등 저장은 같은 날짜의 첫 요청만 기록한다")
+    void insertsDailyStreakOnlyOnce() {
+        User user = userRepository.save(createUser());
+        LocalDate streakDate = LocalDate.of(2026, 9, 8);
+
+        int firstInsertCount = streakLogRepository.insertIfAbsent(user.getId(), streakDate);
+        int duplicateInsertCount = streakLogRepository.insertIfAbsent(user.getId(), streakDate);
+
+        assertThat(firstInsertCount).isEqualTo(1);
+        assertThat(duplicateInsertCount).isZero();
+        assertThat(streakLogRepository.findAll()).hasSize(1);
+    }
+
+    @Test
     @DisplayName("사용자 삭제 시 스트릭 기록도 함께 삭제한다")
     void deletesStreakLogsWithUser() {
         User user = userRepository.save(createUser());
