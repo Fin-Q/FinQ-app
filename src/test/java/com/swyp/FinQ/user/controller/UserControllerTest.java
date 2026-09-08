@@ -6,6 +6,9 @@ import com.swyp.FinQ.global.security.token.JwtTokenProvider;
 import com.swyp.FinQ.reward.domain.XpHistory;
 import com.swyp.FinQ.reward.domain.XpType;
 import com.swyp.FinQ.reward.repository.XpHistoryRepository;
+import com.swyp.FinQ.streak.config.StreakConfig;
+import com.swyp.FinQ.streak.domain.StreakLog;
+import com.swyp.FinQ.streak.repository.StreakLogRepository;
 import com.swyp.FinQ.support.MySqlContainerSupport;
 import com.swyp.FinQ.user.domain.OnboardingStatus;
 import com.swyp.FinQ.user.domain.ProfileImageCode;
@@ -20,6 +23,8 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -48,6 +53,9 @@ class UserControllerTest extends MySqlContainerSupport {
 
     @Autowired
     private XpHistoryRepository xpHistoryRepository;
+
+    @Autowired
+    private StreakLogRepository streakLogRepository;
 
     @Test
     void getsOnboardingStatusAndInterests() throws Exception {
@@ -208,12 +216,15 @@ class UserControllerTest extends MySqlContainerSupport {
     void getsMyPageWithProfileAndLearningSummary() throws Exception {
         User user = saveUser();
         selectInterests(user.getId(), "[\"SAL\"]");
+        user.addXp(80);
         xpHistoryRepository.save(XpHistory.builder()
                 .user(user)
                 .xpAmount(80)
                 .xpType(XpType.CONTENT_COMPLETE)
                 .referenceId("content:my-page-test")
                 .build());
+        LocalDate today = LocalDate.now(StreakConfig.STREAK_ZONE_ID);
+        saveStreakLogs(user, today.minusDays(2), today.minusDays(1), today);
 
         mockMvc.perform(get("/users/me")
                         .header(HttpHeaders.AUTHORIZATION, bearerToken(user.getId())))
@@ -319,6 +330,15 @@ class UserControllerTest extends MySqlContainerSupport {
     private String bearerToken(Long userId) {
         IssuedTokenPair tokens = jwtTokenProvider.issue(userId);
         return "Bearer " + tokens.accessToken();
+    }
+
+    private void saveStreakLogs(User user, LocalDate... streakDates) {
+        for (LocalDate streakDate : streakDates) {
+            streakLogRepository.save(StreakLog.builder()
+                    .user(user)
+                    .streakDate(streakDate)
+                    .build());
+        }
     }
 
     private void selectInterests(Long userId, String categoryCodes) throws Exception {

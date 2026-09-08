@@ -39,21 +39,6 @@ class StreakCalculatorTest {
     }
 
     @Test
-    @DisplayName("전체 기록 중 가장 긴 연속 구간을 계산한다")
-    void calculatesLongestStreak() {
-        List<LocalDate> streakDates = List.of(
-                TODAY.minusDays(7),
-                TODAY.minusDays(6),
-                TODAY.minusDays(3),
-                TODAY.minusDays(2),
-                TODAY.minusDays(1),
-                TODAY
-        );
-
-        assertThat(StreakCalculator.calculateLongestStreak(streakDates)).isEqualTo(4);
-    }
-
-    @Test
     @DisplayName("다음 5일 단위 보너스까지 남은 일수를 계산한다")
     void calculatesDaysUntilNextBonus() {
         assertThat(StreakCalculator.calculateDaysUntilNextBonus(0)).isEqualTo(5);

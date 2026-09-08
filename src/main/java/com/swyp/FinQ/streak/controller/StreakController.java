@@ -28,7 +28,7 @@ public class StreakController {
 
     private final StreakQueryService streakQueryService;
 
-    @Operation(summary = "현재 스트릭 상태 조회", description = "현재·최장 스트릭과 다음 보너스까지 남은 일수를 조회합니다.")
+    @Operation(summary = "현재 스트릭 상태 조회", description = "현재 스트릭과 다음 보너스까지 남은 일수를 조회합니다.")
     @GetMapping("/status")
     public ResponseEntity<SuccessResponse<StreakStatusResponse>> getStatus(
             @AuthenticationPrincipal Jwt jwt

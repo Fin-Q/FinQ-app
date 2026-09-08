@@ -42,7 +42,7 @@ class StreakControllerTest extends MySqlContainerSupport {
     private JwtTokenProvider jwtTokenProvider;
 
     @Test
-    void getsCurrentAndLongestStreakStatus() throws Exception {
+    void getsCurrentStreakStatus() throws Exception {
         User user = saveUser();
         LocalDate today = LocalDate.now(StreakConfig.STREAK_ZONE_ID);
         saveStreakLogs(
@@ -60,7 +60,7 @@ class StreakControllerTest extends MySqlContainerSupport {
                 .andExpect(jsonPath("$.status").value("SUCCESS"))
                 .andExpect(jsonPath("$.message").value("스트릭 상태 조회에 성공했습니다."))
                 .andExpect(jsonPath("$.data.currentStreak").value(2))
-                .andExpect(jsonPath("$.data.longestStreak").value(3))
+                .andExpect(jsonPath("$.data.longestStreak").doesNotExist())
                 .andExpect(jsonPath("$.data.daysUntilNextBonus").value(3));
     }
 

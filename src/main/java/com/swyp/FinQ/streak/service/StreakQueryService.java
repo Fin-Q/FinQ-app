@@ -29,6 +29,15 @@ public class StreakQueryService {
     private final Clock streakClock;
 
     public StreakStatusResponse getStatus(Long userId) {
+        int currentStreak = getCurrentStreak(userId);
+
+        return new StreakStatusResponse(
+                currentStreak,
+                StreakCalculator.calculateDaysUntilNextBonus(currentStreak)
+        );
+    }
+
+    public int getCurrentStreak(Long userId) {
         requireUser(userId);
         LocalDate today = LocalDate.now(streakClock);
         List<LocalDate> streakDates = streakLogRepository.findAllByUserIdOrderByStreakDateAsc(userId)
@@ -36,14 +45,7 @@ public class StreakQueryService {
                 .map(StreakLog::getStreakDate)
                 .toList();
 
-        int currentStreak = StreakCalculator.calculateCurrentStreak(streakDates, today);
-        int longestStreak = StreakCalculator.calculateLongestStreak(streakDates);
-
-        return new StreakStatusResponse(
-                currentStreak,
-                longestStreak,
-                StreakCalculator.calculateDaysUntilNextBonus(currentStreak)
-        );
+        return StreakCalculator.calculateCurrentStreak(streakDates, today);
     }
 
     public StreakCalendarResponse getCalendar(Long userId, YearMonth requestedMonth) {

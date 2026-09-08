@@ -37,29 +37,6 @@ public final class StreakCalculator {
         return currentStreak;
     }
 
-    public static int calculateLongestStreak(List<LocalDate> streakDates) {
-        if (streakDates.isEmpty()) {
-            return 0;
-        }
-
-        List<LocalDate> sortedDates = streakDates.stream()
-                .distinct()
-                .sorted()
-                .toList();
-        int longestStreak = 1;
-        int consecutiveDays = 1;
-
-        for (int index = 1; index < sortedDates.size(); index++) {
-            if (sortedDates.get(index).equals(sortedDates.get(index - 1).plusDays(1))) {
-                consecutiveDays++;
-                longestStreak = Math.max(longestStreak, consecutiveDays);
-            } else {
-                consecutiveDays = 1;
-            }
-        }
-        return longestStreak;
-    }
-
     public static int calculateDaysUntilNextBonus(int currentStreak) {
         int remainder = currentStreak % BONUS_INTERVAL_DAYS;
         return remainder == 0 ? BONUS_INTERVAL_DAYS : BONUS_INTERVAL_DAYS - remainder;
