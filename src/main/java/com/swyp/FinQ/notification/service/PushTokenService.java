@@ -4,6 +4,8 @@ import com.swyp.FinQ.global.exception.BaseException;
 import com.swyp.FinQ.notification.domain.PushToken;
 import com.swyp.FinQ.notification.dto.req.PushTokenRegistrationRequest;
 import com.swyp.FinQ.notification.dto.res.PushTokenRegistrationResponse;
+import com.swyp.FinQ.notification.dto.res.PushTokenUnregistrationResponse;
+import com.swyp.FinQ.notification.exception.NotificationErrorCode;
 import com.swyp.FinQ.notification.repository.PushTokenRepository;
 import com.swyp.FinQ.user.domain.User;
 import com.swyp.FinQ.user.exception.UserErrorCode;
@@ -13,13 +15,20 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
+
 @Service
 @RequiredArgsConstructor
 public class PushTokenService {
 
+    private static final ZoneId SERVICE_ZONE_ID = ZoneId.of("Asia/Seoul");
+
     private final PushTokenRepository pushTokenRepository;
     private final UserRepository userRepository;
     private final TokenHashEncoder tokenHashEncoder;
+    private final Clock clock;
 
     @Transactional
     public PushTokenRegistrationResponse register(
@@ -58,5 +67,17 @@ public class PushTokenService {
                         .build());
 
         return PushTokenRegistrationResponse.from(pushTokenRepository.saveAndFlush(pushToken));
+    }
+
+    @Transactional
+    public PushTokenUnregistrationResponse unregister(Long userId, String deviceId) {
+        PushToken pushToken = pushTokenRepository.findByUser_IdAndDeviceId(userId, deviceId)
+                .orElseThrow(() -> BaseException.of(NotificationErrorCode.PUSH_TOKEN_NOT_FOUND));
+
+        pushTokenRepository.delete(pushToken);
+        return new PushTokenUnregistrationResponse(
+                deviceId,
+                OffsetDateTime.ofInstant(clock.instant(), SERVICE_ZONE_ID)
+        );
     }
 }

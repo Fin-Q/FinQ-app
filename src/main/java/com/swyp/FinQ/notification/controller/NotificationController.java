@@ -6,6 +6,7 @@ import com.swyp.FinQ.notification.dto.req.NotificationSettingUpdateRequest;
 import com.swyp.FinQ.notification.dto.req.PushTokenRegistrationRequest;
 import com.swyp.FinQ.notification.dto.res.NotificationSettingResponse;
 import com.swyp.FinQ.notification.dto.res.PushTokenRegistrationResponse;
+import com.swyp.FinQ.notification.dto.res.PushTokenUnregistrationResponse;
 import com.swyp.FinQ.notification.service.NotificationSettingService;
 import com.swyp.FinQ.notification.service.PushTokenService;
 import com.swyp.FinQ.notification.success.NotificationSuccessCode;
@@ -20,6 +21,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -63,6 +65,18 @@ public class NotificationController {
         return SuccessResponse.of(
                 NotificationSuccessCode.NOTIFICATION_SETTING_UPDATED,
                 notificationSettingService.update(Long.valueOf(jwt.getSubject()), request)
+        );
+    }
+
+    @Operation(summary = "FCM 푸시 토큰 등록 해제")
+    @DeleteMapping("/push-tokens/{deviceId}")
+    public ResponseEntity<SuccessResponse<PushTokenUnregistrationResponse>> unregisterPushToken(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable @NotBlank @Size(max = 255) String deviceId
+    ) {
+        return SuccessResponse.of(
+                NotificationSuccessCode.PUSH_TOKEN_UNREGISTERED,
+                pushTokenService.unregister(Long.valueOf(jwt.getSubject()), deviceId)
         );
     }
 }

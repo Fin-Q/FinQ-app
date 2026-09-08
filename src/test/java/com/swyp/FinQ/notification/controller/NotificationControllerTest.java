@@ -20,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -160,6 +161,38 @@ class NotificationControllerTest extends MySqlContainerSupport {
                                 }
                                 """))
                 .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void unregistersOwnedPushToken() throws Exception {
+        User user = saveUser("unregister@example.com");
+        String bearerToken = bearerToken(user.getId());
+        register(bearerToken, "device-1", "fcm-token")
+                .andExpect(status().isOk());
+
+        mockMvc.perform(delete("/users/me/push-tokens/device-1")
+                        .header(HttpHeaders.AUTHORIZATION, bearerToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("푸시 토큰 등록이 해제되었습니다."))
+                .andExpect(jsonPath("$.data.deviceId").value("device-1"))
+                .andExpect(jsonPath("$.data.unregisteredAt").exists());
+
+        assertThat(pushTokenRepository.findByDeviceId("device-1")).isEmpty();
+    }
+
+    @Test
+    void doesNotUnregisterAnotherUsersPushToken() throws Exception {
+        User owner = saveUser("owner@example.com");
+        User requester = saveUser("requester@example.com");
+        register(bearerToken(owner.getId()), "device-1", "fcm-token")
+                .andExpect(status().isOk());
+
+        mockMvc.perform(delete("/users/me/push-tokens/device-1")
+                        .header(HttpHeaders.AUTHORIZATION, bearerToken(requester.getId())))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.errorCode").value("PUSH_TOKEN_NOT_FOUND"));
+
+        assertThat(pushTokenRepository.findByDeviceId("device-1")).isPresent();
     }
 
     private org.springframework.test.web.servlet.ResultActions register(
