@@ -7,13 +7,17 @@ import com.swyp.FinQ.user.domain.OnboardingStatus;
 import com.swyp.FinQ.user.domain.ProfileImageCode;
 import com.swyp.FinQ.user.domain.RefreshToken;
 import com.swyp.FinQ.user.domain.PasswordResetRequest;
+import com.swyp.FinQ.user.domain.SocialProvider;
 import com.swyp.FinQ.user.domain.User;
 import com.swyp.FinQ.user.domain.UserAgreement;
 import com.swyp.FinQ.user.repository.RefreshTokenRepository;
 import com.swyp.FinQ.user.repository.PasswordResetRequestRepository;
+import com.swyp.FinQ.user.repository.SocialAccountRepository;
 import com.swyp.FinQ.user.repository.UserAgreementRepository;
 import com.swyp.FinQ.user.repository.UserRepository;
 import com.swyp.FinQ.user.service.TokenHashEncoder;
+import com.swyp.FinQ.user.service.KakaoAccessTokenVerifier;
+import com.swyp.FinQ.user.service.KakaoUserIdentity;
 import com.swyp.FinQ.user.service.PasswordResetMailSender;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,6 +35,7 @@ import java.time.LocalDateTime;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -59,6 +64,9 @@ class AuthControllerTest extends MySqlContainerSupport {
     private RefreshTokenRepository refreshTokenRepository;
 
     @Autowired
+    private SocialAccountRepository socialAccountRepository;
+
+    @Autowired
     private PasswordResetRequestRepository passwordResetRequestRepository;
 
     @Autowired
@@ -69,6 +77,9 @@ class AuthControllerTest extends MySqlContainerSupport {
 
     @MockitoBean
     private PasswordResetMailSender passwordResetMailSender;
+
+    @MockitoBean
+    private KakaoAccessTokenVerifier kakaoAccessTokenVerifier;
 
     @Test
     void getsCurrentAgreementsWithoutAuthentication() throws Exception {
@@ -244,6 +255,105 @@ class AuthControllerTest extends MySqlContainerSupport {
                                 """))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.errorCode").value("AUTH_INVALID_CREDENTIALS"));
+    }
+
+    @Test
+    void registersNewUserAndLogsInWithKakao() throws Exception {
+        given(kakaoAccessTokenVerifier.verify("valid-kakao-token"))
+                .willReturn(new KakaoUserIdentity("123456789"));
+
+        String responseBody = mockMvc.perform(post("/auth/social/kakao")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(validNewKakaoLoginRequest()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("SUCCESS"))
+                .andExpect(jsonPath("$.message").value("로그인에 성공했습니다."))
+                .andExpect(jsonPath("$.data.userId").isString())
+                .andExpect(jsonPath("$.data.nickname").value("Minter"))
+                .andExpect(jsonPath("$.data.isNewUser").value(true))
+                .andExpect(jsonPath("$.data.tokenType").value("Bearer"))
+                .andExpect(jsonPath("$.data.accessTokenExpiresIn").value(3600))
+                .andExpect(jsonPath("$.data.onboardingStatus").value("INTEREST_SECTION"))
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        JsonNode data = objectMapper.readTree(responseBody).path("data");
+        Long userId = Long.valueOf(data.path("userId").asText());
+
+        assertThat(socialAccountRepository
+                .findByProviderAndProviderUserId(SocialProvider.KAKAO, "123456789"))
+                .get()
+                .extracting(account -> account.getUser().getId())
+                .isEqualTo(userId);
+        assertThat(userAgreementRepository.findAllByUserId(userId)).hasSize(2);
+        assertThat(refreshTokenRepository.findAll()).hasSize(1);
+    }
+
+    @Test
+    void logsInExistingKakaoUserWithoutNicknameAndAgreements() throws Exception {
+        given(kakaoAccessTokenVerifier.verify("valid-kakao-token"))
+                .willReturn(new KakaoUserIdentity("123456789"));
+        mockMvc.perform(post("/auth/social/kakao")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(validNewKakaoLoginRequest()))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/auth/social/kakao")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "kakaoAccessToken": "valid-kakao-token"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.nickname").value("Minter"))
+                .andExpect(jsonPath("$.data.isNewUser").value(false))
+                .andExpect(jsonPath("$.data.accessToken").isNotEmpty())
+                .andExpect(jsonPath("$.data.refreshToken").isNotEmpty());
+
+        assertThat(userRepository.count()).isOne();
+        assertThat(socialAccountRepository.count()).isOne();
+        assertThat(userAgreementRepository.count()).isEqualTo(2);
+        assertThat(refreshTokenRepository.count()).isEqualTo(2);
+    }
+
+    @Test
+    void rejectsNewKakaoUserWithoutNickname() throws Exception {
+        given(kakaoAccessTokenVerifier.verify("valid-kakao-token"))
+                .willReturn(new KakaoUserIdentity("123456789"));
+
+        mockMvc.perform(post("/auth/social/kakao")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "kakaoAccessToken": "valid-kakao-token",
+                                  "agreements": [
+                                    {"agreementCode": "TERMS_OF_SERVICE", "version": "1.0", "agreed": true},
+                                    {"agreementCode": "PRIVACY_POLICY", "version": "1.0", "agreed": true}
+                                  ]
+                                }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errorCode").value("AUTH_INVALID_KAKAO_SIGN_UP_INFO"));
+    }
+
+    @Test
+    void rejectsKakaoLoginWithoutAccessToken() throws Exception {
+        mockMvc.perform(post("/auth/social/kakao")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isBadRequest());
+
+        verify(kakaoAccessTokenVerifier, never()).verify(org.mockito.ArgumentMatchers.any());
+    }
+
+    @Test
+    void documentsKakaoLoginInOpenApi() throws Exception {
+        mockMvc.perform(get("/api-docs"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$['paths']['/auth/social/kakao']['post']['summary']")
+                        .value("Kakao 소셜 로그인"));
     }
 
     @Test
@@ -521,6 +631,27 @@ class AuthControllerTest extends MySqlContainerSupport {
                 {
                   "email": "user@example.com",
                   "password": "Password123!",
+                  "nickname": "Minter",
+                  "agreements": [
+                    {
+                      "agreementCode": "TERMS_OF_SERVICE",
+                      "version": "1.0",
+                      "agreed": true
+                    },
+                    {
+                      "agreementCode": "PRIVACY_POLICY",
+                      "version": "1.0",
+                      "agreed": true
+                    }
+                  ]
+                }
+                """;
+    }
+
+    private String validNewKakaoLoginRequest() {
+        return """
+                {
+                  "kakaoAccessToken": "valid-kakao-token",
                   "nickname": "Minter",
                   "agreements": [
                     {

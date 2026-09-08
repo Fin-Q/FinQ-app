@@ -39,3 +39,7 @@ mail:
   ses:
     region: ${AWS_REGION:ap-northeast-2}
     from-address: ${SES_FROM_ADDRESS:}
+
+kakao:
+  app-id: ${KAKAO_APP_ID:}
+  api-base-url: https://kapi.kakao.com
