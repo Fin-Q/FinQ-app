@@ -2,18 +2,21 @@ package com.swyp.FinQ.user.controller;
 
 import com.swyp.FinQ.global.success.SuccessResponse;
 import com.swyp.FinQ.global.security.token.JwtClaimNames;
+import com.swyp.FinQ.user.dto.req.AppleLoginRequest;
 import com.swyp.FinQ.user.dto.req.LoginRequest;
 import com.swyp.FinQ.user.dto.req.KakaoLoginRequest;
 import com.swyp.FinQ.user.dto.req.PasswordResetEmailRequest;
 import com.swyp.FinQ.user.dto.req.SignUpRequest;
 import com.swyp.FinQ.user.dto.req.TokenRefreshRequest;
 import com.swyp.FinQ.user.dto.res.AgreementListResponse;
+import com.swyp.FinQ.user.dto.res.AppleLoginResponse;
 import com.swyp.FinQ.user.dto.res.LoginResponse;
 import com.swyp.FinQ.user.dto.res.KakaoLoginResponse;
 import com.swyp.FinQ.user.dto.res.PasswordResetRequestResponse;
 import com.swyp.FinQ.user.dto.res.SignUpResponse;
 import com.swyp.FinQ.user.dto.res.TokenRefreshResponse;
 import com.swyp.FinQ.user.service.AgreementQueryService;
+import com.swyp.FinQ.user.service.AppleLoginService;
 import com.swyp.FinQ.user.service.LoginService;
 import com.swyp.FinQ.user.service.KakaoLoginService;
 import com.swyp.FinQ.user.service.LogoutService;
@@ -44,6 +47,7 @@ public class AuthController {
     private final SignUpService signUpService;
     private final LoginService loginService;
     private final KakaoLoginService kakaoLoginService;
+    private final AppleLoginService appleLoginService;
     private final TokenRefreshService tokenRefreshService;
     private final LogoutService logoutService;
     private final PasswordResetRequestService passwordResetRequestService;
@@ -85,6 +89,22 @@ public class AuthController {
         return SuccessResponse.of(
                 AuthSuccessCode.LOGIN,
                 KakaoLoginResponse.from(kakaoLoginService.login(request.toCommand()))
+        );
+    }
+
+    @Operation(
+            summary = "Apple 소셜 로그인",
+            description = "Apple Identity Token, Authorization Code와 원본 nonce를 검증하고 "
+                    + "기존 회원 로그인 또는 신규 회원 가입을 처리합니다. "
+                    + "닉네임과 약관 동의는 신규 회원에게만 필요합니다."
+    )
+    @PostMapping("/social/apple")
+    public ResponseEntity<SuccessResponse<AppleLoginResponse>> loginWithApple(
+            @Valid @RequestBody AppleLoginRequest request
+    ) {
+        return SuccessResponse.of(
+                AuthSuccessCode.APPLE_LOGIN,
+                AppleLoginResponse.from(appleLoginService.login(request.toCommand()))
         );
     }
 
