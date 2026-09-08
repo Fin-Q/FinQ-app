@@ -10,4 +10,6 @@ public interface PushTokenRepository extends JpaRepository<PushToken, Long> {
     Optional<PushToken> findByDeviceId(String deviceId);
 
     Optional<PushToken> findByFcmTokenHash(String fcmTokenHash);
+
+    boolean existsByFcmTokenHash(String fcmTokenHash);
 }
