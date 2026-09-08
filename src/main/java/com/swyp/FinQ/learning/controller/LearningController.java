@@ -14,6 +14,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -28,18 +30,16 @@ public class LearningController {
     private final LearningGradeService learningGradeService;
     private final LearningQueryService learningQueryService;
 
-    // TODO: 인증 구현 후 토큰에서 userId 추출로 변경
-    private static final Long TEMP_USER_ID = 1L;
-
     @Operation(summary = "콘텐츠 문제 채점", description = "콘텐츠 학습 중 문제의 답안을 제출하고 채점합니다.")
     @PostMapping("/contents/{contentId}/questions/{questionId}/answers")
     public ResponseEntity<SuccessResponse<ContentAnswerResponse>> gradeContentAnswer(
+            @AuthenticationPrincipal Jwt jwt,
             @Parameter(description = "콘텐츠 ID") @PathVariable Long contentId,
             @Parameter(description = "문제 ID") @PathVariable Long questionId,
             @Valid @RequestBody AnswerRequest request
     ) {
         ContentAnswerResponse response = learningGradeService.gradeContentAnswer(
-                TEMP_USER_ID, contentId, questionId, request.selectedOptionId());
+                Long.valueOf(jwt.getSubject()), contentId, questionId, request.selectedOptionId());
         return SuccessResponse.of(LearningSuccessCode.CONTENT_ANSWER_GRADED, response);
     }
 
@@ -55,12 +55,13 @@ public class LearningController {
     @Operation(summary = "심화퀴즈 채점", description = "심화퀴즈 답안을 제출하고 채점합니다.")
     @PostMapping("/categories/{categoryId}/quiz/questions/{questionId}/answers")
     public ResponseEntity<SuccessResponse<QuizAnswerResponse>> gradeQuizAnswer(
+            @AuthenticationPrincipal Jwt jwt,
             @Parameter(description = "카테고리 ID") @PathVariable Long categoryId,
             @Parameter(description = "문제 ID") @PathVariable Long questionId,
             @Valid @RequestBody AnswerRequest request
     ) {
         QuizAnswerResponse response = learningGradeService.gradeQuizAnswer(
-                TEMP_USER_ID, categoryId, questionId, request.selectedOptionId());
+                Long.valueOf(jwt.getSubject()), categoryId, questionId, request.selectedOptionId());
         return SuccessResponse.of(LearningSuccessCode.QUIZ_ANSWER_GRADED, response);
     }
 }

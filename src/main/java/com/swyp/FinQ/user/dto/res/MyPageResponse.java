@@ -34,7 +34,12 @@ public record MyPageResponse(
         List<InterestInfo> interests
 ) {
 
-    public static MyPageResponse of(User user, int totalXp, List<UserInterest> interests) {
+    public static MyPageResponse of(
+            User user,
+            int totalXp,
+            int currentStreak,
+            List<UserInterest> interests
+    ) {
         return new MyPageResponse(
                 String.valueOf(user.getId()),
                 user.getEmail(),
@@ -42,7 +47,7 @@ public record MyPageResponse(
                 user.getProfileImageCode(),
                 totalXp,
                 Level.from(totalXp),
-                user.getCurrentStreak(),
+                currentStreak,
                 user.isNotificationEnabled(),
                 user.getOnboardingStatus(),
                 interests.stream().map(InterestInfo::from).toList()

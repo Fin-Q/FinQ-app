@@ -13,6 +13,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.LocalDate;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
@@ -112,6 +114,44 @@ class XpGrantServiceTest {
 
             assertThat(result.xpEarned()).isEqualTo(0);
             assertThat(result.totalXp()).isEqualTo(100);
+            verify(xpHistoryRepository, never()).save(any());
+        }
+    }
+
+    @Nested
+    @DisplayName("스트릭 보너스 XP 지급")
+    class GrantStreakBonusXp {
+
+        @Test
+        @DisplayName("스트릭 달성 날짜를 기준으로 보너스 XP를 지급한다")
+        void grantStreakBonusXp_success() {
+            User user = createUser(1L, 70);
+            LocalDate streakDate = LocalDate.of(2026, 9, 8);
+
+            given(xpHistoryRepository.existsByUserIdAndXpTypeAndReferenceId(
+                    1L, XpType.STREAK_BONUS, "streak:2026-09-08")).willReturn(false);
+            given(xpHistoryRepository.save(any())).willAnswer(inv -> inv.getArgument(0));
+
+            XpResultInfo result = xpGrantServiceService.grantStreakBonusXp(user, streakDate, 5);
+
+            assertThat(result.xpEarned()).isEqualTo(5);
+            assertThat(user.getTotalXp()).isEqualTo(75);
+            verify(xpHistoryRepository).save(any());
+        }
+
+        @Test
+        @DisplayName("같은 날짜의 스트릭 보너스는 중복 지급하지 않는다")
+        void grantStreakBonusXp_duplicate() {
+            User user = createUser(1L, 75);
+            LocalDate streakDate = LocalDate.of(2026, 9, 8);
+
+            given(xpHistoryRepository.existsByUserIdAndXpTypeAndReferenceId(
+                    1L, XpType.STREAK_BONUS, "streak:2026-09-08")).willReturn(true);
+
+            XpResultInfo result = xpGrantServiceService.grantStreakBonusXp(user, streakDate, 5);
+
+            assertThat(result.xpEarned()).isZero();
+            assertThat(user.getTotalXp()).isEqualTo(75);
             verify(xpHistoryRepository, never()).save(any());
         }
     }

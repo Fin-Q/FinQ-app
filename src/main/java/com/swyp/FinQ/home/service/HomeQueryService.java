@@ -6,6 +6,7 @@ import com.swyp.FinQ.content.repository.ContentRepository;
 import com.swyp.FinQ.global.exception.BaseException;
 import com.swyp.FinQ.home.dto.res.HomeResponse;
 import com.swyp.FinQ.reward.domain.Level;
+import com.swyp.FinQ.streak.service.StreakQueryService;
 import com.swyp.FinQ.user.domain.User;
 import com.swyp.FinQ.user.exception.UserErrorCode;
 import com.swyp.FinQ.user.repository.UserInterestRepository;
@@ -28,6 +29,7 @@ public class HomeQueryService {
     private final UserRepository userRepository;
     private final UserInterestRepository userInterestRepository;
     private final ContentRepository contentRepository;
+    private final StreakQueryService streakQueryService;
 
     public HomeResponse getHome(Long userId) {
         User user = userRepository.findById(userId)
@@ -41,7 +43,7 @@ public class HomeQueryService {
                 level.getValue(),
                 level.getValue(),
                 user.getTotalXp(),
-                user.getCurrentStreak(),
+                streakQueryService.getCurrentStreak(userId),
                 questions
         );
     }
