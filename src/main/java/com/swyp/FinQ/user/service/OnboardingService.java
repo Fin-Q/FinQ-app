@@ -66,6 +66,9 @@ public class OnboardingService {
         List<UserInterest> interests = createInterests(user, categories);
         userInterestRepository.saveAll(interests);
 
+        // 관심 주제 변경 시 홈 질문 캐시 초기화
+        user.updateHomeQuestionCache(null, null);
+
         return OnboardingResponse.of(user, interests);
     }
 

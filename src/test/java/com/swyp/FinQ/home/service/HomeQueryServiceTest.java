@@ -2,6 +2,7 @@ package com.swyp.FinQ.home.service;
 
 import com.swyp.FinQ.content.repository.ContentRepository;
 import com.swyp.FinQ.home.dto.res.HomeResponse;
+import com.swyp.FinQ.learning.repository.UserContentCompletionRepository;
 import com.swyp.FinQ.streak.service.StreakQueryService;
 import com.swyp.FinQ.user.domain.User;
 import com.swyp.FinQ.user.repository.UserInterestRepository;
@@ -31,6 +32,9 @@ class HomeQueryServiceTest {
 
     @Mock
     private ContentRepository contentRepository;
+
+    @Mock
+    private UserContentCompletionRepository userContentCompletionRepository;
 
     @Mock
     private StreakQueryService streakQueryService;
