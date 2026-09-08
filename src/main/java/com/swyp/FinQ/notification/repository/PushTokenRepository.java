@@ -16,4 +16,6 @@ public interface PushTokenRepository extends JpaRepository<PushToken, Long> {
     boolean existsByFcmTokenHash(String fcmTokenHash);
 
     long deleteByUser_IdAndSessionId(Long userId, String sessionId);
+
+    long deleteByFcmTokenHash(String fcmTokenHash);
 }
