@@ -16,6 +16,9 @@ import com.swyp.FinQ.user.repository.SocialAccountRepository;
 import com.swyp.FinQ.user.repository.UserAgreementRepository;
 import com.swyp.FinQ.user.repository.UserRepository;
 import com.swyp.FinQ.user.service.TokenHashEncoder;
+import com.swyp.FinQ.user.service.AppleAuthorizationCodeVerifier;
+import com.swyp.FinQ.user.service.AppleIdentityTokenVerifier;
+import com.swyp.FinQ.user.service.AppleUserIdentity;
 import com.swyp.FinQ.user.service.KakaoAccessTokenVerifier;
 import com.swyp.FinQ.user.service.KakaoUserIdentity;
 import com.swyp.FinQ.user.service.PasswordResetMailSender;
@@ -47,6 +50,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @Transactional
 class AuthControllerTest extends MySqlContainerSupport {
+
+    private static final String APPLE_RAW_NONCE = "0123456789abcdef0123456789abcdef";
 
     @Autowired
     private MockMvc mockMvc;
@@ -80,6 +85,12 @@ class AuthControllerTest extends MySqlContainerSupport {
 
     @MockitoBean
     private KakaoAccessTokenVerifier kakaoAccessTokenVerifier;
+
+    @MockitoBean
+    private AppleIdentityTokenVerifier appleIdentityTokenVerifier;
+
+    @MockitoBean
+    private AppleAuthorizationCodeVerifier appleAuthorizationCodeVerifier;
 
     @Test
     void getsCurrentAgreementsWithoutAuthentication() throws Exception {
@@ -354,6 +365,125 @@ class AuthControllerTest extends MySqlContainerSupport {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$['paths']['/auth/social/kakao']['post']['summary']")
                         .value("Kakao 소셜 로그인"));
+    }
+
+    @Test
+    void 신규_Apple_회원가입과_로그인에_성공한다() throws Exception {
+        given(appleIdentityTokenVerifier.verify("valid-apple-identity-token", APPLE_RAW_NONCE))
+                .willReturn(new AppleUserIdentity("apple-user-id"));
+
+        String responseBody = mockMvc.perform(post("/auth/social/apple")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(validNewAppleLoginRequest()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("SUCCESS"))
+                .andExpect(jsonPath("$.message").value("Apple 로그인에 성공했습니다."))
+                .andExpect(jsonPath("$.data.userId").isString())
+                .andExpect(jsonPath("$.data.nickname").value("Minter"))
+                .andExpect(jsonPath("$.data.isNewUser").value(true))
+                .andExpect(jsonPath("$.data.tokenType").value("Bearer"))
+                .andExpect(jsonPath("$.data.accessTokenExpiresIn").value(3600))
+                .andExpect(jsonPath("$.data.onboardingStatus").value("INTEREST_SECTION"))
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        Long userId = Long.valueOf(objectMapper.readTree(responseBody)
+                .path("data")
+                .path("userId")
+                .asText());
+        assertThat(socialAccountRepository
+                .findByProviderAndProviderUserId(SocialProvider.APPLE, "apple-user-id"))
+                .get()
+                .extracting(account -> account.getUser().getId())
+                .isEqualTo(userId);
+        assertThat(userAgreementRepository.findAllByUserId(userId)).hasSize(2);
+        assertThat(refreshTokenRepository.findAll()).hasSize(1);
+        verify(appleAuthorizationCodeVerifier).verify(
+                "valid-apple-authorization-code",
+                APPLE_RAW_NONCE,
+                new AppleUserIdentity("apple-user-id")
+        );
+    }
+
+    @Test
+    void 기존_Apple_회원은_닉네임과_약관_없이_로그인한다() throws Exception {
+        given(appleIdentityTokenVerifier.verify("valid-apple-identity-token", APPLE_RAW_NONCE))
+                .willReturn(new AppleUserIdentity("apple-user-id"));
+        mockMvc.perform(post("/auth/social/apple")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(validNewAppleLoginRequest()))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/auth/social/apple")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "identityToken": "valid-apple-identity-token",
+                                  "authorizationCode": "valid-apple-authorization-code",
+                                  "nonce": "%s"
+                                }
+                                """.formatted(APPLE_RAW_NONCE)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("Apple 로그인에 성공했습니다."))
+                .andExpect(jsonPath("$.data.nickname").value("Minter"))
+                .andExpect(jsonPath("$.data.isNewUser").value(false))
+                .andExpect(jsonPath("$.data.accessToken").isNotEmpty())
+                .andExpect(jsonPath("$.data.refreshToken").isNotEmpty());
+
+        assertThat(userRepository.count()).isOne();
+        assertThat(socialAccountRepository.count()).isOne();
+        assertThat(userAgreementRepository.count()).isEqualTo(2);
+        assertThat(refreshTokenRepository.count()).isEqualTo(2);
+    }
+
+    @Test
+    void Apple_필수_인증값이_누락되면_요청을_거부한다() throws Exception {
+        mockMvc.perform(post("/auth/social/apple")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "identityToken": "valid-apple-identity-token",
+                                  "authorizationCode": "valid-apple-authorization-code"
+                                }
+                                """))
+                .andExpect(status().isBadRequest());
+
+        verify(appleIdentityTokenVerifier, never()).verify(
+                org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.any()
+        );
+    }
+
+    @Test
+    void Apple_raw_nonce가_32자가_아니면_요청을_거부한다() throws Exception {
+        for (String invalidNonce : List.of("a".repeat(31), "a".repeat(33))) {
+            mockMvc.perform(post("/auth/social/apple")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("""
+                                    {
+                                      "identityToken": "valid-apple-identity-token",
+                                      "authorizationCode": "valid-apple-authorization-code",
+                                      "nonce": "%s"
+                                    }
+                                    """.formatted(invalidNonce)))
+                    .andExpect(status().isBadRequest());
+        }
+
+        verify(appleIdentityTokenVerifier, never()).verify(
+                org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.any()
+        );
+    }
+
+    @Test
+    void Apple_로그인_API를_OpenAPI에_문서화한다() throws Exception {
+        mockMvc.perform(get("/api-docs"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$['paths']['/auth/social/apple']['post']['summary']")
+                        .value("Apple 소셜 로그인"))
+                .andExpect(jsonPath("$['components']['schemas']['AppleLoginRequest']['required'].length()")
+                        .value(3));
     }
 
     @Test
@@ -667,6 +797,29 @@ class AuthControllerTest extends MySqlContainerSupport {
                   ]
                 }
                 """;
+    }
+
+    private String validNewAppleLoginRequest() {
+        return """
+                {
+                  "identityToken": "valid-apple-identity-token",
+                  "authorizationCode": "valid-apple-authorization-code",
+                  "nonce": "%s",
+                  "nickname": "Minter",
+                  "agreements": [
+                    {
+                      "agreementCode": "TERMS_OF_SERVICE",
+                      "version": "1.0",
+                      "agreed": true
+                    },
+                    {
+                      "agreementCode": "PRIVACY_POLICY",
+                      "version": "1.0",
+                      "agreed": true
+                    }
+                  ]
+                }
+                """.formatted(APPLE_RAW_NONCE);
     }
 
     private record RefreshTokenBody(String refreshToken) {

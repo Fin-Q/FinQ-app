@@ -62,6 +62,26 @@ public enum AuthErrorCode implements ErrorCode {
             HttpStatus.SERVICE_UNAVAILABLE,
             "AUTH_KAKAO_AUTH_SERVER_UNAVAILABLE",
             "Kakao 인증 서버를 일시적으로 사용할 수 없습니다."
+    ),
+    INVALID_APPLE_IDENTITY_TOKEN(
+            HttpStatus.UNAUTHORIZED,
+            "AUTH_INVALID_APPLE_IDENTITY_TOKEN",
+            "유효하지 않은 Apple Identity Token입니다."
+    ),
+    INVALID_APPLE_AUTHORIZATION_CODE(
+            HttpStatus.UNAUTHORIZED,
+            "AUTH_INVALID_APPLE_AUTHORIZATION_CODE",
+            "유효하지 않은 Apple Authorization Code입니다."
+    ),
+    INVALID_APPLE_SIGN_UP_INFO(
+            HttpStatus.BAD_REQUEST,
+            "AUTH_INVALID_APPLE_SIGN_UP_INFO",
+            "신규 Apple 사용자의 닉네임은 필수이며 50자 이하여야 합니다."
+    ),
+    APPLE_AUTH_SERVER_UNAVAILABLE(
+            HttpStatus.SERVICE_UNAVAILABLE,
+            "AUTH_APPLE_AUTH_SERVER_UNAVAILABLE",
+            "Apple 인증 서버를 일시적으로 사용할 수 없습니다."
     );
 
     private final HttpStatus status;

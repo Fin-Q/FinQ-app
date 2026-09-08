@@ -43,3 +43,13 @@ mail:
 kakao:
   app-id: ${KAKAO_APP_ID:}
   api-base-url: https://kapi.kakao.com
+
+apple:
+  client-id: ${APPLE_CLIENT_ID:}
+  team-id: ${APPLE_TEAM_ID:}
+  key-id: ${APPLE_KEY_ID:}
+  private-key-base64: ${APPLE_PRIVATE_KEY_BASE64:}
+  issuer: https://appleid.apple.com
+  jwk-set-uri: https://appleid.apple.com/auth/keys
+  token-uri: https://appleid.apple.com/auth/token
+  client-secret-expiration: 5m
