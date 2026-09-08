@@ -12,6 +12,7 @@ import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtValidators;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.jose.jws.SignatureAlgorithm;
+import org.springframework.web.client.RestClient;
 
 @Configuration
 @EnableConfigurationProperties(AppleProperties.class)
@@ -46,5 +47,10 @@ public class AppleConfig {
                 .build();
         decoder.setJwtValidator(validator);
         return decoder;
+    }
+
+    @Bean("appleTokenRestClient")
+    public RestClient appleTokenRestClient() {
+        return RestClient.builder().build();
     }
 }

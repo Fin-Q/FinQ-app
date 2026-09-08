@@ -25,6 +25,7 @@ import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
+import java.time.Duration;
 import java.time.Instant;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -49,8 +50,13 @@ class AppleIdentityTokenClientTest {
         nonceHasher = new AppleNonceHasher();
         properties = new AppleProperties(
                 CLIENT_ID,
+                "apple-team-id",
+                "apple-key-id",
+                "unused-private-key",
                 URI.create(ISSUER),
-                URI.create("https://appleid.apple.com/auth/keys")
+                URI.create("https://appleid.apple.com/auth/keys"),
+                URI.create("https://appleid.apple.com/auth/token"),
+                Duration.ofMinutes(5)
         );
         signingKey = generateRsaKey("apple-test-key");
         client = new AppleIdentityTokenClient(
