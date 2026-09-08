@@ -64,4 +64,67 @@ public interface ContentRepository extends JpaRepository<Content, Long> {
             @Param("categoryIds") List<Long> categoryIds,
             Pageable pageable
     );
+
+    @Query("""
+            SELECT c FROM Content c
+            JOIN FETCH c.category cat
+            WHERE cat.id = :categoryId
+              AND c.isPremium = false
+              AND c.id NOT IN (
+                SELECT ucc.content.id FROM UserContentCompletion ucc WHERE ucc.user.id = :userId
+              )
+              AND c.id NOT IN :excludeIds
+            ORDER BY c.displayOrder
+            """)
+    List<Content> findIncompleteContentsByCategory(
+            @Param("userId") Long userId,
+            @Param("categoryId") Long categoryId,
+            @Param("excludeIds") List<Long> excludeIds,
+            Pageable pageable
+    );
+
+    @Query("""
+            SELECT c FROM Content c
+            JOIN FETCH c.category cat
+            WHERE cat.id = :categoryId
+              AND c.isPremium = false
+              AND c.id NOT IN (
+                SELECT ucc.content.id FROM UserContentCompletion ucc WHERE ucc.user.id = :userId
+              )
+            ORDER BY c.displayOrder
+            """)
+    List<Content> findIncompleteContentsByCategoryNoExclude(
+            @Param("userId") Long userId,
+            @Param("categoryId") Long categoryId,
+            Pageable pageable
+    );
+
+    @Query("""
+            SELECT c FROM Content c
+            JOIN FETCH c.category cat
+            WHERE cat.id = :categoryId
+              AND c.isPremium = false
+              AND c.id NOT IN :excludeIds
+            ORDER BY c.displayOrder
+            """)
+    List<Content> findContentsByCategory(
+            @Param("categoryId") Long categoryId,
+            @Param("excludeIds") List<Long> excludeIds,
+            Pageable pageable
+    );
+
+    @Query("""
+            SELECT c FROM Content c
+            JOIN FETCH c.category cat
+            WHERE cat.id = :categoryId
+              AND c.isPremium = false
+            ORDER BY c.displayOrder
+            """)
+    List<Content> findContentsByCategoryNoExclude(
+            @Param("categoryId") Long categoryId,
+            Pageable pageable
+    );
+
+    @Query("SELECT c FROM Content c JOIN FETCH c.category WHERE c.id IN :ids")
+    List<Content> findAllByIdWithCategory(@Param("ids") List<Long> ids);
 }

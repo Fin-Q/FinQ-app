@@ -70,6 +70,12 @@ public class User extends BaseTimeEntity {
     @Column(name = "last_login_at")
     private LocalDateTime lastLoginAt;
 
+    @Column(name = "home_question_date")
+    private LocalDate homeQuestionDate;
+
+    @Column(name = "home_question_ids", length = 100)
+    private String homeQuestionIds;
+
     public void updateLastLoginAt(LocalDateTime loginAt) {
         this.lastLoginAt = loginAt;
     }
@@ -94,6 +100,11 @@ public class User extends BaseTimeEntity {
 
     public void updateNotificationEnabled(boolean notificationEnabled) {
         this.notificationEnabled = notificationEnabled;
+    }
+  
+    public void updateHomeQuestionCache(LocalDate date, String questionIds) {
+        this.homeQuestionDate = date;
+        this.homeQuestionIds = questionIds;
     }
 
     public void updateProfile(String nickname, ProfileImageCode profileImageCode) {
