@@ -53,3 +53,7 @@ apple:
   jwk-set-uri: https://appleid.apple.com/auth/keys
   token-uri: https://appleid.apple.com/auth/token
   client-secret-expiration: 5m
+
+firebase:
+  enabled: ${FIREBASE_ENABLED:false}
+  credentials-base64: ${FIREBASE_CREDENTIALS_BASE64:}
