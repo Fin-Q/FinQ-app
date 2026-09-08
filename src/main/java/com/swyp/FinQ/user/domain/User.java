@@ -98,6 +98,10 @@ public class User extends BaseTimeEntity {
         this.lastStreakDate = lastStreakDate;
     }
 
+    public void updateNotificationEnabled(boolean notificationEnabled) {
+        this.notificationEnabled = notificationEnabled;
+    }
+  
     public void updateHomeQuestionCache(LocalDate date, String questionIds) {
         this.homeQuestionDate = date;
         this.homeQuestionIds = questionIds;

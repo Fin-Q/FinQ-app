@@ -3,6 +3,7 @@ package com.swyp.FinQ.user.controller;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.swyp.FinQ.support.MySqlContainerSupport;
+import com.swyp.FinQ.notification.repository.PushTokenRepository;
 import com.swyp.FinQ.user.domain.OnboardingStatus;
 import com.swyp.FinQ.user.domain.ProfileImageCode;
 import com.swyp.FinQ.user.domain.RefreshToken;
@@ -67,6 +68,9 @@ class AuthControllerTest extends MySqlContainerSupport {
 
     @Autowired
     private RefreshTokenRepository refreshTokenRepository;
+
+    @Autowired
+    private PushTokenRepository pushTokenRepository;
 
     @Autowired
     private SocialAccountRepository socialAccountRepository;
@@ -553,6 +557,7 @@ class AuthControllerTest extends MySqlContainerSupport {
         JsonNode loginData = login();
         String accessToken = loginData.path("accessToken").asText();
         String refreshToken = loginData.path("refreshToken").asText();
+        registerPushToken(accessToken, "device-1", "fcm-token-1");
 
         mockMvc.perform(post("/auth/logout")
                         .header("Authorization", "Bearer " + accessToken))
@@ -562,6 +567,7 @@ class AuthControllerTest extends MySqlContainerSupport {
                 .andExpect(jsonPath("$.data").doesNotExist());
 
         assertThat(refreshTokenRepository.findByTokenHash(tokenHashEncoder.encode(refreshToken))).isEmpty();
+        assertThat(pushTokenRepository.findByDeviceId("device-1")).isEmpty();
 
         mockMvc.perform(post("/auth/token/refresh")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -575,6 +581,8 @@ class AuthControllerTest extends MySqlContainerSupport {
         saveUser("user@example.com", "Password123!");
         JsonNode firstSession = login();
         JsonNode secondSession = login();
+        registerPushToken(firstSession.path("accessToken").asText(), "device-1", "fcm-token-1");
+        registerPushToken(secondSession.path("accessToken").asText(), "device-2", "fcm-token-2");
 
         mockMvc.perform(post("/auth/logout")
                         .header("Authorization", "Bearer " + firstSession.path("accessToken").asText()))
@@ -586,6 +594,8 @@ class AuthControllerTest extends MySqlContainerSupport {
         assertThat(refreshTokenRepository.findByTokenHash(
                 tokenHashEncoder.encode(secondSession.path("refreshToken").asText())
         )).isPresent();
+        assertThat(pushTokenRepository.findByDeviceId("device-1")).isEmpty();
+        assertThat(pushTokenRepository.findByDeviceId("device-2")).isPresent();
     }
 
     @Test
@@ -823,5 +833,18 @@ class AuthControllerTest extends MySqlContainerSupport {
     }
 
     private record RefreshTokenBody(String refreshToken) {
+    }
+
+    private void registerPushToken(String accessToken, String deviceId, String fcmToken) throws Exception {
+        mockMvc.perform(post("/users/me/push-tokens/{deviceId}", deviceId)
+                        .header("Authorization", "Bearer " + accessToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "fcmToken": "%s",
+                                  "platform": "IOS"
+                                }
+                                """.formatted(fcmToken)))
+                .andExpect(status().isOk());
     }
 }

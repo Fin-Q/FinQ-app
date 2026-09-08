@@ -23,7 +23,8 @@ class UserCascadeDeleteMigrationTest extends MySqlContainerSupport {
             "fk_user_content_completion_user", "CASCADE",
             "fk_user_category_completion_user", "CASCADE",
             "fk_xp_history_user", "CASCADE",
-            "fk_streak_log_user", "CASCADE"
+            "fk_streak_log_user", "CASCADE",
+            "fk_push_token_user", "CASCADE"
     );
 
     @Autowired
