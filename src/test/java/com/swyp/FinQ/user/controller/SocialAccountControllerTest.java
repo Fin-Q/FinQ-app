@@ -9,6 +9,9 @@ import com.swyp.FinQ.user.exception.AuthErrorCode;
 import com.swyp.FinQ.user.repository.*;
 import com.swyp.FinQ.user.service.KakaoAccessTokenVerifier;
 import com.swyp.FinQ.user.service.KakaoUserIdentity;
+import com.swyp.FinQ.user.service.AppleIdentityTokenVerifier;
+import com.swyp.FinQ.user.service.AppleAuthorizationCodeVerifier;
+import com.swyp.FinQ.user.service.AppleUserIdentity;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -28,6 +31,8 @@ import java.util.concurrent.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.doThrow;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -42,9 +47,140 @@ class SocialAccountControllerTest extends MySqlContainerSupport {
     @Autowired JwtTokenProvider tokens;
     @Autowired PlatformTransactionManager transactions;
     @MockitoBean KakaoAccessTokenVerifier verifier;
+    @MockitoBean AppleIdentityTokenVerifier appleIdentityVerifier;
+    @MockitoBean AppleAuthorizationCodeVerifier appleCodeVerifier;
     private final List<Long> createdUsers = new ArrayList<>();
     private static final String PATH = "/users/me/social-accounts/kakao";
     private static final String BODY = "{\"kakaoAccessToken\":\"valid-token\"}";
+    private static final String APPLE_PATH = "/users/me/social-accounts/apple";
+    private static final String NONCE = "0123456789abcdef0123456789abcdef";
+
+    @Test
+    void linksAppleThenLogsInToSameExistingUser() throws Exception {
+        User user = user();
+        AppleUserIdentity identity = new AppleUserIdentity(UUID.randomUUID().toString());
+        given(appleIdentityVerifier.verify("identity-token", NONCE)).willReturn(identity);
+        String first = mvc.perform(post(APPLE_PATH).header("Authorization", bearer(user))
+                        .contentType(MediaType.APPLICATION_JSON).content(appleBody("code-1", NONCE)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("Apple 계정 연동에 성공했습니다."))
+                .andExpect(jsonPath("$.data.socialProvider").value("APPLE"))
+                .andExpect(jsonPath("$.data.linkedAt").value(org.hamcrest.Matchers.endsWith("+09:00")))
+                .andExpect(jsonPath("$.data.length()").value(2))
+                .andReturn().getResponse().getContentAsString();
+        verify(appleCodeVerifier).verify("code-1", NONCE, identity);
+        String linkedAt = json.readTree(first).path("data").path("linkedAt").asText();
+        mvc.perform(post(APPLE_PATH).header("Authorization", bearer(user))
+                        .contentType(MediaType.APPLICATION_JSON).content(appleBody("code-2", NONCE)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.data.linkedAt").value(linkedAt));
+        mvc.perform(post("/auth/social/apple").contentType(MediaType.APPLICATION_JSON).content(appleBody("code-3", NONCE)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.userId").value(user.getId().toString()))
+                .andExpect(jsonPath("$.data.isNewUser").value(false));
+        User after = users.findById(user.getId()).orElseThrow();
+        assertThat(after.getEmail()).isEqualTo(user.getEmail());
+        assertThat(after.getPassword()).isEqualTo(user.getPassword());
+        assertThat(after.getNickname()).isEqualTo(user.getNickname());
+        assertThat(after.getTotalXp()).isEqualTo(80);
+    }
+
+    @Test
+    void rejectsInvalidAppleIdentityBeforeCodeVerification() throws Exception {
+        User user = user();
+        given(appleIdentityVerifier.verify("identity-token", NONCE))
+                .willThrow(BaseException.of(AuthErrorCode.INVALID_APPLE_IDENTITY_TOKEN));
+        mvc.perform(post(APPLE_PATH).header("Authorization", bearer(user))
+                        .contentType(MediaType.APPLICATION_JSON).content(appleBody("code", NONCE)))
+                .andExpect(status().isUnauthorized());
+        verifyNoInteractions(appleCodeVerifier);
+        assertThat(accounts.existsByUserIdAndProvider(user.getId(), SocialProvider.APPLE)).isFalse();
+    }
+
+    @Test
+    void rejectsInvalidAppleAuthorizationCodeWithoutLinking() throws Exception {
+        User user = user();
+        AppleUserIdentity identity = new AppleUserIdentity(UUID.randomUUID().toString());
+        given(appleIdentityVerifier.verify("identity-token", NONCE)).willReturn(identity);
+        doThrow(BaseException.of(AuthErrorCode.INVALID_APPLE_AUTHORIZATION_CODE))
+                .when(appleCodeVerifier).verify("code", NONCE, identity);
+        mvc.perform(post(APPLE_PATH).header("Authorization", bearer(user))
+                        .contentType(MediaType.APPLICATION_JSON).content(appleBody("code", NONCE)))
+                .andExpect(status().isUnauthorized());
+        assertThat(accounts.existsByUserIdAndProvider(user.getId(), SocialProvider.APPLE)).isFalse();
+    }
+
+    @Test
+    void rejectsAlreadyUsedAppleCodeEvenWhenAccountIsLinked() throws Exception {
+        User user = user();
+        AppleUserIdentity identity = new AppleUserIdentity(UUID.randomUUID().toString());
+        given(appleIdentityVerifier.verify("identity-token", NONCE)).willReturn(identity);
+        accounts.saveAndFlush(SocialAccount.builder().user(user).provider(SocialProvider.APPLE)
+                .providerUserId(identity.providerUserId()).build());
+        doThrow(BaseException.of(AuthErrorCode.INVALID_APPLE_AUTHORIZATION_CODE))
+                .when(appleCodeVerifier).verify("used-code", NONCE, identity);
+        mvc.perform(post(APPLE_PATH).header("Authorization", bearer(user))
+                        .contentType(MediaType.APPLICATION_JSON).content(appleBody("used-code", NONCE)))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"", "short", "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"})
+    void rejectsInvalidRawNonce(String nonce) throws Exception {
+        mvc.perform(post(APPLE_PATH).header("Authorization", bearer(user()))
+                        .contentType(MediaType.APPLICATION_JSON).content(appleBody("code", nonce)))
+                .andExpect(status().isBadRequest());
+        verifyNoInteractions(appleIdentityVerifier, appleCodeVerifier);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"identityToken", "authorizationCode", "nonce"})
+    void requiresEveryAppleCredential(String omitted) throws Exception {
+        Map<String, String> body = new HashMap<>(Map.of("identityToken", "identity-token", "authorizationCode", "code", "nonce", NONCE));
+        body.remove(omitted);
+        mvc.perform(post(APPLE_PATH).header("Authorization", bearer(user()))
+                        .contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsString(body)))
+                .andExpect(status().isBadRequest());
+        verifyNoInteractions(appleIdentityVerifier, appleCodeVerifier);
+    }
+
+    @Test
+    void requiresFinQAuthenticationForAppleLink() throws Exception {
+        mvc.perform(post(APPLE_PATH).contentType(MediaType.APPLICATION_JSON).content(appleBody("code", NONCE)))
+                .andExpect(status().isUnauthorized());
+        verifyNoInteractions(appleIdentityVerifier, appleCodeVerifier);
+    }
+
+    @Test
+    void rejectsAppleAccountBelongingToAnotherUser() throws Exception {
+        User owner = user();
+        User caller = user();
+        AppleUserIdentity identity = new AppleUserIdentity(UUID.randomUUID().toString());
+        accounts.saveAndFlush(SocialAccount.builder().user(owner).provider(SocialProvider.APPLE)
+                .providerUserId(identity.providerUserId()).build());
+        given(appleIdentityVerifier.verify("identity-token", NONCE)).willReturn(identity);
+        mvc.perform(post(APPLE_PATH).header("Authorization", bearer(caller))
+                        .contentType(MediaType.APPLICATION_JSON).content(appleBody("code", NONCE)))
+                .andExpect(status().isConflict());
+        assertThat(accounts.findByProviderAndProviderUserId(SocialProvider.APPLE, identity.providerUserId())
+                .orElseThrow().getUser().getId()).isEqualTo(owner.getId());
+    }
+
+    @Test
+    void refusesReplacingExistingAppleAccount() throws Exception {
+        User user = user();
+        accounts.saveAndFlush(SocialAccount.builder().user(user).provider(SocialProvider.APPLE)
+                .providerUserId(UUID.randomUUID().toString()).build());
+        AppleUserIdentity identity = new AppleUserIdentity(UUID.randomUUID().toString());
+        given(appleIdentityVerifier.verify("identity-token", NONCE)).willReturn(identity);
+        mvc.perform(post(APPLE_PATH).header("Authorization", bearer(user))
+                        .contentType(MediaType.APPLICATION_JSON).content(appleBody("code", NONCE)))
+                .andExpect(status().isConflict());
+        assertThat(accounts.findByProviderAndProviderUserId(SocialProvider.APPLE, identity.providerUserId())).isEmpty();
+    }
+
+    private String appleBody(String code, String nonce) throws Exception {
+        return json.writeValueAsString(Map.of("identityToken", "identity-token", "authorizationCode", code, "nonce", nonce));
+    }
 
     @AfterEach
     void cleanup() {
