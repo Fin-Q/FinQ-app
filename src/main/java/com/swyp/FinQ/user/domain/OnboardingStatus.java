@@ -1,7 +1,7 @@
 package com.swyp.FinQ.user.domain;
 
 public enum OnboardingStatus {
-    INTEREST_SECTION,
+    INTEREST_SELECTION,
     CHARACTER_GUIDE,
     COMPLETED
 }

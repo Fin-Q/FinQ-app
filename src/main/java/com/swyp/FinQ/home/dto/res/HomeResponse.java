@@ -23,7 +23,7 @@ public record HomeResponse(
     @Schema(description = "추천 질문 카드")
     public record QuestionCard(
             @Schema(description = "콘텐츠 ID", example = "1")
-            String contentId,
+            Long contentId,
             @Schema(description = "카테고리 코드", example = "SAL")
             String categoryCode,
             @Schema(description = "카테고리명", example = "월급 관리")

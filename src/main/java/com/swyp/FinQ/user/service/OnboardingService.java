@@ -56,7 +56,7 @@ public class OnboardingService {
     @Transactional
     public OnboardingResponse updateInterests(Long userId, InterestSelectionRequest request) {
         User user = getUser(userId);
-        if (user.getOnboardingStatus() == OnboardingStatus.INTEREST_SECTION
+        if (user.getOnboardingStatus() == OnboardingStatus.INTEREST_SELECTION
                 || !userInterestRepository.existsByUserId(userId)) {
             throw BaseException.of(UserErrorCode.INTEREST_NOT_SELECTED);
         }
@@ -75,7 +75,7 @@ public class OnboardingService {
     @Transactional
     public OnboardingResponse completeOnboarding(Long userId) {
         User user = getUser(userId);
-        if (user.getOnboardingStatus() == OnboardingStatus.INTEREST_SECTION) {
+        if (user.getOnboardingStatus() == OnboardingStatus.INTEREST_SELECTION) {
             throw BaseException.of(UserErrorCode.ONBOARDING_INTEREST_REQUIRED);
         }
         if (user.getOnboardingStatus() == OnboardingStatus.CHARACTER_GUIDE) {
@@ -91,7 +91,7 @@ public class OnboardingService {
     }
 
     private void validateInitialSelection(User user, List<CategoryCode> categoryCodes) {
-        if (user.getOnboardingStatus() != OnboardingStatus.INTEREST_SECTION
+        if (user.getOnboardingStatus() != OnboardingStatus.INTEREST_SELECTION
                 || userInterestRepository.existsByUserId(user.getId())) {
             throw BaseException.of(UserErrorCode.INTEREST_ALREADY_SELECTED);
         }

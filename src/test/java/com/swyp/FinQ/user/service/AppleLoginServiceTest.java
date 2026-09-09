@@ -115,7 +115,7 @@ class AppleLoginServiceTest {
         assertThat(result.userId()).isEqualTo("2");
         assertThat(result.isNewUser()).isTrue();
         assertThat(result.refreshToken()).isEqualTo("finq-refresh-token");
-        assertThat(result.onboardingStatus()).isEqualTo(OnboardingStatus.INTEREST_SECTION);
+        assertThat(result.onboardingStatus()).isEqualTo(OnboardingStatus.INTEREST_SELECTION);
         assertThat(savedUser.getLastLoginAt()).isEqualTo("2026-09-08T12:00:00");
         verify(agreementRegistrationService).validateRequired(agreements);
         verify(agreementRegistrationService).save(savedUser, agreements, savedUser.getLastLoginAt());
@@ -203,7 +203,7 @@ class AppleLoginServiceTest {
                 .id(id)
                 .nickname(nickname)
                 .profileImageCode(ProfileImageCode.PROFILE_01)
-                .onboardingStatus(OnboardingStatus.INTEREST_SECTION)
+                .onboardingStatus(OnboardingStatus.INTEREST_SELECTION)
                 .build();
     }
 

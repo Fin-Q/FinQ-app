@@ -44,7 +44,8 @@ public class TokenRefreshService {
                 tokens.accessToken(),
                 tokens.refreshToken(),
                 "Bearer",
-                tokens.accessTokenExpiresIn()
+                tokens.accessTokenExpiresIn(),
+                tokens.refreshTokenExpiresIn()
         );
     }
 
