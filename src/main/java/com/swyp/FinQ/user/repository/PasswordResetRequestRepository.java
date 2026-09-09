@@ -13,6 +13,10 @@ public interface PasswordResetRequestRepository extends JpaRepository<PasswordRe
 
     Optional<PasswordResetRequest> findByVerificationId(String verificationId);
 
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select r from PasswordResetRequest r where r.verificationId = :verificationId")
+    Optional<PasswordResetRequest> findForUpdateByVerificationId(@Param("verificationId") String verificationId);
+
     Optional<PasswordResetRequest> findByPasswordResetTokenHash(String passwordResetTokenHash);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)

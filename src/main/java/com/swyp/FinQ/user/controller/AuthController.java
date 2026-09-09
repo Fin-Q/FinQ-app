@@ -8,6 +8,9 @@ import com.swyp.FinQ.user.dto.req.KakaoLoginRequest;
 import com.swyp.FinQ.user.dto.req.PasswordResetEmailRequest;
 import com.swyp.FinQ.user.dto.req.PasswordResetConfirmRequest;
 import com.swyp.FinQ.user.service.PasswordResetService;
+import com.swyp.FinQ.user.service.VerificationCodeConfirmService;
+import com.swyp.FinQ.user.dto.req.VerificationCodeConfirmRequest;
+import com.swyp.FinQ.user.dto.res.VerificationCodeConfirmResponse;
 import com.swyp.FinQ.user.dto.req.SignUpRequest;
 import com.swyp.FinQ.user.dto.req.TokenRefreshRequest;
 import com.swyp.FinQ.user.dto.res.AgreementListResponse;
@@ -54,6 +57,7 @@ public class AuthController {
     private final LogoutService logoutService;
     private final PasswordResetRequestService passwordResetRequestService;
     private final PasswordResetService passwordResetService;
+    private final VerificationCodeConfirmService verificationCodeConfirmService;
 
     @Operation(summary = "현재 적용 중인 필수 약관 목록 조회")
     @GetMapping("/agreements")
@@ -147,5 +151,14 @@ public class AuthController {
     ) {
         passwordResetService.reset(request);
         return SuccessResponse.of(AuthSuccessCode.PASSWORD_RESET, null);
+    }
+
+    @Operation(summary = "비밀번호 재설정 인증번호 확인")
+    @PostMapping("/password-reset/verifications/confirm")
+    public ResponseEntity<SuccessResponse<VerificationCodeConfirmResponse>> confirmVerificationCode(
+            @Valid @RequestBody VerificationCodeConfirmRequest request
+    ) {
+        return SuccessResponse.of(AuthSuccessCode.VERIFICATION_CODE_CONFIRMED,
+                verificationCodeConfirmService.confirm(request));
     }
 }

@@ -16,7 +16,8 @@ public enum AuthSuccessCode implements SuccessCode {
     TOKEN_REFRESH(HttpStatus.OK, "토큰 재발급에 성공했습니다."),
     LOGOUT(HttpStatus.OK, "로그아웃에 성공했습니다."),
     PASSWORD_RESET_CODE_SENT(HttpStatus.OK, "인증번호를 전송했습니다."),
-    PASSWORD_RESET(HttpStatus.OK, "비밀번호 재설정에 성공했습니다.");
+    PASSWORD_RESET(HttpStatus.OK, "비밀번호 재설정에 성공했습니다."),
+    VERIFICATION_CODE_CONFIRMED(HttpStatus.OK, "인증번호 확인에 성공했습니다.");
 
     private final HttpStatus status;
     private final String message;

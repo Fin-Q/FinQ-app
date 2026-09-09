@@ -32,6 +32,8 @@ jwt:
   refresh-token-expiration: 14d
 
 password-reset:
+  token-expiration: 10m
+  maximum-failed-attempts: ${PASSWORD_RESET_MAXIMUM_FAILED_ATTEMPTS:5}
   code-expiration: 5m
   resend-cooldown: ${PASSWORD_RESET_RESEND_COOLDOWN:1m}
 
