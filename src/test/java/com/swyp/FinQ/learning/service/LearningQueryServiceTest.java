@@ -4,6 +4,8 @@ import com.swyp.FinQ.content.domain.Category;
 import com.swyp.FinQ.content.repository.CategoryRepository;
 import com.swyp.FinQ.global.exception.BaseException;
 import com.swyp.FinQ.learning.domain.AdvancedQuiz;
+import com.swyp.FinQ.learning.domain.AdvancedQuizInfo;
+import com.swyp.FinQ.learning.repository.AdvancedQuizInfoRepository;
 import com.swyp.FinQ.learning.dto.res.QuizListResponse;
 import com.swyp.FinQ.learning.repository.AdvancedQuizRepository;
 import com.swyp.FinQ.reward.domain.XpConstants;
@@ -33,6 +35,19 @@ class LearningQueryServiceTest {
 
     @Mock
     private AdvancedQuizRepository advancedQuizRepository;
+
+    @Mock
+    private AdvancedQuizInfoRepository advancedQuizInfoRepository;
+
+    private void givenQuizInfo() {
+        given(advancedQuizInfoRepository.findByCategoryId(1L)).willReturn(Optional.of(
+                AdvancedQuizInfo.builder()
+                        .introTitle("안내 제목")
+                        .introDescription("안내 설명")
+                        .completionTitle("완료 제목")
+                        .completionDescription("완료 설명")
+                        .build()));
+    }
 
     private Category createCategory(Long id, String name) {
         return Category.builder()
@@ -65,6 +80,7 @@ class LearningQueryServiceTest {
         @Test
         @DisplayName("카테고리의 퀴즈 목록을 순서대로 반환한다")
         void returns_quiz_list_in_order() {
+            givenQuizInfo();
             Category category = createCategory(1L, "금융 기초");
             List<AdvancedQuiz> quizzes = List.of(
                     createQuiz(1L, category, 1),
@@ -80,12 +96,17 @@ class LearningQueryServiceTest {
             assertThat(response.categoryId()).isEqualTo(1L);
             assertThat(response.categoryName()).isEqualTo("금융 기초");
             assertThat(response.rewardXp()).isEqualTo(XpConstants.QUIZ_COMPLETE_XP);
+            assertThat(response.introTitle()).isEqualTo("안내 제목");
+            assertThat(response.introDescription()).isEqualTo("안내 설명");
+            assertThat(response.completionTitle()).isEqualTo("완료 제목");
+            assertThat(response.completionDescription()).isEqualTo("완료 설명");
             assertThat(response.questions()).hasSize(3);
         }
 
         @Test
         @DisplayName("각 퀴즈 문제에 4개의 선택지가 포함된다")
         void each_question_has_four_options() {
+            givenQuizInfo();
             Category category = createCategory(1L, "금융 기초");
             List<AdvancedQuiz> quizzes = List.of(createQuiz(1L, category, 1));
 
@@ -107,6 +128,7 @@ class LearningQueryServiceTest {
         @Test
         @DisplayName("퀴즈가 없는 카테고리이면 빈 목록을 반환한다")
         void empty_quiz_list() {
+            givenQuizInfo();
             Category category = createCategory(1L, "금융 기초");
 
             given(categoryRepository.findById(1L)).willReturn(Optional.of(category));

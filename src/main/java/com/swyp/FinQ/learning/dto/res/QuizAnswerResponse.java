@@ -16,7 +16,8 @@ public record QuizAnswerResponse(
         String correctOptionId,
         @Schema(description = "마지막 문제 여부", example = "false")
         boolean isLastQuestion,
-        @Schema(description = "카테고리 최초 완료 시 결과 (미완료 또는 이미 완료된 경우 null)")
+        @JsonInclude(JsonInclude.Include.ALWAYS)
+        @Schema(description = "카테고리 최초 완료 시 결과 (미완료 또는 이미 완료된 경우 null)", nullable = true)
         CategoryResult categoryResult
 ) {
 
