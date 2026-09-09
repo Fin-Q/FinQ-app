@@ -9,7 +9,8 @@ import java.util.List;
 public record CategoryDetailResponse(
         @Schema(description = "카테고리 ID", example = "1")
         Long categoryId,
-        @Schema(description = "카테고리 코드", example = "SAL")
+        @Schema(description = "카테고리 코드. SAL=월급관리 / INV=투자기초 / STK=주식·ETF / TAX=세금·절세",
+                example = "SAL", allowableValues = {"SAL", "INV", "STK", "TAX"})
         CategoryCode categoryCode,
         @Schema(description = "카테고리명", example = "월급관리·저축")
         String categoryName,
@@ -17,11 +18,12 @@ public record CategoryDetailResponse(
         int completedContentCount,
         @Schema(description = "전체 콘텐츠 수", example = "5")
         int totalContentCount,
-        @Schema(description = "진행률 (%)", example = "40")
+        @Schema(description = "진행률 (%, 0~100 정수)", example = "40")
         int progressRate,
-        @Schema(description = "카테고리 완료 여부 (심화퀴즈 전부 정답 시 true)", example = "false")
+        @Schema(description = "카테고리 완료 여부. 모든 콘텐츠 완료 + 심화퀴즈 3문제 전부 정답 시 true", example = "false")
         boolean categoryCompleted,
-        @Schema(description = "심화퀴즈 상태", example = "INCOMPLETE", allowableValues = {"INCOMPLETE", "COMPLETED"})
+        @Schema(description = "심화퀴즈 상태. 심화퀴즈 3문제 전부 정답 시 COMPLETED",
+                example = "INCOMPLETE", allowableValues = {"INCOMPLETE", "COMPLETED"})
         String advancedQuizStatus,
         @Schema(description = "콘텐츠 목록")
         List<ContentSummary> contents,
