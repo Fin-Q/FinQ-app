@@ -1,6 +1,7 @@
 package com.swyp.FinQ.learning.controller;
 
 import com.swyp.FinQ.global.success.SuccessResponse;
+import com.swyp.FinQ.global.config.ApiDocumentation;
 import com.swyp.FinQ.learning.dto.req.AnswerRequest;
 import com.swyp.FinQ.learning.dto.res.ContentAnswerResponse;
 import com.swyp.FinQ.learning.dto.res.QuizAnswerResponse;

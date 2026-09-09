@@ -282,7 +282,7 @@ class AuthControllerTest extends MySqlContainerSupport {
                         .content(validNewKakaoLoginRequest()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("SUCCESS"))
-                .andExpect(jsonPath("$.message").value("로그인에 성공했습니다."))
+                .andExpect(jsonPath("$.message").value("Kakao 로그인에 성공했습니다."))
                 .andExpect(jsonPath("$.data.userId").isString())
                 .andExpect(jsonPath("$.data.nickname").value("Minter"))
                 .andExpect(jsonPath("$.data.isNewUser").value(true))
@@ -324,6 +324,7 @@ class AuthControllerTest extends MySqlContainerSupport {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.nickname").value("Minter"))
                 .andExpect(jsonPath("$.data.isNewUser").value(false))
+                .andExpect(jsonPath("$.message").value("Kakao 로그인에 성공했습니다."))
                 .andExpect(jsonPath("$.data.accessToken").isNotEmpty())
                 .andExpect(jsonPath("$.data.refreshToken").isNotEmpty());
 
@@ -368,7 +369,7 @@ class AuthControllerTest extends MySqlContainerSupport {
         mockMvc.perform(get("/api-docs"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$['paths']['/auth/social/kakao']['post']['summary']")
-                        .value("Kakao 소셜 로그인"));
+                        .value("[USER-004] Kakao 소셜 로그인"));
     }
 
     @Test
@@ -485,7 +486,7 @@ class AuthControllerTest extends MySqlContainerSupport {
         mockMvc.perform(get("/api-docs"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$['paths']['/auth/social/apple']['post']['summary']")
-                        .value("Apple 소셜 로그인"))
+                        .value("[USER-003] Apple 소셜 로그인"))
                 .andExpect(jsonPath("$['components']['schemas']['AppleLoginRequest']['required'].length()")
                         .value(3));
     }

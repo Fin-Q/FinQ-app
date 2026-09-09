@@ -6,6 +6,7 @@ import com.swyp.FinQ.content.dto.res.ContentDetailResponse;
 import com.swyp.FinQ.content.dto.res.KnowledgeMapResponse;
 import com.swyp.FinQ.content.service.ContentQueryService;
 import com.swyp.FinQ.content.success.ContentSuccessCode;
+import com.swyp.FinQ.global.config.ApiDocumentation;
 import com.swyp.FinQ.global.success.SuccessResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;

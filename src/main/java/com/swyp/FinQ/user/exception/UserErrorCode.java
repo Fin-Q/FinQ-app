@@ -9,6 +9,8 @@ import org.springframework.http.HttpStatus;
 public enum UserErrorCode implements ErrorCode {
 
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "USER_NOT_FOUND", "사용자를 찾을 수 없습니다."),
+    SOCIAL_ACCOUNT_LINK_CONFLICT(HttpStatus.CONFLICT, "USER_SOCIAL_ACCOUNT_LINK_CONFLICT",
+            "이미 연동된 소셜 계정이 있어 연동할 수 없습니다."),
     INTEREST_ALREADY_SELECTED(
             HttpStatus.CONFLICT,
             "USER_INTEREST_ALREADY_SELECTED",

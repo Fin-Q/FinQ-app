@@ -1,6 +1,7 @@
 package com.swyp.FinQ.reward.controller;
 
 import com.swyp.FinQ.global.success.SuccessResponse;
+import com.swyp.FinQ.global.config.ApiDocumentation;
 import com.swyp.FinQ.reward.dto.res.RewardStatusResponse;
 import com.swyp.FinQ.reward.service.XpQueryService;
 import com.swyp.FinQ.reward.success.RewardSuccessCode;

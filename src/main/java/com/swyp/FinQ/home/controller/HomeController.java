@@ -1,6 +1,7 @@
 package com.swyp.FinQ.home.controller;
 
 import com.swyp.FinQ.global.success.SuccessResponse;
+import com.swyp.FinQ.global.config.ApiDocumentation;
 import com.swyp.FinQ.home.dto.res.HomeResponse;
 import com.swyp.FinQ.home.service.HomeQueryService;
 import com.swyp.FinQ.home.success.HomeSuccessCode;

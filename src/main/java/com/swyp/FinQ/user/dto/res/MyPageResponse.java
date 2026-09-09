@@ -1,7 +1,6 @@
 package com.swyp.FinQ.user.dto.res;
 
 import com.swyp.FinQ.content.domain.CategoryCode;
-import com.swyp.FinQ.reward.domain.Level;
 import com.swyp.FinQ.user.domain.OnboardingStatus;
 import com.swyp.FinQ.user.domain.ProfileImageCode;
 import com.swyp.FinQ.user.domain.User;
@@ -22,8 +21,6 @@ public record MyPageResponse(
         ProfileImageCode profileImageCode,
         @Schema(description = "누적 XP", example = "80")
         int totalXp,
-        @Schema(description = "현재 레벨", example = "LV2")
-        Level level,
         @Schema(description = "현재 연속 스트릭 일수", example = "3")
         int currentStreakDays,
         @Schema(description = "알림 활성화 여부", example = "true")
@@ -46,7 +43,6 @@ public record MyPageResponse(
                 user.getNickname(),
                 user.getProfileImageCode(),
                 totalXp,
-                Level.from(totalXp),
                 currentStreak,
                 user.isNotificationEnabled(),
                 user.getOnboardingStatus(),
