@@ -87,7 +87,7 @@ public class AuthController {
             @Valid @RequestBody KakaoLoginRequest request
     ) {
         return SuccessResponse.of(
-                AuthSuccessCode.LOGIN,
+                AuthSuccessCode.KAKAO_LOGIN,
                 KakaoLoginResponse.from(kakaoLoginService.login(request.toCommand()))
         );
     }
