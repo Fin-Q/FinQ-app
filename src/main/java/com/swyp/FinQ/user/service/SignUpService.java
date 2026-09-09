@@ -35,7 +35,7 @@ public class SignUpService {
                 .password(passwordEncoder.encode(request.password()))
                 .nickname(request.nickname())
                 .profileImageCode(ProfileImageCode.random())
-                .onboardingStatus(OnboardingStatus.INTEREST_SECTION)
+                .onboardingStatus(OnboardingStatus.INTEREST_SELECTION)
                 .build());
 
         LocalDateTime accountCreatedAt = user.getCreatedAt();

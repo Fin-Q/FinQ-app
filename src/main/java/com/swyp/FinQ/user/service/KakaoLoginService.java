@@ -63,7 +63,7 @@ public class KakaoLoginService {
         User user = userRepository.saveAndFlush(User.builder()
                 .nickname(command.nickname())
                 .profileImageCode(ProfileImageCode.random())
-                .onboardingStatus(OnboardingStatus.INTEREST_SECTION)
+                .onboardingStatus(OnboardingStatus.INTEREST_SELECTION)
                 .build());
         user.updateLastLoginAt(loginAt);
 

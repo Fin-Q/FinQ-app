@@ -18,7 +18,8 @@ public record ContentAnswerResponse(
         @Schema(description = "다음 행동 지시", example = "NEXT_BODY",
                 allowableValues = {"NEXT_BODY", "NEXT_SUMMARY", "NEXT_QUESTION", "CONTENT_COMPLETED", "RETRY"})
         String nextAction,
-        @Schema(description = "콘텐츠 최초 완료 시 결과 (미완료 또는 이미 완료된 경우 null)")
+        @JsonInclude(JsonInclude.Include.ALWAYS)
+        @Schema(description = "콘텐츠 최초 완료 시 결과 (미완료 또는 이미 완료된 경우 null)", nullable = true)
         ContentResult contentResult
 ) {
 

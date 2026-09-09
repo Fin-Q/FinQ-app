@@ -66,7 +66,7 @@ class UserControllerTest extends MySqlContainerSupport {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("SUCCESS"))
                 .andExpect(jsonPath("$.message").value("온보딩 상태 조회에 성공했습니다."))
-                .andExpect(jsonPath("$.data.onboardingStatus").value("INTEREST_SECTION"))
+                .andExpect(jsonPath("$.data.onboardingStatus").value("INTEREST_SELECTION"))
                 .andExpect(jsonPath("$.data.interests").isEmpty());
     }
 
@@ -322,7 +322,7 @@ class UserControllerTest extends MySqlContainerSupport {
                 .password("encoded-password")
                 .nickname("Minter")
                 .profileImageCode(ProfileImageCode.PROFILE_01)
-                .onboardingStatus(OnboardingStatus.INTEREST_SECTION)
+                .onboardingStatus(OnboardingStatus.INTEREST_SELECTION)
                 .currentStreak(3)
                 .build());
     }

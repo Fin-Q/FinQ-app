@@ -1,0 +1,6 @@
+UPDATE users
+SET onboarding_status = 'INTEREST_SELECTION'
+WHERE onboarding_status = 'INTEREST_SECTION';
+
+ALTER TABLE users
+    MODIFY COLUMN onboarding_status VARCHAR(30) NOT NULL DEFAULT 'INTEREST_SELECTION';

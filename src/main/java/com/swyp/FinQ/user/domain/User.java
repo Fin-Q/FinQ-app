@@ -47,7 +47,7 @@ public class User extends BaseTimeEntity {
     @Builder.Default
     @Enumerated(EnumType.STRING)
     @Column(name = "onboarding_status", nullable = false, length = 30)
-    private OnboardingStatus onboardingStatus = OnboardingStatus.INTEREST_SECTION;
+    private OnboardingStatus onboardingStatus = OnboardingStatus.INTEREST_SELECTION;
 
     @Column(name = "onboarding_completed_at")
     private LocalDateTime onboardingCompletedAt;

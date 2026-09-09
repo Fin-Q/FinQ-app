@@ -122,7 +122,7 @@ class AuthControllerTest extends MySqlContainerSupport {
                 .andExpect(jsonPath("$.data.userId").isString())
                 .andExpect(jsonPath("$.data.tokenType").value("Bearer"))
                 .andExpect(jsonPath("$.data.accessTokenExpiresIn").value(3600))
-                .andExpect(jsonPath("$.data.onboardingStatus").value("INTEREST_SECTION"))
+                .andExpect(jsonPath("$.data.onboardingStatus").value("INTEREST_SELECTION"))
                 .andReturn()
                 .getResponse()
                 .getContentAsString();
@@ -152,7 +152,7 @@ class AuthControllerTest extends MySqlContainerSupport {
                 .password("encoded-password")
                 .nickname("Existing")
                 .profileImageCode(ProfileImageCode.PROFILE_01)
-                .onboardingStatus(OnboardingStatus.INTEREST_SECTION)
+                .onboardingStatus(OnboardingStatus.INTEREST_SELECTION)
                 .build());
 
         mockMvc.perform(post("/auth/sign-up")
@@ -231,7 +231,7 @@ class AuthControllerTest extends MySqlContainerSupport {
                 .andExpect(jsonPath("$.data.nickname").value("Minter"))
                 .andExpect(jsonPath("$.data.tokenType").value("Bearer"))
                 .andExpect(jsonPath("$.data.accessTokenExpiresIn").value(3600))
-                .andExpect(jsonPath("$.data.onboardingStatus").value("INTEREST_SECTION"))
+                .andExpect(jsonPath("$.data.onboardingStatus").value("INTEREST_SELECTION"))
                 .andReturn()
                 .getResponse()
                 .getContentAsString();
@@ -288,7 +288,7 @@ class AuthControllerTest extends MySqlContainerSupport {
                 .andExpect(jsonPath("$.data.isNewUser").value(true))
                 .andExpect(jsonPath("$.data.tokenType").value("Bearer"))
                 .andExpect(jsonPath("$.data.accessTokenExpiresIn").value(3600))
-                .andExpect(jsonPath("$.data.onboardingStatus").value("INTEREST_SECTION"))
+                .andExpect(jsonPath("$.data.onboardingStatus").value("INTEREST_SELECTION"))
                 .andReturn()
                 .getResponse()
                 .getContentAsString();
@@ -387,7 +387,7 @@ class AuthControllerTest extends MySqlContainerSupport {
                 .andExpect(jsonPath("$.data.isNewUser").value(true))
                 .andExpect(jsonPath("$.data.tokenType").value("Bearer"))
                 .andExpect(jsonPath("$.data.accessTokenExpiresIn").value(3600))
-                .andExpect(jsonPath("$.data.onboardingStatus").value("INTEREST_SECTION"))
+                .andExpect(jsonPath("$.data.onboardingStatus").value("INTEREST_SELECTION"))
                 .andReturn()
                 .getResponse()
                 .getContentAsString();
@@ -512,6 +512,7 @@ class AuthControllerTest extends MySqlContainerSupport {
                 .andExpect(jsonPath("$.message").value("토큰 재발급에 성공했습니다."))
                 .andExpect(jsonPath("$.data.tokenType").value("Bearer"))
                 .andExpect(jsonPath("$.data.accessTokenExpiresIn").value(3600))
+                .andExpect(jsonPath("$.data.refreshTokenExpiresIn").value(1209600))
                 .andReturn()
                 .getResponse()
                 .getContentAsString();
@@ -741,7 +742,7 @@ class AuthControllerTest extends MySqlContainerSupport {
                 .password(passwordEncoder.encode(password))
                 .nickname("Minter")
                 .profileImageCode(ProfileImageCode.PROFILE_01)
-                .onboardingStatus(OnboardingStatus.INTEREST_SECTION)
+                .onboardingStatus(OnboardingStatus.INTEREST_SELECTION)
                 .lastLoginAt(LocalDateTime.now().minusDays(1))
                 .build());
     }

@@ -10,7 +10,7 @@ import java.util.List;
 
 @Schema(description = "온보딩 상태 응답")
 public record OnboardingResponse(
-        @Schema(description = "현재 온보딩 단계", example = "INTEREST_SECTION")
+        @Schema(description = "현재 온보딩 단계", example = "INTEREST_SELECTION")
         OnboardingStatus onboardingStatus,
         @Schema(description = "선택한 관심 주제")
         List<InterestInfo> interests

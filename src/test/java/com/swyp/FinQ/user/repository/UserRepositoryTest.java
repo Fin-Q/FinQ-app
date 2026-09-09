@@ -57,7 +57,7 @@ class UserRepositoryTest extends MySqlContainerSupport {
         User found = userRepository.findByEmail(user.getEmail()).orElseThrow();
 
         assertThat(found.getId()).isEqualTo(user.getId());
-        assertThat(found.getOnboardingStatus()).isEqualTo(OnboardingStatus.INTEREST_SECTION);
+        assertThat(found.getOnboardingStatus()).isEqualTo(OnboardingStatus.INTEREST_SELECTION);
         assertThat(userRepository.existsByEmail(user.getEmail())).isTrue();
     }
 

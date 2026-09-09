@@ -86,7 +86,7 @@ public class HomeQueryService {
 
         return newContents.stream()
                 .map(content -> new HomeResponse.QuestionCard(
-                        content.getContentCode(),
+                        content.getId(),
                         content.getCategory().getCategoryCode().name(),
                         content.getCategory().getCategoryName(),
                         content.getTitle(),
@@ -239,7 +239,7 @@ public class HomeQueryService {
 
         return ordered.stream()
                 .map(content -> new HomeResponse.QuestionCard(
-                        content.getContentCode(),
+                        content.getId(),
                         content.getCategory().getCategoryCode().name(),
                         content.getCategory().getCategoryName(),
                         content.getTitle(),
