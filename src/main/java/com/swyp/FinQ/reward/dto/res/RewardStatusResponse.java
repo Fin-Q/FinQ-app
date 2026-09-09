@@ -6,9 +6,9 @@ import io.swagger.v3.oas.annotations.media.Schema;
 public record RewardStatusResponse(
         @Schema(description = "누적 경험치", example = "120")
         int totalXp,
-        @Schema(description = "현재 레벨", example = "2")
+        @Schema(description = "현재 레벨 (숫자). 레벨 체계: 1(0xp) → 2(80xp) → 3(180xp) → 4(300xp)", example = "2")
         int level,
-        @Schema(description = "캐릭터 성장 단계", example = "2")
+        @Schema(description = "캐릭터 성장 단계 (레벨과 동일한 숫자 값)", example = "2")
         int characterStage
 ) {
 }
