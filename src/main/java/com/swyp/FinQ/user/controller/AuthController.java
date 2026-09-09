@@ -6,6 +6,8 @@ import com.swyp.FinQ.user.dto.req.AppleLoginRequest;
 import com.swyp.FinQ.user.dto.req.LoginRequest;
 import com.swyp.FinQ.user.dto.req.KakaoLoginRequest;
 import com.swyp.FinQ.user.dto.req.PasswordResetEmailRequest;
+import com.swyp.FinQ.user.dto.req.PasswordResetConfirmRequest;
+import com.swyp.FinQ.user.service.PasswordResetService;
 import com.swyp.FinQ.user.dto.req.SignUpRequest;
 import com.swyp.FinQ.user.dto.req.TokenRefreshRequest;
 import com.swyp.FinQ.user.dto.res.AgreementListResponse;
@@ -51,6 +53,7 @@ public class AuthController {
     private final TokenRefreshService tokenRefreshService;
     private final LogoutService logoutService;
     private final PasswordResetRequestService passwordResetRequestService;
+    private final PasswordResetService passwordResetService;
 
     @Operation(summary = "현재 적용 중인 필수 약관 목록 조회")
     @GetMapping("/agreements")
@@ -135,5 +138,14 @@ public class AuthController {
                 AuthSuccessCode.PASSWORD_RESET_CODE_SENT,
                 passwordResetRequestService.request(request.loginId())
         );
+    }
+
+    @Operation(summary = "비밀번호 재설정")
+    @PostMapping("/password-reset")
+    public ResponseEntity<SuccessResponse<Void>> resetPassword(
+            @Valid @RequestBody PasswordResetConfirmRequest request
+    ) {
+        passwordResetService.reset(request);
+        return SuccessResponse.of(AuthSuccessCode.PASSWORD_RESET, null);
     }
 }

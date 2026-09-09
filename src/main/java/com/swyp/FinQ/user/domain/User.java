@@ -80,6 +80,10 @@ public class User extends BaseTimeEntity {
         this.lastLoginAt = loginAt;
     }
 
+    public void changePassword(String encodedPassword) {
+        this.password = encodedPassword;
+    }
+
     public void moveToCharacterGuide() {
         this.onboardingStatus = OnboardingStatus.CHARACTER_GUIDE;
     }

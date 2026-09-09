@@ -21,4 +21,6 @@ public interface PushTokenRepository extends JpaRepository<PushToken, Long> {
     long deleteByUser_IdAndSessionId(Long userId, String sessionId);
 
     long deleteByFcmTokenHash(String fcmTokenHash);
+
+    void deleteAllByUser_Id(Long userId);
 }
