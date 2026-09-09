@@ -2,7 +2,10 @@ package com.swyp.FinQ.user.controller;
 
 import com.swyp.FinQ.global.success.SuccessResponse;
 import com.swyp.FinQ.user.dto.req.InterestSelectionRequest;
-import com.swyp.FinQ.user.dto.req.ProfileUpdateRequest;
+import com.swyp.FinQ.user.dto.req.NicknameUpdateRequest;
+import com.swyp.FinQ.user.dto.req.ProfileImageUpdateRequest;
+import com.swyp.FinQ.user.dto.res.NicknameUpdateResponse;
+import com.swyp.FinQ.user.dto.res.ProfileImageUpdateResponse;
 import com.swyp.FinQ.user.dto.res.MyPageResponse;
 import com.swyp.FinQ.user.dto.res.OnboardingResponse;
 import com.swyp.FinQ.user.service.OnboardingService;
@@ -89,15 +92,27 @@ public class UserController {
         );
     }
 
-    @Operation(summary = "닉네임 및 프로필 이미지 수정")
-    @PatchMapping("/profile")
-    public ResponseEntity<SuccessResponse<MyPageResponse>> updateProfile(
+    @Operation(summary = "닉네임 변경")
+    @PatchMapping("/nickname")
+    public ResponseEntity<SuccessResponse<NicknameUpdateResponse>> updateNickname(
             @AuthenticationPrincipal Jwt jwt,
-            @Valid @RequestBody ProfileUpdateRequest request
+            @Valid @RequestBody NicknameUpdateRequest request
     ) {
         return SuccessResponse.of(
-                UserSuccessCode.PROFILE_UPDATED,
-                userProfileService.updateProfile(Long.valueOf(jwt.getSubject()), request)
+                UserSuccessCode.NICKNAME_UPDATED,
+                userProfileService.updateNickname(Long.valueOf(jwt.getSubject()), request)
+        );
+    }
+
+    @Operation(summary = "프로필 이미지 변경")
+    @PatchMapping("/profile-image")
+    public ResponseEntity<SuccessResponse<ProfileImageUpdateResponse>> updateProfileImage(
+            @AuthenticationPrincipal Jwt jwt,
+            @Valid @RequestBody ProfileImageUpdateRequest request
+    ) {
+        return SuccessResponse.of(
+                UserSuccessCode.PROFILE_IMAGE_UPDATED,
+                userProfileService.updateProfileImage(Long.valueOf(jwt.getSubject()), request)
         );
     }
 }

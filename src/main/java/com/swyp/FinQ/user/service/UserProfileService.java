@@ -3,7 +3,10 @@ package com.swyp.FinQ.user.service;
 import com.swyp.FinQ.global.exception.BaseException;
 import com.swyp.FinQ.streak.service.StreakQueryService;
 import com.swyp.FinQ.user.domain.User;
-import com.swyp.FinQ.user.dto.req.ProfileUpdateRequest;
+import com.swyp.FinQ.user.dto.req.NicknameUpdateRequest;
+import com.swyp.FinQ.user.dto.req.ProfileImageUpdateRequest;
+import com.swyp.FinQ.user.dto.res.NicknameUpdateResponse;
+import com.swyp.FinQ.user.dto.res.ProfileImageUpdateResponse;
 import com.swyp.FinQ.user.dto.res.MyPageResponse;
 import com.swyp.FinQ.user.exception.UserErrorCode;
 import com.swyp.FinQ.user.repository.UserInterestRepository;
@@ -11,6 +14,8 @@ import com.swyp.FinQ.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.ZoneId;
 
 @Service
 @RequiredArgsConstructor
@@ -27,17 +32,22 @@ public class UserProfileService {
     }
 
     @Transactional
-    public MyPageResponse updateProfile(Long userId, ProfileUpdateRequest request) {
-        if (request.nickname() == null && request.profileImageCode() == null) {
-            throw BaseException.of(UserErrorCode.PROFILE_UPDATE_EMPTY);
-        }
-
+    public NicknameUpdateResponse updateNickname(Long userId, NicknameUpdateRequest request) {
         User user = getUser(userId);
-        user.updateProfile(
-                request.nickname() == null ? null : request.nickname().trim(),
-                request.profileImageCode()
+        user.updateProfile(request.nickname().trim(), null);
+        userRepository.saveAndFlush(user);
+        return new NicknameUpdateResponse(
+                user.getNickname(),
+                user.getUpdatedAt().atZone(ZoneId.systemDefault())
+                        .withZoneSameInstant(ZoneId.of("Asia/Seoul")).toOffsetDateTime()
         );
-        return toResponse(user);
+    }
+
+    @Transactional
+    public ProfileImageUpdateResponse updateProfileImage(Long userId, ProfileImageUpdateRequest request) {
+        User user = getUser(userId);
+        user.updateProfile(null, request.profileImageCode());
+        return new ProfileImageUpdateResponse(user.getProfileImageCode());
     }
 
     private User getUser(Long userId) {

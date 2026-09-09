@@ -16,6 +16,8 @@ import com.swyp.FinQ.user.domain.User;
 import com.swyp.FinQ.user.repository.UserInterestRepository;
 import com.swyp.FinQ.user.repository.UserRepository;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -235,69 +237,82 @@ class UserControllerTest extends MySqlContainerSupport {
                 .andExpect(jsonPath("$.data.nickname").value("Minter"))
                 .andExpect(jsonPath("$.data.profileImageCode").value("PROFILE_01"))
                 .andExpect(jsonPath("$.data.totalXp").value(80))
-                .andExpect(jsonPath("$.data.level").value("LV2"))
+                .andExpect(jsonPath("$.data.level").doesNotExist())
                 .andExpect(jsonPath("$.data.currentStreakDays").value(3))
                 .andExpect(jsonPath("$.data.notificationEnabled").value(true))
                 .andExpect(jsonPath("$.data.interests[0].categoryCode").value("SAL"));
     }
 
     @Test
-    void updatesNicknameAndProfileImage() throws Exception {
+    void updatesNicknameWithoutChangingProfileImage() throws Exception {
         User user = saveUser();
 
-        mockMvc.perform(patch("/users/me/profile")
+        var result = mockMvc.perform(patch("/users/me/nickname")
                         .header(HttpHeaders.AUTHORIZATION, bearerToken(user.getId()))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                  "nickname": "  핀큐  ",
+                                  "nickname": "  핀큐  "
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("닉네임 변경에 성공했습니다."))
+                .andExpect(jsonPath("$.data.nickname").value("핀큐"))
+                .andExpect(jsonPath("$.data.updatedAt").value(org.hamcrest.Matchers.endsWith("+09:00")))
+                .andExpect(jsonPath("$.data.length()").value(2))
+                .andExpect(jsonPath("$.data.profileImageCode").doesNotExist())
+                .andReturn();
+
+        User updatedUser = userRepository.findById(user.getId()).orElseThrow();
+        assertThat(updatedUser.getNickname()).isEqualTo("핀큐");
+        assertThat(updatedUser.getProfileImageCode()).isEqualTo(ProfileImageCode.PROFILE_01);
+        String expectedUpdatedAt = updatedUser.getUpdatedAt()
+                .atZone(java.time.ZoneId.systemDefault())
+                .withZoneSameInstant(java.time.ZoneId.of("Asia/Seoul"))
+                .toOffsetDateTime().toString();
+        assertThat(result.getResponse().getContentAsString(java.nio.charset.StandardCharsets.UTF_8))
+                .contains(expectedUpdatedAt);
+    }
+
+    @Test
+    void updatesProfileImageWithoutChangingNickname() throws Exception {
+        User user = saveUser();
+
+        mockMvc.perform(patch("/users/me/profile-image")
+                        .header(HttpHeaders.AUTHORIZATION, bearerToken(user.getId()))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
                                   "profileImageCode": "PROFILE_04"
                                 }
                                 """))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.message").value("프로필 수정에 성공했습니다."))
-                .andExpect(jsonPath("$.data.nickname").value("핀큐"))
-                .andExpect(jsonPath("$.data.profileImageCode").value("PROFILE_04"));
+                .andExpect(jsonPath("$.message").value("프로필 이미지 변경에 성공했습니다."))
+                .andExpect(jsonPath("$.data.profileImageCode").value("PROFILE_04"))
+                .andExpect(jsonPath("$.data.length()").value(1));
 
         User updatedUser = userRepository.findById(user.getId()).orElseThrow();
-        assertThat(updatedUser.getNickname()).isEqualTo("핀큐");
+        assertThat(updatedUser.getNickname()).isEqualTo("Minter");
         assertThat(updatedUser.getProfileImageCode()).isEqualTo(ProfileImageCode.PROFILE_04);
     }
 
     @Test
-    void updatesOnlyRequestedProfileField() throws Exception {
+    void rejectsEmptyNicknameUpdate() throws Exception {
         User user = saveUser();
 
-        mockMvc.perform(patch("/users/me/profile")
-                        .header(HttpHeaders.AUTHORIZATION, bearerToken(user.getId()))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {
-                                  "nickname": "새 닉네임"
-                                }
-                                """))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.nickname").value("새 닉네임"))
-                .andExpect(jsonPath("$.data.profileImageCode").value("PROFILE_01"));
-    }
-
-    @Test
-    void rejectsEmptyProfileUpdate() throws Exception {
-        User user = saveUser();
-
-        mockMvc.perform(patch("/users/me/profile")
+        mockMvc.perform(patch("/users/me/nickname")
                         .header(HttpHeaders.AUTHORIZATION, bearerToken(user.getId()))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{}"))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.errorCode").value("USER_PROFILE_UPDATE_EMPTY"));
+                .andExpect(jsonPath("$.errorCode").value("COMMON_VALIDATION_ERROR"));
     }
 
     @Test
     void rejectsBlankNickname() throws Exception {
         User user = saveUser();
 
-        mockMvc.perform(patch("/users/me/profile")
+        mockMvc.perform(patch("/users/me/nickname")
                         .header(HttpHeaders.AUTHORIZATION, bearerToken(user.getId()))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -314,6 +329,49 @@ class UserControllerTest extends MySqlContainerSupport {
         mockMvc.perform(get("/users/me/onboarding"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.errorCode").value("AUTH_UNAUTHORIZED"));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"{}", "{\"profileImageCode\":null}", "{\"profileImageCode\":\"INVALID\"}"})
+    void rejectsInvalidProfileImage(String body) throws Exception {
+        User user = saveUser();
+        mockMvc.perform(patch("/users/me/profile-image")
+                        .header(HttpHeaders.AUTHORIZATION, bearerToken(user.getId()))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isBadRequest());
+        assertThat(user.getProfileImageCode()).isEqualTo(ProfileImageCode.PROFILE_01);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"{\"nickname\":null}", "{\"nickname\":\"\"}"})
+    void rejectsInvalidNickname(String body) throws Exception {
+        User user = saveUser();
+        mockMvc.perform(patch("/users/me/nickname")
+                        .header(HttpHeaders.AUTHORIZATION, bearerToken(user.getId()))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isBadRequest());
+        assertThat(user.getNickname()).isEqualTo("Minter");
+    }
+
+    @Test
+    void rejectsNicknameOverFiftyCharacters() throws Exception {
+        User user = saveUser();
+        mockMvc.perform(patch("/users/me/nickname")
+                        .header(HttpHeaders.AUTHORIZATION, bearerToken(user.getId()))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"nickname\":\"" + "a".repeat(51) + "\"}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"/users/me/nickname", "/users/me/profile-image"})
+    void rejectsProfileChangesWithoutAccessToken(String path) throws Exception {
+        mockMvc.perform(patch(path)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isUnauthorized());
     }
 
     private User saveUser() {
