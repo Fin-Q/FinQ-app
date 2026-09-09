@@ -19,6 +19,9 @@ public class LearningProgressService {
     private final UserCategoryCompletionRepository userCategoryCompletionRepository;
 
     public Set<Long> getCompletedContentIds(Long userId, List<Content> contents) {
+        if (contents.isEmpty()) {
+            return Set.of();
+        }
         return userContentCompletionRepository.findCompletedContentIdsByUserIdAndContentIn(userId, contents);
     }
 

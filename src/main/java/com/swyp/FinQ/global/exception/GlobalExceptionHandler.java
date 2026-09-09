@@ -93,12 +93,21 @@ public class GlobalExceptionHandler {
   }
 
   /**
-   * 존재하지 않는 URL 또는 파라미터 타입 불일치
+   * 존재하지 않는 URL (404)
    */
-  @ExceptionHandler({NoHandlerFoundException.class, MethodArgumentTypeMismatchException.class})
-  public ResponseEntity<ErrorResponse> onNotFoundOrTypeMismatch(Exception e) {
-    log.info("Not found or type mismatch: {}", e.getMessage());
+  @ExceptionHandler(NoHandlerFoundException.class)
+  public ResponseEntity<ErrorResponse> onNotFound(NoHandlerFoundException e) {
+    log.info("Not found: {}", e.getMessage());
     return ErrorResponse.of(GlobalErrorCode.COMMON_RESOURCE_NOT_FOUND);
+  }
+
+  /**
+   * 파라미터 타입 불일치 — 잘못된 enum 값 등 (400)
+   */
+  @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+  public ResponseEntity<ErrorResponse> onTypeMismatch(MethodArgumentTypeMismatchException e) {
+    log.info("Type mismatch: {}", e.getMessage());
+    return ErrorResponse.of(GlobalErrorCode.COMMON_INVALID_REQUEST);
   }
 
   /**

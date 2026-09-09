@@ -67,9 +67,10 @@ public class ContentController {
     )
     @GetMapping("/contents/{contentId}")
     public ResponseEntity<SuccessResponse<ContentDetailResponse>> getContentDetail(
+            @AuthenticationPrincipal Jwt jwt,
             @Parameter(description = "콘텐츠 ID") @PathVariable Long contentId
     ) {
-        ContentDetailResponse response = contentQueryService.getContentDetail(contentId);
+        ContentDetailResponse response = contentQueryService.getContentDetail(contentId, Long.valueOf(jwt.getSubject()));
         return SuccessResponse.of(ContentSuccessCode.CONTENT_DETAIL_RETRIEVED, response);
     }
 }

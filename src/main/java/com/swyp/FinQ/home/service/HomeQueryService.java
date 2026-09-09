@@ -74,11 +74,11 @@ public class HomeQueryService {
         // 새로운 질문 카드 생성
         List<Content> newContents = buildQuestionCards(user);
 
-        // 캐시 업데이트
+        // 캐시 업데이트 (별도 UPDATE 쿼리로 User 전체 flush 방지)
         String ids = newContents.stream()
                 .map(c -> String.valueOf(c.getId()))
                 .collect(Collectors.joining(","));
-        user.updateHomeQuestionCache(today, ids);
+        userRepository.updateHomeQuestionCache(user.getId(), today, ids);
 
         Set<Long> completedIds = newContents.isEmpty()
                 ? Set.of()
@@ -234,8 +234,10 @@ public class HomeQueryService {
                 .map(contentMap::get)
                 .toList();
 
-        Set<Long> completedIds = userContentCompletionRepository
-                .findCompletedContentIdsByUserIdAndContentIn(userId, new ArrayList<>(ordered));
+        Set<Long> completedIds = ordered.isEmpty()
+                ? Set.of()
+                : userContentCompletionRepository
+                        .findCompletedContentIdsByUserIdAndContentIn(userId, new ArrayList<>(ordered));
 
         return ordered.stream()
                 .map(content -> new HomeResponse.QuestionCard(
