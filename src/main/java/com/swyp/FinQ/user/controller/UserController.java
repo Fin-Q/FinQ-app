@@ -1,5 +1,6 @@
 package com.swyp.FinQ.user.controller;
 
+import com.swyp.FinQ.global.config.ApiDocumentation;
 import com.swyp.FinQ.global.success.SuccessResponse;
 import com.swyp.FinQ.user.dto.req.InterestSelectionRequest;
 import com.swyp.FinQ.user.dto.req.NicknameUpdateRequest;
@@ -26,7 +27,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-@Tag(name = "User", description = "사용자 온보딩 및 프로필 API")
+@Tag(name = "USER", description = "사용자 온보딩 및 프로필 API")
 @RestController
 @RequestMapping("/users/me")
 @RequiredArgsConstructor
@@ -36,6 +37,7 @@ public class UserController {
     private final UserProfileService userProfileService;
 
     @Operation(summary = "마이페이지 조회")
+    @ApiDocumentation(id = "USER-016", name = "마이페이지 정보 조회", owner = "이민지")
     @GetMapping
     public ResponseEntity<SuccessResponse<MyPageResponse>> getMyPage(
             @AuthenticationPrincipal Jwt jwt
@@ -47,6 +49,7 @@ public class UserController {
     }
 
     @Operation(summary = "온보딩 상태 조회")
+    @ApiDocumentation(id = "USER-013", name = "온보딩 진행 상태 조회", owner = "이민지")
     @GetMapping("/onboarding")
     public ResponseEntity<SuccessResponse<OnboardingResponse>> getOnboarding(
             @AuthenticationPrincipal Jwt jwt
@@ -58,6 +61,7 @@ public class UserController {
     }
 
     @Operation(summary = "관심 주제 최초 저장")
+    @ApiDocumentation(id = "USER-014", name = "관심 주제 저장", owner = "이민지")
     @PostMapping("/interests")
     public ResponseEntity<SuccessResponse<OnboardingResponse>> selectInterests(
             @AuthenticationPrincipal Jwt jwt,
@@ -70,6 +74,7 @@ public class UserController {
     }
 
     @Operation(summary = "관심 주제 수정")
+    @ApiDocumentation(name = "관심 주제 수정", owner = "이민지")
     @PutMapping("/interests")
     public ResponseEntity<SuccessResponse<OnboardingResponse>> updateInterests(
             @AuthenticationPrincipal Jwt jwt,
@@ -82,6 +87,7 @@ public class UserController {
     }
 
     @Operation(summary = "온보딩 완료 처리")
+    @ApiDocumentation(id = "USER-015", name = "온보딩 완료 상태 변경", owner = "이민지")
     @PatchMapping("/onboarding/complete")
     public ResponseEntity<SuccessResponse<OnboardingResponse>> completeOnboarding(
             @AuthenticationPrincipal Jwt jwt
@@ -93,6 +99,7 @@ public class UserController {
     }
 
     @Operation(summary = "닉네임 변경")
+    @ApiDocumentation(id = "USER-017", name = "닉네임 변경", owner = "이민지")
     @PatchMapping("/nickname")
     public ResponseEntity<SuccessResponse<NicknameUpdateResponse>> updateNickname(
             @AuthenticationPrincipal Jwt jwt,
@@ -105,6 +112,7 @@ public class UserController {
     }
 
     @Operation(summary = "프로필 이미지 변경")
+    @ApiDocumentation(id = "USER-018", name = "프로필 이미지 변경", owner = "이민지")
     @PatchMapping("/profile-image")
     public ResponseEntity<SuccessResponse<ProfileImageUpdateResponse>> updateProfileImage(
             @AuthenticationPrincipal Jwt jwt,

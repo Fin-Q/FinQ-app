@@ -1,6 +1,7 @@
 package com.swyp.FinQ.notification.controller;
 
 import com.swyp.FinQ.global.security.token.JwtClaimNames;
+import com.swyp.FinQ.global.config.ApiDocumentation;
 import com.swyp.FinQ.global.success.SuccessResponse;
 import com.swyp.FinQ.notification.dto.req.NotificationSettingUpdateRequest;
 import com.swyp.FinQ.notification.dto.req.PushTokenRegistrationRequest;
@@ -28,7 +29,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-@Tag(name = "Notification", description = "푸시 토큰 및 알림 설정 API")
+@Tag(name = "NOTI", description = "푸시 토큰 및 알림 설정 API")
 @Validated
 @RestController
 @RequestMapping("/users/me")
@@ -39,6 +40,7 @@ public class NotificationController {
     private final NotificationSettingService notificationSettingService;
 
     @Operation(summary = "FCM 푸시 토큰 등록 또는 갱신")
+    @ApiDocumentation(id = "NOTI-001", name = "푸시 토큰 등록/갱신")
     @PostMapping("/push-tokens/{deviceId}")
     public ResponseEntity<SuccessResponse<PushTokenRegistrationResponse>> registerPushToken(
             @AuthenticationPrincipal Jwt jwt,
@@ -57,6 +59,7 @@ public class NotificationController {
     }
 
     @Operation(summary = "알림 수신 설정 변경")
+    @ApiDocumentation(id = "NOTI-002", name = "알림 설정 변경")
     @PatchMapping("/notification-settings")
     public ResponseEntity<SuccessResponse<NotificationSettingResponse>> updateNotificationSetting(
             @AuthenticationPrincipal Jwt jwt,
@@ -69,6 +72,7 @@ public class NotificationController {
     }
 
     @Operation(summary = "FCM 푸시 토큰 등록 해제")
+    @ApiDocumentation(id = "NOTI-003", name = "푸시 토큰 해제")
     @DeleteMapping("/push-tokens/{deviceId}")
     public ResponseEntity<SuccessResponse<PushTokenUnregistrationResponse>> unregisterPushToken(
             @AuthenticationPrincipal Jwt jwt,

@@ -1,5 +1,6 @@
 package com.swyp.FinQ.user.controller;
 
+import com.swyp.FinQ.global.config.ApiDocumentation;
 import com.swyp.FinQ.global.success.SuccessResponse;
 import com.swyp.FinQ.user.dto.req.KakaoAccountLinkRequest;
 import com.swyp.FinQ.user.dto.req.AppleAccountLinkRequest;
@@ -19,13 +20,14 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/users/me/social-accounts")
 @RequiredArgsConstructor
-@Tag(name = "User", description = "사용자 계정 연동 API")
+@Tag(name = "USER", description = "사용자 계정 연동 API")
 public class SocialAccountController {
     private final KakaoAccountLinkService kakaoAccountLinkService;
     private final AppleAccountLinkService appleAccountLinkService;
 
     @PostMapping("/kakao")
     @Operation(summary = "Kakao 계정 연동")
+    @ApiDocumentation(id = "USER-012", name = "Kakao 계정 연동", owner = "이민지")
     public ResponseEntity<SuccessResponse<SocialAccountLinkResponse>> linkKakao(
             @AuthenticationPrincipal Jwt jwt, @Valid @RequestBody KakaoAccountLinkRequest request
     ) {
@@ -36,6 +38,7 @@ public class SocialAccountController {
     @PostMapping("/apple")
     @Operation(summary = "Apple 계정 연동",
             description = "Identity Token과 일회용 Authorization Code를 동일한 원본 nonce로 검증합니다.")
+    @ApiDocumentation(id = "USER-011", name = "Apple 계정 연동", owner = "이민지")
     public ResponseEntity<SuccessResponse<SocialAccountLinkResponse>> linkApple(
             @AuthenticationPrincipal Jwt jwt, @Valid @RequestBody AppleAccountLinkRequest request
     ) {

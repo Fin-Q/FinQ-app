@@ -369,7 +369,7 @@ class AuthControllerTest extends MySqlContainerSupport {
         mockMvc.perform(get("/api-docs"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$['paths']['/auth/social/kakao']['post']['summary']")
-                        .value("Kakao 소셜 로그인"));
+                        .value("[USER-004] Kakao 소셜 로그인"));
     }
 
     @Test
@@ -486,7 +486,7 @@ class AuthControllerTest extends MySqlContainerSupport {
         mockMvc.perform(get("/api-docs"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$['paths']['/auth/social/apple']['post']['summary']")
-                        .value("Apple 소셜 로그인"))
+                        .value("[USER-003] Apple 소셜 로그인"))
                 .andExpect(jsonPath("$['components']['schemas']['AppleLoginRequest']['required'].length()")
                         .value(3));
     }

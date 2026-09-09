@@ -1,6 +1,7 @@
 package com.swyp.FinQ.learning.controller;
 
 import com.swyp.FinQ.global.success.SuccessResponse;
+import com.swyp.FinQ.global.config.ApiDocumentation;
 import com.swyp.FinQ.learning.dto.req.AnswerRequest;
 import com.swyp.FinQ.learning.dto.res.ContentAnswerResponse;
 import com.swyp.FinQ.learning.dto.res.QuizAnswerResponse;
@@ -22,7 +23,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
-@Tag(name = "Learning", description = "학습 채점 및 심화퀴즈 API")
+@Tag(name = "LEARNING", description = "학습 채점 및 심화퀴즈 API")
 @RestController
 @RequiredArgsConstructor
 public class LearningController {
@@ -31,6 +32,7 @@ public class LearningController {
     private final LearningQueryService learningQueryService;
 
     @Operation(summary = "콘텐츠 문제 채점", description = "콘텐츠 학습 중 문제의 답안을 제출하고 채점합니다.")
+    @ApiDocumentation(id = "LEARNING-001", name = "콘텐츠 문제 채점")
     @PostMapping("/contents/{contentId}/questions/{questionId}/answers")
     public ResponseEntity<SuccessResponse<ContentAnswerResponse>> gradeContentAnswer(
             @AuthenticationPrincipal Jwt jwt,
@@ -44,6 +46,7 @@ public class LearningController {
     }
 
     @Operation(summary = "심화퀴즈 조회", description = "카테고리별 심화퀴즈 3문제를 조회합니다.")
+    @ApiDocumentation(id = "LEARNING-002", name = "심화 퀴즈 조회")
     @GetMapping("/categories/{categoryId}/quiz")
     public ResponseEntity<SuccessResponse<QuizListResponse>> getQuizList(
             @Parameter(description = "카테고리 ID") @PathVariable Long categoryId
@@ -53,6 +56,7 @@ public class LearningController {
     }
 
     @Operation(summary = "심화퀴즈 채점", description = "심화퀴즈 답안을 제출하고 채점합니다.")
+    @ApiDocumentation(id = "LEARNING-003", name = "심화 퀴즈 채점")
     @PostMapping("/categories/{categoryId}/quiz/questions/{questionId}/answers")
     public ResponseEntity<SuccessResponse<QuizAnswerResponse>> gradeQuizAnswer(
             @AuthenticationPrincipal Jwt jwt,

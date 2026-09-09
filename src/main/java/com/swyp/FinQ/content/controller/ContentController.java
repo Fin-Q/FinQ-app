@@ -6,6 +6,7 @@ import com.swyp.FinQ.content.dto.res.ContentDetailResponse;
 import com.swyp.FinQ.content.dto.res.KnowledgeMapResponse;
 import com.swyp.FinQ.content.service.ContentQueryService;
 import com.swyp.FinQ.content.success.ContentSuccessCode;
+import com.swyp.FinQ.global.config.ApiDocumentation;
 import com.swyp.FinQ.global.success.SuccessResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -18,7 +19,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
 
-@Tag(name = "Content", description = "콘텐츠 및 지식맵 API")
+@Tag(name = "CONTENT", description = "콘텐츠 및 지식맵 API")
 @RestController
 @RequiredArgsConstructor
 public class ContentController {
@@ -26,6 +27,7 @@ public class ContentController {
     private final ContentQueryService contentQueryService;
 
     @Operation(summary = "지식맵 조회", description = "전체 카테고리 목록과 사용자별 진행률을 조회합니다.")
+    @ApiDocumentation(id = "CONTENT-001", name = "지식맵 조회")
     @GetMapping("/knowledge-map")
     public ResponseEntity<SuccessResponse<KnowledgeMapResponse>> getKnowledgeMap(
             @AuthenticationPrincipal Jwt jwt
@@ -35,6 +37,7 @@ public class ContentController {
     }
 
     @Operation(summary = "카테고리 상세 조회", description = "카테고리별 콘텐츠 목록과 완료 상태를 조회합니다.")
+    @ApiDocumentation(id = "CONTENT-002", name = "카테고리 상세 조회")
     @GetMapping("/categories/{categoryCode}")
     public ResponseEntity<SuccessResponse<CategoryDetailResponse>> getCategoryDetail(
             @AuthenticationPrincipal Jwt jwt,
@@ -45,6 +48,7 @@ public class ContentController {
     }
 
     @Operation(summary = "학습 콘텐츠 전체 조회", description = "본문, 핵심정리, 문제를 블록 배열로 한 번에 조회합니다.")
+    @ApiDocumentation(id = "CONTENT-003", name = "학습 콘텐츠 전체 조회")
     @GetMapping("/contents/{contentId}")
     public ResponseEntity<SuccessResponse<ContentDetailResponse>> getContentDetail(
             @Parameter(description = "콘텐츠 ID") @PathVariable Long contentId
