@@ -32,7 +32,10 @@ public class StreakController {
     private final StreakQueryService streakQueryService;
 
     @Operation(summary = "현재 스트릭 상태 조회", description = "현재 스트릭과 다음 보너스까지 남은 일수를 조회합니다.")
-    @ApiDocumentation(id = "STREAK-002", name = "현재 스트릭 요약 조회", owner = ApiOwner.MINJI)
+    @ApiDocumentation(
+            id = "STREAK-002", name = "현재 스트릭 요약 조회", owner = ApiOwner.MINJI,
+            errors = "USER_NOT_FOUND"
+    )
     @GetMapping("/status")
     public ResponseEntity<SuccessResponse<StreakStatusResponse>> getStatus(
             @AuthenticationPrincipal Jwt jwt
@@ -42,7 +45,10 @@ public class StreakController {
     }
 
     @Operation(summary = "월간 스트릭 조회", description = "가입 월부터 현재 월까지의 스트릭 인정 날짜를 조회합니다.")
-    @ApiDocumentation(id = "STREAK-001", name = "월간 스트릭 조회", owner = ApiOwner.MINJI)
+    @ApiDocumentation(
+            id = "STREAK-001", name = "월간 스트릭 조회", owner = ApiOwner.MINJI,
+            errors = {"USER_NOT_FOUND", "STREAK_MONTH_OUT_OF_RANGE"}
+    )
     @GetMapping("/calendar")
     public ResponseEntity<SuccessResponse<StreakCalendarResponse>> getCalendar(
             @AuthenticationPrincipal Jwt jwt,

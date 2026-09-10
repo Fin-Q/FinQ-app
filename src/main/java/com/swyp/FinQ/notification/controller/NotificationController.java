@@ -42,7 +42,10 @@ public class NotificationController {
     private final NotificationSettingService notificationSettingService;
 
     @Operation(summary = "FCM 푸시 토큰 등록 또는 갱신")
-    @ApiDocumentation(id = "NOTI-001", name = "푸시 토큰 등록/갱신", owner = ApiOwner.MINJI)
+    @ApiDocumentation(
+            id = "NOTI-001", name = "푸시 토큰 등록/갱신", owner = ApiOwner.MINJI,
+            errors = "USER_NOT_FOUND"
+    )
     @PostMapping("/push-tokens/{deviceId}")
     public ResponseEntity<SuccessResponse<PushTokenRegistrationResponse>> registerPushToken(
             @AuthenticationPrincipal Jwt jwt,
@@ -61,7 +64,10 @@ public class NotificationController {
     }
 
     @Operation(summary = "알림 수신 설정 변경")
-    @ApiDocumentation(id = "NOTI-002", name = "알림 설정 변경", owner = ApiOwner.MINJI)
+    @ApiDocumentation(
+            id = "NOTI-002", name = "알림 설정 변경", owner = ApiOwner.MINJI,
+            errors = "USER_NOT_FOUND"
+    )
     @PatchMapping("/notification-settings")
     public ResponseEntity<SuccessResponse<NotificationSettingResponse>> updateNotificationSetting(
             @AuthenticationPrincipal Jwt jwt,
@@ -74,7 +80,10 @@ public class NotificationController {
     }
 
     @Operation(summary = "FCM 푸시 토큰 등록 해제")
-    @ApiDocumentation(id = "NOTI-003", name = "푸시 토큰 해제", owner = ApiOwner.MINJI)
+    @ApiDocumentation(
+            id = "NOTI-003", name = "푸시 토큰 해제", owner = ApiOwner.MINJI,
+            errors = "PUSH_TOKEN_NOT_FOUND"
+    )
     @DeleteMapping("/push-tokens/{deviceId}")
     public ResponseEntity<SuccessResponse<PushTokenUnregistrationResponse>> unregisterPushToken(
             @AuthenticationPrincipal Jwt jwt,

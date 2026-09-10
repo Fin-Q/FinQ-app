@@ -29,7 +29,15 @@ public class SocialAccountController {
 
     @PostMapping("/kakao")
     @Operation(summary = "Kakao 계정 연동")
-    @ApiDocumentation(id = "USER-012", name = "Kakao 계정 연동", owner = ApiOwner.MINJI)
+    @ApiDocumentation(
+            id = "USER-012", name = "Kakao 계정 연동", owner = ApiOwner.MINJI,
+            errors = {
+                    "AUTH_INVALID_KAKAO_ACCESS_TOKEN",
+                    "AUTH_KAKAO_AUTH_SERVER_UNAVAILABLE",
+                    "USER_NOT_FOUND",
+                    "USER_SOCIAL_ACCOUNT_LINK_CONFLICT"
+            }
+    )
     public ResponseEntity<SuccessResponse<SocialAccountLinkResponse>> linkKakao(
             @AuthenticationPrincipal Jwt jwt, @Valid @RequestBody KakaoAccountLinkRequest request
     ) {
@@ -40,7 +48,16 @@ public class SocialAccountController {
     @PostMapping("/apple")
     @Operation(summary = "Apple 계정 연동",
             description = "Identity Token과 일회용 Authorization Code를 동일한 원본 nonce로 검증합니다.")
-    @ApiDocumentation(id = "USER-011", name = "Apple 계정 연동", owner = ApiOwner.MINJI)
+    @ApiDocumentation(
+            id = "USER-011", name = "Apple 계정 연동", owner = ApiOwner.MINJI,
+            errors = {
+                    "AUTH_INVALID_APPLE_IDENTITY_TOKEN",
+                    "AUTH_INVALID_APPLE_AUTHORIZATION_CODE",
+                    "AUTH_APPLE_AUTH_SERVER_UNAVAILABLE",
+                    "USER_NOT_FOUND",
+                    "USER_SOCIAL_ACCOUNT_LINK_CONFLICT"
+            }
+    )
     public ResponseEntity<SuccessResponse<SocialAccountLinkResponse>> linkApple(
             @AuthenticationPrincipal Jwt jwt, @Valid @RequestBody AppleAccountLinkRequest request
     ) {
