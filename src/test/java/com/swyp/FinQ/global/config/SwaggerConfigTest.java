@@ -234,37 +234,83 @@ class SwaggerConfigTest extends MySqlContainerSupport {
             assertThat(responses.has("400")).as("400 response for %s", operation.key()).isTrue();
             assertThat(responses.has("500")).as("500 response for %s", operation.key()).isTrue();
             assertThat(responses.path("400").path("content").path("application/json")
-                    .path("examples").path("example").path("value").path("status").asText())
+                    .path("examples").path("COMMON_VALIDATION_ERROR")
+                    .path("value").path("status").asText())
                     .as("400 example for %s", operation.key())
                     .isEqualTo("ERROR");
-            assertThat(errorCode(responses, "400"))
+            assertThat(errorCode(responses, "400", "COMMON_VALIDATION_ERROR"))
                     .as("400 error code for %s", operation.key())
                     .isEqualTo("COMMON_VALIDATION_ERROR");
-            assertThat(errorCode(responses, "500"))
+            assertThat(errorCode(responses, "500", "COMMON_INTERNAL_SERVER_ERROR"))
                     .as("500 error code for %s", operation.key())
                     .isEqualTo("COMMON_INTERNAL_SERVER_ERROR");
 
             boolean shouldRequireAuthentication = !PUBLIC_OPERATIONS.contains(operation.key());
-            assertThat(responses.has("401"))
-                    .as("401 response for %s", operation.key())
-                    .isEqualTo(shouldRequireAuthentication);
             if (shouldRequireAuthentication) {
-                assertThat(errorCode(responses, "401"))
+                assertThat(errorCode(responses, "401", "AUTH_UNAUTHORIZED"))
                         .as("401 error code for %s", operation.key())
                         .isEqualTo("AUTH_UNAUTHORIZED");
+            } else {
+                assertThat(exampleNames(responses, "401"))
+                        .as("public operation must not require authentication: %s", operation.key())
+                        .doesNotContain("AUTH_UNAUTHORIZED");
             }
         }
     }
 
-    private String errorCode(JsonNode responses, String status) {
+    @Test
+    void documentsApiSpecificErrorsAsNamedExamples() throws Exception {
+        JsonNode apiDocs = getApiDocs();
+
+        JsonNode signUp = operation(apiDocs, "/auth/sign-up", "post").path("responses");
+        assertThat(exampleNames(signUp, "400"))
+                .contains("COMMON_VALIDATION_ERROR", "AUTH_REQUIRED_AGREEMENT_MISSING",
+                        "AUTH_REQUIRED_AGREEMENT_NOT_ACCEPTED");
+        assertThat(exampleNames(signUp, "409")).containsExactly("AUTH_EMAIL_ALREADY_EXISTS");
+
+        JsonNode appleLogin = operation(apiDocs, "/auth/social/apple", "post").path("responses");
+        assertThat(exampleNames(appleLogin, "401"))
+                .contains("AUTH_INVALID_APPLE_IDENTITY_TOKEN", "AUTH_INVALID_APPLE_AUTHORIZATION_CODE");
+        assertThat(exampleNames(appleLogin, "503")).contains("AUTH_APPLE_AUTH_SERVER_UNAVAILABLE");
+
+        JsonNode unregister = operation(apiDocs, "/users/me/push-tokens/{deviceId}", "delete")
+                .path("responses");
+        assertThat(exampleNames(unregister, "404")).containsExactly("PUSH_TOKEN_NOT_FOUND");
+
+        JsonNode streakCalendar = operation(apiDocs, "/streak/calendar", "get").path("responses");
+        assertThat(exampleNames(streakCalendar, "400"))
+                .contains("COMMON_VALIDATION_ERROR", "STREAK_MONTH_OUT_OF_RANGE");
+        assertThat(exampleNames(streakCalendar, "404")).containsExactly("USER_NOT_FOUND");
+    }
+
+    @Test
+    void swaggerDoesNotExposeVirtualErrorCodes() throws Exception {
+        String apiDocs = getApiDocs().toString();
+
+        assertThat(apiDocs)
+                .doesNotContain("COMMON-001", "AUTH-001", "COMMON-500");
+    }
+
+    private String errorCode(JsonNode responses, String status, String exampleName) {
         return responses.path(status)
                 .path("content")
                 .path("application/json")
                 .path("examples")
-                .path("example")
+                .path(exampleName)
                 .path("value")
                 .path("errorCode")
                 .asText();
+    }
+
+    private Set<String> exampleNames(JsonNode responses, String status) {
+        Set<String> names = new HashSet<>();
+        responses.path(status).path("content").path("application/json")
+                .path("examples").fieldNames().forEachRemaining(names::add);
+        return names;
+    }
+
+    private JsonNode operation(JsonNode apiDocs, String path, String method) {
+        return apiDocs.path("paths").path(path).path(method);
     }
 
     @Test

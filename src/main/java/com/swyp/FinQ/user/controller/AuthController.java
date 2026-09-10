@@ -73,7 +73,14 @@ public class AuthController {
     }
 
     @Operation(summary = "회원가입")
-    @ApiDocumentation(id = "USER-001", name = "회원가입", owner = ApiOwner.MINJI, secured = false)
+    @ApiDocumentation(
+            id = "USER-001", name = "회원가입", owner = ApiOwner.MINJI, secured = false,
+            errors = {
+                    "AUTH_EMAIL_ALREADY_EXISTS",
+                    "AUTH_REQUIRED_AGREEMENT_MISSING",
+                    "AUTH_REQUIRED_AGREEMENT_NOT_ACCEPTED"
+            }
+    )
     @PostMapping("/sign-up")
     public ResponseEntity<SuccessResponse<SignUpResponse>> signUp(
             @Valid @RequestBody SignUpRequest request
@@ -82,7 +89,10 @@ public class AuthController {
     }
 
     @Operation(summary = "일반 로그인")
-    @ApiDocumentation(id = "USER-002", name = "일반 로그인", owner = ApiOwner.MINJI, secured = false)
+    @ApiDocumentation(
+            id = "USER-002", name = "일반 로그인", owner = ApiOwner.MINJI, secured = false,
+            errors = "AUTH_INVALID_CREDENTIALS"
+    )
     @PostMapping("/login")
     public ResponseEntity<SuccessResponse<LoginResponse>> login(
             @Valid @RequestBody LoginRequest request
@@ -95,7 +105,16 @@ public class AuthController {
             description = "Kakao Access Token을 검증하고 기존 회원 로그인 또는 신규 회원 가입을 처리합니다. "
                     + "닉네임과 약관 동의는 신규 회원에게만 필요합니다."
     )
-    @ApiDocumentation(id = "USER-004", name = "Kakao 소셜 로그인", owner = ApiOwner.MINJI, secured = false)
+    @ApiDocumentation(
+            id = "USER-004", name = "Kakao 소셜 로그인", owner = ApiOwner.MINJI, secured = false,
+            errors = {
+                    "AUTH_INVALID_KAKAO_ACCESS_TOKEN",
+                    "AUTH_INVALID_KAKAO_SIGN_UP_INFO",
+                    "AUTH_KAKAO_AUTH_SERVER_UNAVAILABLE",
+                    "AUTH_REQUIRED_AGREEMENT_MISSING",
+                    "AUTH_REQUIRED_AGREEMENT_NOT_ACCEPTED"
+            }
+    )
     @PostMapping("/social/kakao")
     public ResponseEntity<SuccessResponse<KakaoLoginResponse>> loginWithKakao(
             @Valid @RequestBody KakaoLoginRequest request
@@ -112,7 +131,17 @@ public class AuthController {
                     + "기존 회원 로그인 또는 신규 회원 가입을 처리합니다. "
                     + "닉네임과 약관 동의는 신규 회원에게만 필요합니다."
     )
-    @ApiDocumentation(id = "USER-003", name = "Apple 소셜 로그인", owner = ApiOwner.MINJI, secured = false)
+    @ApiDocumentation(
+            id = "USER-003", name = "Apple 소셜 로그인", owner = ApiOwner.MINJI, secured = false,
+            errors = {
+                    "AUTH_INVALID_APPLE_IDENTITY_TOKEN",
+                    "AUTH_INVALID_APPLE_AUTHORIZATION_CODE",
+                    "AUTH_INVALID_APPLE_SIGN_UP_INFO",
+                    "AUTH_APPLE_AUTH_SERVER_UNAVAILABLE",
+                    "AUTH_REQUIRED_AGREEMENT_MISSING",
+                    "AUTH_REQUIRED_AGREEMENT_NOT_ACCEPTED"
+            }
+    )
     @PostMapping("/social/apple")
     public ResponseEntity<SuccessResponse<AppleLoginResponse>> loginWithApple(
             @Valid @RequestBody AppleLoginRequest request
@@ -124,7 +153,10 @@ public class AuthController {
     }
 
     @Operation(summary = "토큰 재발급")
-    @ApiDocumentation(id = "USER-005", name = "Access Token 재발급", owner = ApiOwner.MINJI, secured = false)
+    @ApiDocumentation(
+            id = "USER-005", name = "Access Token 재발급", owner = ApiOwner.MINJI, secured = false,
+            errors = "AUTH_INVALID_REFRESH_TOKEN"
+    )
     @PostMapping("/token/refresh")
     public ResponseEntity<SuccessResponse<TokenRefreshResponse>> refresh(
             @Valid @RequestBody TokenRefreshRequest request
@@ -144,7 +176,13 @@ public class AuthController {
     }
 
     @Operation(summary = "비밀번호 재설정 인증번호 전송")
-    @ApiDocumentation(id = "USER-007", name = "인증번호 전송", owner = ApiOwner.MINJI, secured = false)
+    @ApiDocumentation(
+            id = "USER-007", name = "인증번호 전송", owner = ApiOwner.MINJI, secured = false,
+            errors = {
+                    "AUTH_PASSWORD_RESET_RESEND_TOO_EARLY",
+                    "AUTH_PASSWORD_RESET_EMAIL_SEND_FAILED"
+            }
+    )
     @PostMapping("/password-reset/verifications")
     public ResponseEntity<SuccessResponse<PasswordResetRequestResponse>> requestPasswordReset(
             @Valid @RequestBody PasswordResetEmailRequest request
@@ -156,7 +194,10 @@ public class AuthController {
     }
 
     @Operation(summary = "비밀번호 재설정")
-    @ApiDocumentation(id = "USER-009", name = "비밀번호 재설정", owner = ApiOwner.MINJI, secured = false)
+    @ApiDocumentation(
+            id = "USER-009", name = "비밀번호 재설정", owner = ApiOwner.MINJI, secured = false,
+            errors = "AUTH_INVALID_PASSWORD_RESET_REQUEST"
+    )
     @PostMapping("/password-reset")
     public ResponseEntity<SuccessResponse<Void>> resetPassword(
             @Valid @RequestBody PasswordResetConfirmRequest request
@@ -166,7 +207,10 @@ public class AuthController {
     }
 
     @Operation(summary = "비밀번호 재설정 인증번호 확인")
-    @ApiDocumentation(id = "USER-008", name = "인증번호 확인", owner = ApiOwner.MINJI, secured = false)
+    @ApiDocumentation(
+            id = "USER-008", name = "인증번호 확인", owner = ApiOwner.MINJI, secured = false,
+            errors = "AUTH_INVALID_PASSWORD_RESET_REQUEST"
+    )
     @PostMapping("/password-reset/verifications/confirm")
     public ResponseEntity<SuccessResponse<VerificationCodeConfirmResponse>> confirmVerificationCode(
             @Valid @RequestBody VerificationCodeConfirmRequest request

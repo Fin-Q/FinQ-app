@@ -18,4 +18,6 @@ public @interface ApiDocumentation {
     ApiOwner owner() default ApiOwner.UNASSIGNED;
 
     boolean secured() default true;
+
+    String[] errors() default {};
 }

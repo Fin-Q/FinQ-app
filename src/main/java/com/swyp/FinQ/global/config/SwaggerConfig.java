@@ -2,6 +2,7 @@ package com.swyp.FinQ.global.config;
 
 import com.swyp.FinQ.global.exception.ErrorResponse;
 import com.swyp.FinQ.global.exception.ErrorCode;
+import com.swyp.FinQ.global.exception.ErrorCodeCatalog;
 import com.swyp.FinQ.global.exception.GlobalErrorCode;
 import io.swagger.v3.core.converter.ModelConverters;
 import io.swagger.v3.oas.models.OpenAPI;
@@ -76,6 +77,9 @@ public class SwaggerConfig {
       operation.addExtension("x-owner", owner);
       addCommonErrorResponse(operation, GlobalErrorCode.COMMON_VALIDATION_ERROR);
       addCommonErrorResponse(operation, GlobalErrorCode.COMMON_INTERNAL_SERVER_ERROR);
+      for (String errorCode : documentation.errors()) {
+        addCommonErrorResponse(operation, ErrorCodeCatalog.require(errorCode));
+      }
 
       if (documentation.secured()) {
         operation.setSecurity(List.of(new SecurityRequirement().addList(BEARER_AUTH_SCHEME)));
@@ -100,21 +104,30 @@ public class SwaggerConfig {
       io.swagger.v3.oas.models.Operation operation,
       ErrorCode errorCode
   ) {
-    MediaType mediaType = new MediaType()
-      .schema(new Schema<>().$ref("#/components/schemas/ErrorResponse"))
-      .addExamples("example", new Example().value(Map.of(
+    String httpStatus = String.valueOf(errorCode.status().value());
+    ApiResponse apiResponse = operation.getResponses().get(httpStatus);
+    if (apiResponse == null) {
+      apiResponse = new ApiResponse()
+        .description(errorCode.status().value() + " " + errorCode.status().getReasonPhrase())
+        .content(new Content());
+      operation.getResponses().addApiResponse(httpStatus, apiResponse);
+    }
+
+    MediaType mediaType = apiResponse.getContent().get("application/json");
+    if (mediaType == null) {
+      mediaType = new MediaType()
+        .schema(new Schema<>().$ref("#/components/schemas/ErrorResponse"));
+      apiResponse.getContent().addMediaType("application/json", mediaType);
+    }
+
+    mediaType.addExamples(errorCode.errorCode(), new Example()
+      .summary(errorCode.message())
+      .value(Map.of(
         "status", "ERROR",
         "errorCode", errorCode.errorCode(),
         "message", errorCode.message(),
         "details", List.of(),
         "traceId", "a1b2c3d4e5f67890"
       )));
-
-    operation.getResponses().addApiResponse(
-      String.valueOf(errorCode.status().value()),
-      new ApiResponse()
-        .description(errorCode.message())
-        .content(new Content().addMediaType("application/json", mediaType))
-    );
   }
 }

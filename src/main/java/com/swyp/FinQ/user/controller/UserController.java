@@ -42,7 +42,10 @@ public class UserController {
     private final UserWithdrawalService userWithdrawalService;
 
     @Operation(summary = "회원 탈퇴")
-    @ApiDocumentation(id = "USER-010", name = "회원 탈퇴", owner = ApiOwner.MINJI)
+    @ApiDocumentation(
+            id = "USER-010", name = "회원 탈퇴", owner = ApiOwner.MINJI,
+            errors = "USER_NOT_FOUND"
+    )
     @DeleteMapping
     public ResponseEntity<SuccessResponse<Void>> withdraw(
             @AuthenticationPrincipal Jwt jwt
@@ -52,7 +55,10 @@ public class UserController {
     }
 
     @Operation(summary = "마이페이지 조회")
-    @ApiDocumentation(id = "USER-016", name = "마이페이지 정보 조회", owner = ApiOwner.MINJI)
+    @ApiDocumentation(
+            id = "USER-016", name = "마이페이지 정보 조회", owner = ApiOwner.MINJI,
+            errors = "USER_NOT_FOUND"
+    )
     @GetMapping
     public ResponseEntity<SuccessResponse<MyPageResponse>> getMyPage(
             @AuthenticationPrincipal Jwt jwt
@@ -64,7 +70,10 @@ public class UserController {
     }
 
     @Operation(summary = "온보딩 상태 조회")
-    @ApiDocumentation(id = "USER-013", name = "온보딩 진행 상태 조회", owner = ApiOwner.MINJI)
+    @ApiDocumentation(
+            id = "USER-013", name = "온보딩 진행 상태 조회", owner = ApiOwner.MINJI,
+            errors = "USER_NOT_FOUND"
+    )
     @GetMapping("/onboarding")
     public ResponseEntity<SuccessResponse<OnboardingResponse>> getOnboarding(
             @AuthenticationPrincipal Jwt jwt
@@ -76,7 +85,14 @@ public class UserController {
     }
 
     @Operation(summary = "관심 주제 최초 저장")
-    @ApiDocumentation(id = "USER-014", name = "관심 주제 저장", owner = ApiOwner.MINJI)
+    @ApiDocumentation(
+            id = "USER-014", name = "관심 주제 저장", owner = ApiOwner.MINJI,
+            errors = {
+                    "USER_NOT_FOUND",
+                    "USER_INTEREST_ALREADY_SELECTED",
+                    "USER_DUPLICATE_INTEREST_CATEGORY"
+            }
+    )
     @PostMapping("/interests")
     public ResponseEntity<SuccessResponse<OnboardingResponse>> selectInterests(
             @AuthenticationPrincipal Jwt jwt,
@@ -89,7 +105,14 @@ public class UserController {
     }
 
     @Operation(summary = "관심 주제 수정")
-    @ApiDocumentation(name = "관심 주제 수정", owner = ApiOwner.MINJI)
+    @ApiDocumentation(
+            name = "관심 주제 수정", owner = ApiOwner.MINJI,
+            errors = {
+                    "USER_NOT_FOUND",
+                    "USER_INTEREST_NOT_SELECTED",
+                    "USER_DUPLICATE_INTEREST_CATEGORY"
+            }
+    )
     @PutMapping("/interests")
     public ResponseEntity<SuccessResponse<OnboardingResponse>> updateInterests(
             @AuthenticationPrincipal Jwt jwt,
@@ -102,7 +125,10 @@ public class UserController {
     }
 
     @Operation(summary = "온보딩 완료 처리")
-    @ApiDocumentation(id = "USER-015", name = "온보딩 완료 상태 변경", owner = ApiOwner.MINJI)
+    @ApiDocumentation(
+            id = "USER-015", name = "온보딩 완료 상태 변경", owner = ApiOwner.MINJI,
+            errors = {"USER_NOT_FOUND", "USER_ONBOARDING_INTEREST_REQUIRED"}
+    )
     @PatchMapping("/onboarding/complete")
     public ResponseEntity<SuccessResponse<OnboardingResponse>> completeOnboarding(
             @AuthenticationPrincipal Jwt jwt
@@ -114,7 +140,10 @@ public class UserController {
     }
 
     @Operation(summary = "닉네임 변경")
-    @ApiDocumentation(id = "USER-017", name = "닉네임 변경", owner = ApiOwner.MINJI)
+    @ApiDocumentation(
+            id = "USER-017", name = "닉네임 변경", owner = ApiOwner.MINJI,
+            errors = "USER_NOT_FOUND"
+    )
     @PatchMapping("/nickname")
     public ResponseEntity<SuccessResponse<NicknameUpdateResponse>> updateNickname(
             @AuthenticationPrincipal Jwt jwt,
@@ -127,7 +156,10 @@ public class UserController {
     }
 
     @Operation(summary = "프로필 이미지 변경")
-    @ApiDocumentation(id = "USER-018", name = "프로필 이미지 변경", owner = ApiOwner.MINJI)
+    @ApiDocumentation(
+            id = "USER-018", name = "프로필 이미지 변경", owner = ApiOwner.MINJI,
+            errors = "USER_NOT_FOUND"
+    )
     @PatchMapping("/profile-image")
     public ResponseEntity<SuccessResponse<ProfileImageUpdateResponse>> updateProfileImage(
             @AuthenticationPrincipal Jwt jwt,
