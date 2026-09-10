@@ -55,6 +55,7 @@ mail:
 
 kakao:
   app-id: ${KAKAO_APP_ID:}
+  admin-key: ${KAKAO_ADMIN_KEY:}
   api-base-url: https://kapi.kakao.com
 
 apple:
@@ -65,6 +66,7 @@ apple:
   issuer: https://appleid.apple.com
   jwk-set-uri: https://appleid.apple.com/auth/keys
   token-uri: https://appleid.apple.com/auth/token
+  revoke-uri: https://appleid.apple.com/auth/revoke
   client-secret-expiration: 5m
 
 social-oauth:

@@ -7,6 +7,7 @@ import java.net.URI;
 @ConfigurationProperties(prefix = "kakao")
 public record KakaoProperties(
         String appId,
+        String adminKey,
         URI apiBaseUrl
 ) {
 }

@@ -34,7 +34,7 @@ class KakaoAccessTokenClientTest {
         server = MockRestServiceServer.bindTo(builder).build();
         client = new KakaoAccessTokenClient(
                 builder.baseUrl("https://kapi.kakao.com").build(),
-                new KakaoProperties("1563928", URI.create("https://kapi.kakao.com"))
+                new KakaoProperties("1563928", "admin-key", URI.create("https://kapi.kakao.com"))
         );
     }
 

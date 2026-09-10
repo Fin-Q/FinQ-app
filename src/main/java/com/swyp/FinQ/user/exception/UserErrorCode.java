@@ -11,6 +11,11 @@ public enum UserErrorCode implements ErrorCode {
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "USER_NOT_FOUND", "사용자를 찾을 수 없습니다."),
     SOCIAL_ACCOUNT_LINK_CONFLICT(HttpStatus.CONFLICT, "USER_SOCIAL_ACCOUNT_LINK_CONFLICT",
             "이미 연동된 소셜 계정이 있어 연동할 수 없습니다."),
+    SOCIAL_ACCOUNT_UNLINK_FAILED(
+            HttpStatus.SERVICE_UNAVAILABLE,
+            "USER_SOCIAL_ACCOUNT_UNLINK_FAILED",
+            "소셜 계정 연결 해제에 실패했습니다. 잠시 후 다시 시도해주세요."
+    ),
     INTEREST_ALREADY_SELECTED(
             HttpStatus.CONFLICT,
             "USER_INTEREST_ALREADY_SELECTED",
