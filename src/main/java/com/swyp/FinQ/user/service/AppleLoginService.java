@@ -24,7 +24,7 @@ import java.util.Optional;
 public class AppleLoginService {
 
     private static final ZoneId SERVICE_ZONE_ID = ZoneId.of("Asia/Seoul");
-    private static final int MAX_NICKNAME_LENGTH = 50;
+    private static final int MAX_NICKNAME_LENGTH = 15;
 
     private final AppleIdentityTokenVerifier appleIdentityTokenVerifier;
     private final AppleAuthorizationCodeVerifier appleAuthorizationCodeVerifier;

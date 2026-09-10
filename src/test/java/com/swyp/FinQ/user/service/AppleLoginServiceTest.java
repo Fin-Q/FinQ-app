@@ -165,6 +165,20 @@ class AppleLoginServiceTest {
     }
 
     @Test
+    void 신규_Apple_회원의_닉네임이_15자를_초과하면_거부한다() {
+        mockVerifiedIdentity();
+        given(socialAccountRepository.findByProviderAndProviderUserId(SocialProvider.APPLE, PROVIDER_USER_ID))
+                .willReturn(Optional.empty());
+
+        assertThatThrownBy(() -> appleLoginService.login(command("a".repeat(16), requiredAgreements())))
+                .isInstanceOfSatisfying(BaseException.class, exception ->
+                        assertThat(exception.getCode()).isEqualTo(AuthErrorCode.INVALID_APPLE_SIGN_UP_INFO));
+
+        verify(userRepository, never()).saveAndFlush(any(User.class));
+        verify(appleAuthorizationCodeVerifier, never()).verify(any(), any(), any());
+    }
+
+    @Test
     void 필수_약관_검증이_실패하면_Apple_회원정보를_저장하지_않는다() {
         List<AgreementRequest> agreements = requiredAgreements();
         BaseException agreementException = BaseException.of(AuthErrorCode.REQUIRED_AGREEMENT_NOT_ACCEPTED);

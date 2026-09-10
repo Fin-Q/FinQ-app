@@ -68,7 +68,7 @@ class UserControllerTest extends MySqlContainerSupport {
     @Test
     void withdrawsAuthenticatedUser() throws Exception {
         User user = saveUser();
-        selectInterests(user.getId(), "[\"SAL\"]");
+        selectInterests(user.getId(), "[1]");
         saveStreakLogs(user, LocalDate.now());
         entityManager.flush();
         entityManager.clear();
@@ -126,7 +126,7 @@ class UserControllerTest extends MySqlContainerSupport {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                  "categoryCodes": ["INV", "SAL"]
+                                  "interestTopicIds": [2, 1]
                                 }
                                 """))
                 .andExpect(status().isCreated())
@@ -147,7 +147,7 @@ class UserControllerTest extends MySqlContainerSupport {
         User user = saveUser();
         String request = """
                 {
-                  "categoryCodes": ["SAL"]
+                  "interestTopicIds": [1]
                 }
                 """;
 
@@ -174,7 +174,7 @@ class UserControllerTest extends MySqlContainerSupport {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                  "categoryCodes": ["SAL", "SAL"]
+                                  "interestTopicIds": [1, 1]
                                 }
                                 """))
                 .andExpect(status().isBadRequest())
@@ -182,16 +182,48 @@ class UserControllerTest extends MySqlContainerSupport {
     }
 
     @Test
+    void rejectsMoreThanTwoInterestTopics() throws Exception {
+        User user = saveUser();
+
+        mockMvc.perform(post("/users/me/interests")
+                        .header(HttpHeaders.AUTHORIZATION, bearerToken(user.getId()))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "interestTopicIds": [1, 2, 3]
+                                }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errorCode").value("COMMON_VALIDATION_ERROR"));
+    }
+
+    @Test
+    void rejectsUnknownInterestTopicId() throws Exception {
+        User user = saveUser();
+
+        mockMvc.perform(post("/users/me/interests")
+                        .header(HttpHeaders.AUTHORIZATION, bearerToken(user.getId()))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "interestTopicIds": [999999]
+                                }
+                                """))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.errorCode").value("CATEGORY_NOT_FOUND"));
+    }
+
+    @Test
     void replacesSelectedInterests() throws Exception {
         User user = saveUser();
-        selectInterests(user.getId(), "[\"SAL\", \"INV\"]");
+        selectInterests(user.getId(), "[1, 2]");
 
         mockMvc.perform(put("/users/me/interests")
                         .header(HttpHeaders.AUTHORIZATION, bearerToken(user.getId()))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                  "categoryCodes": ["TAX", "STK"]
+                                  "interestTopicIds": [4, 3]
                                 }
                                 """))
                 .andExpect(status().isOk())
@@ -218,7 +250,7 @@ class UserControllerTest extends MySqlContainerSupport {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                  "categoryCodes": ["SAL"]
+                                  "interestTopicIds": [1]
                                 }
                                 """))
                 .andExpect(status().isConflict())
@@ -228,7 +260,7 @@ class UserControllerTest extends MySqlContainerSupport {
     @Test
     void completesOnboardingAndKeepsCompletionTimeOnRepeatedRequest() throws Exception {
         User user = saveUser();
-        selectInterests(user.getId(), "[\"SAL\"]");
+        selectInterests(user.getId(), "[1]");
 
         mockMvc.perform(patch("/users/me/onboarding/complete")
                         .header(HttpHeaders.AUTHORIZATION, bearerToken(user.getId())))
@@ -262,7 +294,7 @@ class UserControllerTest extends MySqlContainerSupport {
     @Test
     void getsMyPageWithProfileAndLearningSummary() throws Exception {
         User user = saveUser();
-        selectInterests(user.getId(), "[\"SAL\"]");
+        selectInterests(user.getId(), "[1]");
         user.addXp(80);
         xpHistoryRepository.save(XpHistory.builder()
                 .user(user)
@@ -394,12 +426,12 @@ class UserControllerTest extends MySqlContainerSupport {
     }
 
     @Test
-    void rejectsNicknameOverFiftyCharacters() throws Exception {
+    void rejectsNicknameOverFifteenCharacters() throws Exception {
         User user = saveUser();
         mockMvc.perform(patch("/users/me/nickname")
                         .header(HttpHeaders.AUTHORIZATION, bearerToken(user.getId()))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"nickname\":\"" + "a".repeat(51) + "\"}"))
+                        .content("{\"nickname\":\"" + "a".repeat(16) + "\"}"))
                 .andExpect(status().isBadRequest());
     }
 
@@ -437,11 +469,11 @@ class UserControllerTest extends MySqlContainerSupport {
         }
     }
 
-    private void selectInterests(Long userId, String categoryCodes) throws Exception {
+    private void selectInterests(Long userId, String interestTopicIds) throws Exception {
         mockMvc.perform(post("/users/me/interests")
                         .header(HttpHeaders.AUTHORIZATION, bearerToken(userId))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"categoryCodes\":" + categoryCodes + "}"))
+                        .content("{\"interestTopicIds\":" + interestTopicIds + "}"))
                 .andExpect(status().isCreated());
     }
 }

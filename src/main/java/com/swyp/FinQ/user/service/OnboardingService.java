@@ -1,7 +1,6 @@
 package com.swyp.FinQ.user.service;
 
 import com.swyp.FinQ.content.domain.Category;
-import com.swyp.FinQ.content.domain.CategoryCode;
 import com.swyp.FinQ.content.exception.ContentErrorCode;
 import com.swyp.FinQ.content.repository.CategoryRepository;
 import com.swyp.FinQ.global.exception.BaseException;
@@ -44,9 +43,9 @@ public class OnboardingService {
     @Transactional
     public OnboardingResponse selectInterests(Long userId, InterestSelectionRequest request) {
         User user = getUser(userId);
-        validateInitialSelection(user, request.categoryCodes());
+        validateInitialSelection(user, request.interestTopicIds());
 
-        List<UserInterest> interests = createInterests(user, resolveCategories(request.categoryCodes()));
+        List<UserInterest> interests = createInterests(user, resolveCategories(request.interestTopicIds()));
         userInterestRepository.saveAll(interests);
         user.moveToCharacterGuide();
 
@@ -61,7 +60,7 @@ public class OnboardingService {
             throw BaseException.of(UserErrorCode.INTEREST_NOT_SELECTED);
         }
 
-        List<Category> categories = resolveCategories(request.categoryCodes());
+        List<Category> categories = resolveCategories(request.interestTopicIds());
         userInterestRepository.deleteAllByUserId(userId);
         List<UserInterest> interests = createInterests(user, categories);
         userInterestRepository.saveAll(interests);
@@ -90,26 +89,26 @@ public class OnboardingService {
                 .orElseThrow(() -> BaseException.of(UserErrorCode.USER_NOT_FOUND));
     }
 
-    private void validateInitialSelection(User user, List<CategoryCode> categoryCodes) {
+    private void validateInitialSelection(User user, List<Long> interestTopicIds) {
         if (user.getOnboardingStatus() != OnboardingStatus.INTEREST_SELECTION
                 || userInterestRepository.existsByUserId(user.getId())) {
             throw BaseException.of(UserErrorCode.INTEREST_ALREADY_SELECTED);
         }
-        if (new LinkedHashSet<>(categoryCodes).size() != categoryCodes.size()) {
+        if (new LinkedHashSet<>(interestTopicIds).size() != interestTopicIds.size()) {
             throw BaseException.of(UserErrorCode.DUPLICATE_INTEREST_CATEGORY);
         }
     }
 
-    private List<Category> resolveCategories(List<CategoryCode> requestedCodes) {
-        Set<CategoryCode> categoryCodes = new LinkedHashSet<>(requestedCodes);
-        if (categoryCodes.size() != requestedCodes.size()) {
+    private List<Category> resolveCategories(List<Long> requestedIds) {
+        Set<Long> interestTopicIds = new LinkedHashSet<>(requestedIds);
+        if (interestTopicIds.size() != requestedIds.size()) {
             throw BaseException.of(UserErrorCode.DUPLICATE_INTEREST_CATEGORY);
         }
 
-        List<Category> categories = categoryRepository.findAllByCategoryCodeIn(categoryCodes).stream()
+        List<Category> categories = categoryRepository.findAllById(interestTopicIds).stream()
                 .sorted((left, right) -> left.getDisplayOrder().compareTo(right.getDisplayOrder()))
                 .toList();
-        if (categories.size() != categoryCodes.size()) {
+        if (categories.size() != interestTopicIds.size()) {
             throw BaseException.of(ContentErrorCode.CATEGORY_NOT_FOUND);
         }
         return categories;

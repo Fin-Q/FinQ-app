@@ -57,7 +57,7 @@ class SwaggerConfigTest extends MySqlContainerSupport {
             ApiTags.CONTENT, ApiOwner.YEZANEE.displayName(),
             ApiTags.HOME, ApiOwner.YEZANEE.displayName(),
             ApiTags.LEARNING, ApiOwner.YEZANEE.displayName(),
-            ApiTags.NOTI, ApiOwner.UNASSIGNED.displayName(),
+            ApiTags.NOTI, ApiOwner.MINJI.displayName(),
             ApiTags.REWARD, ApiOwner.YEZANEE.displayName(),
             ApiTags.STREAK, ApiOwner.MINJI.displayName(),
             ApiTags.USER, ApiOwner.MINJI.displayName()
@@ -183,6 +183,22 @@ class SwaggerConfigTest extends MySqlContainerSupport {
         assertThat(signUp.path("properties").path("email").path("maxLength").asInt()).isEqualTo(255);
         assertThat(signUp.path("properties").path("password").path("minLength").asInt()).isEqualTo(8);
         assertThat(signUp.path("properties").path("password").path("maxLength").asInt()).isEqualTo(72);
+        assertThat(signUp.path("properties").path("nickname").path("maxLength").asInt()).isEqualTo(15);
+
+        JsonNode interestSelection = schemas.path("InterestSelectionRequest");
+        assertThat(textValues(interestSelection.path("required"))).contains("interestTopicIds");
+        assertThat(interestSelection.path("properties").has("categoryCodes")).isFalse();
+        JsonNode interestTopicIds = interestSelection.path("properties").path("interestTopicIds");
+        assertThat(interestTopicIds.path("type").asText()).isEqualTo("array");
+        assertThat(interestTopicIds.path("maxItems").asInt()).isEqualTo(2);
+        assertThat(interestTopicIds.path("items").path("type").asText()).isEqualTo("integer");
+
+        assertThat(schemas.path("KakaoLoginRequest").path("properties")
+                .path("nickname").path("maxLength").asInt()).isEqualTo(15);
+        assertThat(schemas.path("AppleLoginRequest").path("properties")
+                .path("nickname").path("maxLength").asInt()).isEqualTo(15);
+        assertThat(schemas.path("NicknameUpdateRequest").path("properties")
+                .path("nickname").path("maxLength").asInt()).isEqualTo(15);
 
         JsonNode verificationCode = schemas.path("VerificationCodeConfirmRequest")
                 .path("properties").path("verificationCode");
@@ -221,12 +237,34 @@ class SwaggerConfigTest extends MySqlContainerSupport {
                     .path("examples").path("example").path("value").path("status").asText())
                     .as("400 example for %s", operation.key())
                     .isEqualTo("ERROR");
+            assertThat(errorCode(responses, "400"))
+                    .as("400 error code for %s", operation.key())
+                    .isEqualTo("COMMON_VALIDATION_ERROR");
+            assertThat(errorCode(responses, "500"))
+                    .as("500 error code for %s", operation.key())
+                    .isEqualTo("COMMON_INTERNAL_SERVER_ERROR");
 
             boolean shouldRequireAuthentication = !PUBLIC_OPERATIONS.contains(operation.key());
             assertThat(responses.has("401"))
                     .as("401 response for %s", operation.key())
                     .isEqualTo(shouldRequireAuthentication);
+            if (shouldRequireAuthentication) {
+                assertThat(errorCode(responses, "401"))
+                        .as("401 error code for %s", operation.key())
+                        .isEqualTo("AUTH_UNAUTHORIZED");
+            }
         }
+    }
+
+    private String errorCode(JsonNode responses, String status) {
+        return responses.path(status)
+                .path("content")
+                .path("application/json")
+                .path("examples")
+                .path("example")
+                .path("value")
+                .path("errorCode")
+                .asText();
     }
 
     @Test

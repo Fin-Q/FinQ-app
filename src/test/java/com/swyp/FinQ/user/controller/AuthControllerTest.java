@@ -146,6 +146,20 @@ class AuthControllerTest extends MySqlContainerSupport {
     }
 
     @Test
+    void rejectsSignUpWithNicknameOverFifteenCharacters() throws Exception {
+        String request = validSignUpRequest().replace("\"nickname\": \"Minter\"",
+                "\"nickname\": \"" + "a".repeat(16) + "\"");
+
+        mockMvc.perform(post("/auth/sign-up")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(request))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errorCode").value("COMMON_VALIDATION_ERROR"));
+
+        assertThat(userRepository.findByEmail("user@example.com")).isEmpty();
+    }
+
+    @Test
     void rejectsExistingEmail() throws Exception {
         userRepository.save(User.builder()
                 .email("user@example.com")
