@@ -1,8 +1,19 @@
 package com.swyp.FinQ.user.controller;
 
+import com.swyp.FinQ.content.domain.Category;
 import com.swyp.FinQ.content.domain.CategoryCode;
+import com.swyp.FinQ.content.domain.Content;
+import com.swyp.FinQ.content.repository.CategoryRepository;
+import com.swyp.FinQ.content.repository.ContentRepository;
 import com.swyp.FinQ.global.security.token.IssuedTokenPair;
 import com.swyp.FinQ.global.security.token.JwtTokenProvider;
+import com.swyp.FinQ.learning.domain.UserCategoryCompletion;
+import com.swyp.FinQ.learning.domain.UserContentCompletion;
+import com.swyp.FinQ.learning.repository.UserCategoryCompletionRepository;
+import com.swyp.FinQ.learning.repository.UserContentCompletionRepository;
+import com.swyp.FinQ.notification.domain.PushPlatform;
+import com.swyp.FinQ.notification.domain.PushToken;
+import com.swyp.FinQ.notification.repository.PushTokenRepository;
 import com.swyp.FinQ.reward.domain.XpHistory;
 import com.swyp.FinQ.reward.domain.XpType;
 import com.swyp.FinQ.reward.repository.XpHistoryRepository;
@@ -11,10 +22,20 @@ import com.swyp.FinQ.streak.domain.StreakLog;
 import com.swyp.FinQ.streak.repository.StreakLogRepository;
 import com.swyp.FinQ.support.MySqlContainerSupport;
 import com.swyp.FinQ.user.domain.OnboardingStatus;
+import com.swyp.FinQ.user.domain.PasswordResetRequest;
 import com.swyp.FinQ.user.domain.ProfileImageCode;
+import com.swyp.FinQ.user.domain.SocialAccount;
+import com.swyp.FinQ.user.domain.SocialProvider;
 import com.swyp.FinQ.user.domain.User;
+import com.swyp.FinQ.user.domain.UserAgreement;
+import com.swyp.FinQ.user.domain.UserInterest;
+import com.swyp.FinQ.user.repository.PasswordResetRequestRepository;
+import com.swyp.FinQ.user.repository.RefreshTokenRepository;
+import com.swyp.FinQ.user.repository.SocialAccountRepository;
+import com.swyp.FinQ.user.repository.UserAgreementRepository;
 import com.swyp.FinQ.user.repository.UserInterestRepository;
 import com.swyp.FinQ.user.repository.UserRepository;
+import com.swyp.FinQ.user.service.AuthTokenService;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import org.junit.jupiter.api.Test;
@@ -29,6 +50,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -54,7 +76,37 @@ class UserControllerTest extends MySqlContainerSupport {
     private UserInterestRepository userInterestRepository;
 
     @Autowired
+    private UserAgreementRepository userAgreementRepository;
+
+    @Autowired
+    private SocialAccountRepository socialAccountRepository;
+
+    @Autowired
+    private RefreshTokenRepository refreshTokenRepository;
+
+    @Autowired
+    private PasswordResetRequestRepository passwordResetRequestRepository;
+
+    @Autowired
+    private UserContentCompletionRepository userContentCompletionRepository;
+
+    @Autowired
+    private UserCategoryCompletionRepository userCategoryCompletionRepository;
+
+    @Autowired
+    private PushTokenRepository pushTokenRepository;
+
+    @Autowired
+    private CategoryRepository categoryRepository;
+
+    @Autowired
+    private ContentRepository contentRepository;
+
+    @Autowired
     private JwtTokenProvider jwtTokenProvider;
+
+    @Autowired
+    private AuthTokenService authTokenService;
 
     @Autowired
     private XpHistoryRepository xpHistoryRepository;
@@ -68,21 +120,103 @@ class UserControllerTest extends MySqlContainerSupport {
     @Test
     void withdrawsAuthenticatedUser() throws Exception {
         User user = saveUser();
-        selectInterests(user.getId(), "[1]");
-        saveStreakLogs(user, LocalDate.now());
+        Category category = categoryRepository.findByCategoryCode(CategoryCode.SAL).orElseThrow();
+        Content content = contentRepository.findByCategoryOrderByDisplayOrder(category).getFirst();
+        LocalDateTime now = LocalDateTime.now();
+
+        UserAgreement agreement = userAgreementRepository.save(UserAgreement.builder()
+                .user(user)
+                .agreementCode("TERMS_OF_SERVICE")
+                .agreementVersion("1.0")
+                .agreed(true)
+                .agreedAt(now)
+                .build());
+        SocialAccount socialAccount = socialAccountRepository.save(SocialAccount.builder()
+                .user(user)
+                .provider(SocialProvider.KAKAO)
+                .providerUserId("withdrawal-kakao-user")
+                .build());
+        PasswordResetRequest passwordResetRequest = passwordResetRequestRepository.save(
+                PasswordResetRequest.builder()
+                        .user(user)
+                        .verificationId("withdrawal-verification")
+                        .verificationCodeHash("verification-code-hash")
+                        .codeExpiresAt(now.plusMinutes(5))
+                        .resendAvailableAt(now.plusMinutes(1))
+                        .passwordResetTokenHash("withdrawal-reset-token-hash")
+                        .tokenExpiresAt(now.plusMinutes(10))
+                        .build()
+        );
+        UserInterest interest = userInterestRepository.save(UserInterest.builder()
+                .user(user)
+                .category(category)
+                .build());
+        UserContentCompletion contentCompletion = userContentCompletionRepository.save(
+                UserContentCompletion.builder()
+                        .user(user)
+                        .content(content)
+                        .completedAt(now)
+                        .xpEarned(10)
+                        .build()
+        );
+        UserCategoryCompletion categoryCompletion = userCategoryCompletionRepository.save(
+                UserCategoryCompletion.builder()
+                        .user(user)
+                        .category(category)
+                        .completedAt(now)
+                        .xpEarned(40)
+                        .build()
+        );
+        XpHistory xpHistory = xpHistoryRepository.save(XpHistory.builder()
+                .user(user)
+                .xpAmount(10)
+                .xpType(XpType.CONTENT_COMPLETE)
+                .referenceId("content:withdrawal-test")
+                .build());
+        StreakLog streakLog = streakLogRepository.save(StreakLog.builder()
+                .user(user)
+                .streakDate(LocalDate.now())
+                .build());
+        PushToken pushToken = pushTokenRepository.save(PushToken.builder()
+                .user(user)
+                .sessionId("withdrawal-push-session")
+                .deviceId("withdrawal-device")
+                .fcmToken("withdrawal-fcm-token")
+                .fcmTokenHash("a".repeat(64))
+                .platform(PushPlatform.IOS)
+                .build());
+        IssuedTokenPair tokens = authTokenService.issue(user);
+        Long refreshTokenId = refreshTokenRepository.findBySessionId(tokens.sessionId()).orElseThrow().getId();
+
         entityManager.flush();
         entityManager.clear();
 
         mockMvc.perform(delete("/users/me")
-                        .header(HttpHeaders.AUTHORIZATION, bearerToken(user.getId())))
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + tokens.accessToken()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("SUCCESS"))
                 .andExpect(jsonPath("$.message").value("회원 탈퇴에 성공했습니다."))
                 .andExpect(jsonPath("$.data").doesNotExist());
 
+        entityManager.clear();
+
         assertThat(userRepository.existsById(user.getId())).isFalse();
-        assertThat(userInterestRepository.findAllByUserId(user.getId())).isEmpty();
-        assertThat(streakLogRepository.findAllByUserIdOrderByStreakDateAsc(user.getId())).isEmpty();
+        assertThat(userAgreementRepository.existsById(agreement.getId())).isFalse();
+        assertThat(socialAccountRepository.existsById(socialAccount.getId())).isFalse();
+        assertThat(refreshTokenRepository.existsById(refreshTokenId)).isFalse();
+        assertThat(passwordResetRequestRepository.existsById(passwordResetRequest.getId())).isFalse();
+        assertThat(userInterestRepository.existsById(interest.getId())).isFalse();
+        assertThat(userContentCompletionRepository.existsById(contentCompletion.getId())).isFalse();
+        assertThat(userCategoryCompletionRepository.existsById(categoryCompletion.getId())).isFalse();
+        assertThat(xpHistoryRepository.existsById(xpHistory.getId())).isFalse();
+        assertThat(streakLogRepository.existsById(streakLog.getId())).isFalse();
+        assertThat(pushTokenRepository.existsById(pushToken.getId())).isFalse();
+
+        mockMvc.perform(post("/auth/token/refresh")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"refreshToken\":\"" + tokens.refreshToken() + "\"}"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.errorCode").value("AUTH_INVALID_REFRESH_TOKEN"));
     }
 
     @Test
