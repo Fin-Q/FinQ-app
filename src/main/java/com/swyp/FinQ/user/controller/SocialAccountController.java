@@ -1,6 +1,7 @@
 package com.swyp.FinQ.user.controller;
 
 import com.swyp.FinQ.global.config.ApiDocumentation;
+import com.swyp.FinQ.global.config.ApiOwner;
 import com.swyp.FinQ.global.config.ApiTags;
 import com.swyp.FinQ.global.success.SuccessResponse;
 import com.swyp.FinQ.user.dto.req.KakaoAccountLinkRequest;
@@ -28,7 +29,7 @@ public class SocialAccountController {
 
     @PostMapping("/kakao")
     @Operation(summary = "Kakao 계정 연동")
-    @ApiDocumentation(id = "USER-012", name = "Kakao 계정 연동", owner = "이민지")
+    @ApiDocumentation(id = "USER-012", name = "Kakao 계정 연동", owner = ApiOwner.MINJI)
     public ResponseEntity<SuccessResponse<SocialAccountLinkResponse>> linkKakao(
             @AuthenticationPrincipal Jwt jwt, @Valid @RequestBody KakaoAccountLinkRequest request
     ) {
@@ -39,7 +40,7 @@ public class SocialAccountController {
     @PostMapping("/apple")
     @Operation(summary = "Apple 계정 연동",
             description = "Identity Token과 일회용 Authorization Code를 동일한 원본 nonce로 검증합니다.")
-    @ApiDocumentation(id = "USER-011", name = "Apple 계정 연동", owner = "이민지")
+    @ApiDocumentation(id = "USER-011", name = "Apple 계정 연동", owner = ApiOwner.MINJI)
     public ResponseEntity<SuccessResponse<SocialAccountLinkResponse>> linkApple(
             @AuthenticationPrincipal Jwt jwt, @Valid @RequestBody AppleAccountLinkRequest request
     ) {

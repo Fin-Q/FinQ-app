@@ -64,7 +64,7 @@ public class SwaggerConfig {
       }
 
       String apiId = documentation.id().isBlank() ? "미지정" : documentation.id();
-      String owner = documentation.owner().isBlank() ? "미지정" : documentation.owner();
+      String owner = documentation.owner().displayName();
 
       operation.setSummary("[" + apiId + "] " + documentation.name());
       operation.setOperationId(documentation.id().isBlank() ? null : documentation.id());

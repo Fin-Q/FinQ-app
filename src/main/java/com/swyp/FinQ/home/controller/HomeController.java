@@ -2,6 +2,7 @@ package com.swyp.FinQ.home.controller;
 
 import com.swyp.FinQ.global.success.SuccessResponse;
 import com.swyp.FinQ.global.config.ApiDocumentation;
+import com.swyp.FinQ.global.config.ApiOwner;
 import com.swyp.FinQ.global.config.ApiTags;
 import com.swyp.FinQ.home.dto.res.HomeResponse;
 import com.swyp.FinQ.home.service.HomeQueryService;
@@ -25,7 +26,7 @@ public class HomeController {
     @Operation(
             description = "사용자 정보, 캐릭터/레벨, XP, 스트릭, 추천 질문 카드를 조회합니다."
     )
-    @ApiDocumentation(id = "HOME-001", name = "홈 화면 조회", owner = "yezanee")
+    @ApiDocumentation(id = "HOME-001", name = "홈 화면 조회", owner = ApiOwner.YEZANEE)
     @GetMapping("/home")
     public ResponseEntity<SuccessResponse<HomeResponse>> getHome(
             @AuthenticationPrincipal Jwt jwt

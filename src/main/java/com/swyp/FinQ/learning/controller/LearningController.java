@@ -2,6 +2,7 @@ package com.swyp.FinQ.learning.controller;
 
 import com.swyp.FinQ.global.success.SuccessResponse;
 import com.swyp.FinQ.global.config.ApiDocumentation;
+import com.swyp.FinQ.global.config.ApiOwner;
 import com.swyp.FinQ.global.config.ApiTags;
 import com.swyp.FinQ.learning.dto.req.AnswerRequest;
 import com.swyp.FinQ.learning.dto.res.ContentAnswerResponse;
@@ -35,7 +36,7 @@ public class LearningController {
     @Operation(
             description = "콘텐츠 학습 중 문제의 답안을 제출하고 채점합니다. 최초 정답 시 콘텐츠 완료 및 보상을 처리합니다."
     )
-    @ApiDocumentation(id = "LEARNING-001", name = "문제 채점", owner = "yezanee")
+    @ApiDocumentation(id = "LEARNING-001", name = "문제 채점", owner = ApiOwner.YEZANEE)
     @PostMapping("/contents/{contentId}/questions/{questionId}/answers")
     public ResponseEntity<SuccessResponse<ContentAnswerResponse>> gradeContentAnswer(
             @AuthenticationPrincipal Jwt jwt,
@@ -51,7 +52,7 @@ public class LearningController {
     @Operation(
             description = "카테고리별 심화퀴즈 3문제를 조회합니다."
     )
-    @ApiDocumentation(id = "LEARNING-002", name = "심화퀴즈 조회", owner = "yezanee")
+    @ApiDocumentation(id = "LEARNING-002", name = "심화퀴즈 조회", owner = ApiOwner.YEZANEE)
     @GetMapping("/categories/{categoryId}/quiz")
     public ResponseEntity<SuccessResponse<QuizListResponse>> getQuizList(
             @Parameter(description = "카테고리 ID") @PathVariable Long categoryId
@@ -63,7 +64,7 @@ public class LearningController {
     @Operation(
             description = "심화퀴즈 답안을 제출하고 채점합니다. 3문제 최초 통과 시 카테고리 완료 및 보상을 처리합니다."
     )
-    @ApiDocumentation(id = "LEARNING-003", name = "심화퀴즈 채점", owner = "yezanee")
+    @ApiDocumentation(id = "LEARNING-003", name = "심화퀴즈 채점", owner = ApiOwner.YEZANEE)
     @PostMapping("/categories/{categoryId}/quiz/questions/{questionId}/answers")
     public ResponseEntity<SuccessResponse<QuizAnswerResponse>> gradeQuizAnswer(
             @AuthenticationPrincipal Jwt jwt,

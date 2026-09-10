@@ -15,7 +15,7 @@ public @interface ApiDocumentation {
 
     String name();
 
-    String owner() default "미지정";
+    ApiOwner owner() default ApiOwner.UNASSIGNED;
 
     boolean secured() default true;
 }

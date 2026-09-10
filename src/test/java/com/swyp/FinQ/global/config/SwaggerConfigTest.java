@@ -54,13 +54,13 @@ class SwaggerConfigTest extends MySqlContainerSupport {
     );
 
     private static final Map<String, String> EXPECTED_OWNERS_BY_TAG = Map.of(
-            ApiTags.CONTENT, "yezanee",
-            ApiTags.HOME, "yezanee",
-            ApiTags.LEARNING, "yezanee",
-            ApiTags.NOTI, "미지정",
-            ApiTags.REWARD, "yezanee",
-            ApiTags.STREAK, "이민지",
-            ApiTags.USER, "이민지"
+            ApiTags.CONTENT, ApiOwner.YEZANEE.displayName(),
+            ApiTags.HOME, ApiOwner.YEZANEE.displayName(),
+            ApiTags.LEARNING, ApiOwner.YEZANEE.displayName(),
+            ApiTags.NOTI, ApiOwner.UNASSIGNED.displayName(),
+            ApiTags.REWARD, ApiOwner.YEZANEE.displayName(),
+            ApiTags.STREAK, ApiOwner.MINJI.displayName(),
+            ApiTags.USER, ApiOwner.MINJI.displayName()
     );
 
     @Autowired
@@ -198,11 +198,16 @@ class SwaggerConfigTest extends MySqlContainerSupport {
     @Test
     void documentsCommonSuccessAndErrorResponses() throws Exception {
         JsonNode schemas = getApiDocs().path("components").path("schemas");
+        assertThat(textValues(schemas.path("ErrorResponse").path("properties").path("status").path("enum")))
+                .containsExactlyInAnyOrder("SUCCESS", "ERROR");
         assertEveryPropertyHasDescription(schemas.path("ErrorResponse"));
         int[] successSchemaCount = {0};
         schemas.properties().forEach(schema -> {
             if (schema.getKey().startsWith("SuccessResponse")) {
                 assertEveryPropertyHasDescription(schema.getValue());
+                assertThat(textValues(schema.getValue().path("properties").path("status").path("enum")))
+                        .as("response status enum for %s", schema.getKey())
+                        .containsExactlyInAnyOrder("SUCCESS", "ERROR");
                 successSchemaCount[0]++;
             }
         });
