@@ -1,6 +1,7 @@
 package com.swyp.FinQ.user.controller;
 
 import com.swyp.FinQ.global.config.ApiDocumentation;
+import com.swyp.FinQ.global.config.ApiTags;
 import com.swyp.FinQ.global.success.SuccessResponse;
 import com.swyp.FinQ.user.dto.req.KakaoAccountLinkRequest;
 import com.swyp.FinQ.user.dto.req.AppleAccountLinkRequest;
@@ -20,7 +21,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/users/me/social-accounts")
 @RequiredArgsConstructor
-@Tag(name = "USER", description = "사용자 계정 연동 API")
+@Tag(name = ApiTags.USER, description = "사용자 계정 연동 API")
 public class SocialAccountController {
     private final KakaoAccountLinkService kakaoAccountLinkService;
     private final AppleAccountLinkService appleAccountLinkService;

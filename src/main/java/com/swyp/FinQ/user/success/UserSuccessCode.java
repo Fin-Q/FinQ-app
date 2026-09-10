@@ -16,7 +16,8 @@ public enum UserSuccessCode implements SuccessCode {
     NICKNAME_UPDATED(HttpStatus.OK, "닉네임 변경에 성공했습니다."),
     PROFILE_IMAGE_UPDATED(HttpStatus.OK, "프로필 이미지 변경에 성공했습니다."),
     KAKAO_ACCOUNT_LINKED(HttpStatus.OK, "Kakao 계정 연동에 성공했습니다."),
-    APPLE_ACCOUNT_LINKED(HttpStatus.OK, "Apple 계정 연동에 성공했습니다.");
+    APPLE_ACCOUNT_LINKED(HttpStatus.OK, "Apple 계정 연동에 성공했습니다."),
+    USER_WITHDRAWN(HttpStatus.OK, "회원 탈퇴에 성공했습니다.");
 
     private final HttpStatus status;
     private final String message;

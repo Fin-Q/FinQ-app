@@ -2,6 +2,7 @@ package com.swyp.FinQ.streak.controller;
 
 import com.swyp.FinQ.global.success.SuccessResponse;
 import com.swyp.FinQ.global.config.ApiDocumentation;
+import com.swyp.FinQ.global.config.ApiTags;
 import com.swyp.FinQ.streak.dto.res.StreakCalendarResponse;
 import com.swyp.FinQ.streak.dto.res.StreakStatusResponse;
 import com.swyp.FinQ.streak.service.StreakQueryService;
@@ -21,7 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.time.YearMonth;
 
-@Tag(name = "STREAK", description = "스트릭 기록 조회 API")
+@Tag(name = ApiTags.STREAK, description = "스트릭 기록 조회 API")
 @RestController
 @RequestMapping("/streak")
 @RequiredArgsConstructor

@@ -13,6 +13,8 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -39,7 +41,7 @@ class SwaggerConfigTest extends MySqlContainerSupport {
 
     private static final Set<String> EXPECTED_OPERATION_IDS = Set.of(
             "USER-001", "USER-002", "USER-003", "USER-004", "USER-005", "USER-006",
-            "USER-007", "USER-008", "USER-009", "USER-011", "USER-012", "USER-013",
+            "USER-007", "USER-008", "USER-009", "USER-010", "USER-011", "USER-012", "USER-013",
             "USER-014", "USER-015", "USER-016", "USER-017", "USER-018",
             "CONTENT-001", "CONTENT-002", "CONTENT-003", "HOME-001",
             "LEARNING-001", "LEARNING-002", "LEARNING-003", "REWARD-001",
@@ -49,6 +51,16 @@ class SwaggerConfigTest extends MySqlContainerSupport {
     private static final Set<String> EXPECTED_UNASSIGNED_OPERATIONS = Set.of(
             "get /auth/agreements",
             "put /users/me/interests"
+    );
+
+    private static final Map<String, String> EXPECTED_OWNERS_BY_TAG = Map.of(
+            ApiTags.CONTENT, "yezanee",
+            ApiTags.HOME, "yezanee",
+            ApiTags.LEARNING, "yezanee",
+            ApiTags.NOTI, "미지정",
+            ApiTags.REWARD, "yezanee",
+            ApiTags.STREAK, "이민지",
+            ApiTags.USER, "이민지"
     );
 
     @Autowired
@@ -74,7 +86,7 @@ class SwaggerConfigTest extends MySqlContainerSupport {
     void documentsOnlyProtectedOperationsWithBearerAuthentication() throws Exception {
         List<ApiOperation> operations = getOperations(getApiDocs());
 
-        assertThat(operations).hasSize(32);
+        assertThat(operations).hasSize(33);
         for (ApiOperation operation : operations) {
             boolean hasBearerSecurity = operation.document().path("security").isArray()
                     && operation.document().path("security").size() == 1
@@ -112,23 +124,34 @@ class SwaggerConfigTest extends MySqlContainerSupport {
     }
 
     @Test
-    void exposesDomainTagsAndBackendOwners() throws Exception {
-        List<ApiOperation> operations = getOperations(getApiDocs());
+    void exposesOnlyUppercaseDomainTags() throws Exception {
+        JsonNode apiDocs = getApiDocs();
+        List<ApiOperation> operations = getOperations(apiDocs);
         Set<String> tags = new HashSet<>();
 
         for (ApiOperation operation : operations) {
-            String tag = operation.document().path("tags").get(0).asText();
-            String expectedOwner = Set.of("USER", "STREAK").contains(tag) ? "이민지" : "미지정";
-
-            tags.add(tag);
-            assertThat(operation.document().path("x-owner").asText()).isEqualTo(expectedOwner);
-            assertThat(operation.document().path("description").asText())
-                    .contains("BE 담당자:** " + expectedOwner);
+            operation.document().path("tags").forEach(tagNode -> {
+                String tag = tagNode.asText();
+                tags.add(tag);
+                assertThat(tag).isEqualTo(tag.toUpperCase(Locale.ROOT));
+            });
         }
 
-        assertThat(tags).containsExactlyInAnyOrder(
-                "USER", "CONTENT", "HOME", "LEARNING", "REWARD", "STREAK", "NOTI"
-        );
+        assertThat(tags).containsExactlyInAnyOrderElementsOf(ApiTags.ALL);
+
+        Set<String> documentedTags = new HashSet<>();
+        apiDocs.path("tags").forEach(tagNode -> documentedTags.add(tagNode.path("name").asText()));
+        assertThat(documentedTags).containsExactlyInAnyOrderElementsOf(ApiTags.ALL);
+    }
+
+    @Test
+    void exposesBackendOwners() throws Exception {
+        for (ApiOperation operation : getOperations(getApiDocs())) {
+            String tag = operation.document().path("tags").get(0).asText();
+            assertThat(operation.document().path("x-owner").asText())
+                    .as("backend owner for %s", operation.key())
+                    .isEqualTo(EXPECTED_OWNERS_BY_TAG.get(tag));
+        }
     }
 
     @Test

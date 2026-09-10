@@ -30,13 +30,13 @@ public class SwaggerConfig {
           .description("JWT Access Token을 입력하세요. Bearer 접두사는 자동으로 적용됩니다.")
       ))
       .tags(List.of(
-        new Tag().name("CONTENT").description("콘텐츠 및 지식맵 API"),
-        new Tag().name("HOME").description("홈 화면 API"),
-        new Tag().name("LEARNING").description("학습 채점 및 심화 퀴즈 API"),
-        new Tag().name("NOTI").description("푸시 토큰 및 알림 설정 API"),
-        new Tag().name("REWARD").description("보상 및 레벨 API"),
-        new Tag().name("STREAK").description("스트릭 기록 조회 API"),
-        new Tag().name("USER").description("회원 인증, 온보딩 및 프로필 API")
+        new Tag().name(ApiTags.CONTENT).description("콘텐츠 및 지식맵 API"),
+        new Tag().name(ApiTags.HOME).description("홈 화면 API"),
+        new Tag().name(ApiTags.LEARNING).description("학습 채점 및 심화 퀴즈 API"),
+        new Tag().name(ApiTags.NOTI).description("푸시 토큰 및 알림 설정 API"),
+        new Tag().name(ApiTags.REWARD).description("보상 및 레벨 API"),
+        new Tag().name(ApiTags.STREAK).description("스트릭 기록 조회 API"),
+        new Tag().name(ApiTags.USER).description("회원 인증, 온보딩 및 프로필 API")
       ))
       .info(new Info()
         .title("FinQ API")

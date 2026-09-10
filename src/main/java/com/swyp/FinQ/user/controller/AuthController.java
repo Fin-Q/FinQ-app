@@ -1,6 +1,7 @@
 package com.swyp.FinQ.user.controller;
 
 import com.swyp.FinQ.global.config.ApiDocumentation;
+import com.swyp.FinQ.global.config.ApiTags;
 import com.swyp.FinQ.global.success.SuccessResponse;
 import com.swyp.FinQ.global.security.token.JwtClaimNames;
 import com.swyp.FinQ.user.dto.req.AppleLoginRequest;
@@ -43,7 +44,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-@Tag(name = "USER", description = "회원 인증 API")
+@Tag(name = ApiTags.USER, description = "회원 인증 API")
 @RestController
 @RequestMapping("/auth")
 @RequiredArgsConstructor

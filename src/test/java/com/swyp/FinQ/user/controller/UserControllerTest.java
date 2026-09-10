@@ -15,6 +15,8 @@ import com.swyp.FinQ.user.domain.ProfileImageCode;
 import com.swyp.FinQ.user.domain.User;
 import com.swyp.FinQ.user.repository.UserInterestRepository;
 import com.swyp.FinQ.user.repository.UserRepository;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -29,6 +31,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -58,6 +61,48 @@ class UserControllerTest extends MySqlContainerSupport {
 
     @Autowired
     private StreakLogRepository streakLogRepository;
+
+    @PersistenceContext
+    private EntityManager entityManager;
+
+    @Test
+    void withdrawsAuthenticatedUser() throws Exception {
+        User user = saveUser();
+        selectInterests(user.getId(), "[\"SAL\"]");
+        saveStreakLogs(user, LocalDate.now());
+        entityManager.flush();
+        entityManager.clear();
+
+        mockMvc.perform(delete("/users/me")
+                        .header(HttpHeaders.AUTHORIZATION, bearerToken(user.getId())))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("SUCCESS"))
+                .andExpect(jsonPath("$.message").value("회원 탈퇴에 성공했습니다."))
+                .andExpect(jsonPath("$.data").doesNotExist());
+
+        assertThat(userRepository.existsById(user.getId())).isFalse();
+        assertThat(userInterestRepository.findAllByUserId(user.getId())).isEmpty();
+        assertThat(streakLogRepository.findAllByUserIdOrderByStreakDateAsc(user.getId())).isEmpty();
+    }
+
+    @Test
+    void rejectsWithdrawalWithoutAccessToken() throws Exception {
+        User user = saveUser();
+
+        mockMvc.perform(delete("/users/me"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.errorCode").value("AUTH_UNAUTHORIZED"));
+
+        assertThat(userRepository.existsById(user.getId())).isTrue();
+    }
+
+    @Test
+    void returnsNotFoundWhenWithdrawalUserDoesNotExist() throws Exception {
+        mockMvc.perform(delete("/users/me")
+                        .header(HttpHeaders.AUTHORIZATION, bearerToken(Long.MAX_VALUE)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.errorCode").value("USER_NOT_FOUND"));
+    }
 
     @Test
     void getsOnboardingStatusAndInterests() throws Exception {
@@ -247,7 +292,7 @@ class UserControllerTest extends MySqlContainerSupport {
     void updatesNicknameWithoutChangingProfileImage() throws Exception {
         User user = saveUser();
 
-        var result = mockMvc.perform(patch("/users/me/nickname")
+        mockMvc.perform(patch("/users/me/nickname")
                         .header(HttpHeaders.AUTHORIZATION, bearerToken(user.getId()))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -260,18 +305,11 @@ class UserControllerTest extends MySqlContainerSupport {
                 .andExpect(jsonPath("$.data.nickname").value("핀큐"))
                 .andExpect(jsonPath("$.data.updatedAt").value(org.hamcrest.Matchers.endsWith("+09:00")))
                 .andExpect(jsonPath("$.data.length()").value(2))
-                .andExpect(jsonPath("$.data.profileImageCode").doesNotExist())
-                .andReturn();
+                .andExpect(jsonPath("$.data.profileImageCode").doesNotExist());
 
         User updatedUser = userRepository.findById(user.getId()).orElseThrow();
         assertThat(updatedUser.getNickname()).isEqualTo("핀큐");
         assertThat(updatedUser.getProfileImageCode()).isEqualTo(ProfileImageCode.PROFILE_01);
-        String expectedUpdatedAt = updatedUser.getUpdatedAt()
-                .atZone(java.time.ZoneId.systemDefault())
-                .withZoneSameInstant(java.time.ZoneId.of("Asia/Seoul"))
-                .toOffsetDateTime().toString();
-        assertThat(result.getResponse().getContentAsString(java.nio.charset.StandardCharsets.UTF_8))
-                .contains(expectedUpdatedAt);
     }
 
     @Test

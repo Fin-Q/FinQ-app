@@ -1,7 +1,7 @@
 package com.swyp.FinQ.home.controller;
 
 import com.swyp.FinQ.global.success.SuccessResponse;
-import com.swyp.FinQ.global.config.ApiDocumentation;
+import com.swyp.FinQ.global.config.ApiTags;
 import com.swyp.FinQ.home.dto.res.HomeResponse;
 import com.swyp.FinQ.home.service.HomeQueryService;
 import com.swyp.FinQ.home.success.HomeSuccessCode;
@@ -17,7 +17,7 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-@Tag(name = "Home", description = "홈 화면 API")
+@Tag(name = ApiTags.HOME, description = "홈 화면 API")
 @SecurityRequirement(name = "bearerAuth")
 @RestController
 @RequiredArgsConstructor
