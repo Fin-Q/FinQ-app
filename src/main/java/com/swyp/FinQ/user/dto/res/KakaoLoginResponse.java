@@ -22,7 +22,8 @@ public record KakaoLoginResponse(
         String tokenType,
         @Schema(description = "Access Token 만료 시간(초)", example = "3600")
         long accessTokenExpiresIn,
-        @Schema(description = "현재 온보딩 단계", example = "INTEREST_SELECTION")
+        @Schema(description = "현재 온보딩 단계", example = "INTEREST_SELECTION",
+                allowableValues = {"INTEREST_SELECTION", "CHARACTER_GUIDE", "COMPLETED"})
         OnboardingStatus onboardingStatus
 ) {
 

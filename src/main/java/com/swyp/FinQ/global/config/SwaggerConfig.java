@@ -1,9 +1,15 @@
 package com.swyp.FinQ.global.config;
 
-import io.swagger.v3.oas.models.Components;
+import com.swyp.FinQ.global.exception.ErrorResponse;
+import io.swagger.v3.core.converter.ModelConverters;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.info.Info;
+import io.swagger.v3.oas.models.media.Content;
+import io.swagger.v3.oas.models.media.MediaType;
+import io.swagger.v3.oas.models.media.Schema;
+import io.swagger.v3.oas.models.examples.Example;
+import io.swagger.v3.oas.models.responses.ApiResponse;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
 import io.swagger.v3.oas.models.tags.Tag;
@@ -12,6 +18,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import java.util.List;
+import java.util.Map;
 
 @Configuration
 public class SwaggerConfig {
@@ -20,15 +27,19 @@ public class SwaggerConfig {
 
   @Bean
   public OpenAPI openAPI() {
+    Components components = new Components().addSecuritySchemes(
+      BEARER_AUTH_SCHEME,
+      new SecurityScheme()
+        .type(SecurityScheme.Type.HTTP)
+        .scheme("bearer")
+        .bearerFormat("JWT")
+        .description("JWT Access Token을 입력하세요. Bearer 접두사는 자동으로 적용됩니다.")
+    );
+    ModelConverters.getInstance().read(ErrorResponse.class)
+      .forEach(components::addSchemas);
+
     return new OpenAPI()
-      .components(new Components().addSecuritySchemes(
-        BEARER_AUTH_SCHEME,
-        new SecurityScheme()
-          .type(SecurityScheme.Type.HTTP)
-          .scheme("bearer")
-          .bearerFormat("JWT")
-          .description("JWT Access Token을 입력하세요. Bearer 접두사는 자동으로 적용됩니다.")
-      ))
+      .components(components)
       .tags(List.of(
         new Tag().name(ApiTags.CONTENT).description("콘텐츠 및 지식맵 API"),
         new Tag().name(ApiTags.HOME).description("홈 화면 API"),
@@ -41,13 +52,7 @@ public class SwaggerConfig {
       .info(new Info()
         .title("FinQ API")
         .description("FinQ 금융 학습 서비스 API 문서")
-        .version("v1.0.0"))
-      .components(new Components()
-        .addSecuritySchemes("bearerAuth", new SecurityScheme()
-          .type(SecurityScheme.Type.HTTP)
-          .scheme("bearer")
-          .bearerFormat("JWT")
-          .description("JWT Access Token을 입력하세요.")));
+        .version("v1.0.0"));
   }
 
   @Bean
@@ -65,9 +70,12 @@ public class SwaggerConfig {
       operation.setOperationId(documentation.id().isBlank() ? null : documentation.id());
       operation.setDescription(withOwner(operation.getDescription(), owner));
       operation.addExtension("x-owner", owner);
+      addCommonErrorResponse(operation, "400", "잘못된 요청 또는 입력값 검증 실패", "COMMON-001");
+      addCommonErrorResponse(operation, "500", "서버 내부 오류", "COMMON-500");
 
       if (documentation.secured()) {
         operation.setSecurity(List.of(new SecurityRequirement().addList(BEARER_AUTH_SCHEME)));
+        addCommonErrorResponse(operation, "401", "인증 정보가 없거나 유효하지 않음", "AUTH-001");
       } else {
         operation.setSecurity(null);
       }
@@ -81,6 +89,30 @@ public class SwaggerConfig {
     if (description == null || description.isBlank()) {
       return ownerDescription;
     }
-    return description + "\n\n" + ownerDescription;
+    return ownerDescription + "\n\n" + description;
+  }
+
+  private void addCommonErrorResponse(
+      io.swagger.v3.oas.models.Operation operation,
+      String responseCode,
+      String description,
+      String errorCode
+  ) {
+    MediaType mediaType = new MediaType()
+      .schema(new Schema<>().$ref("#/components/schemas/ErrorResponse"))
+      .addExamples("example", new Example().value(Map.of(
+        "status", "ERROR",
+        "errorCode", errorCode,
+        "message", description,
+        "details", List.of(),
+        "traceId", "a1b2c3d4e5f67890"
+      )));
+
+    operation.getResponses().addApiResponse(
+      responseCode,
+      new ApiResponse()
+        .description(description)
+        .content(new Content().addMediaType("application/json", mediaType))
+    );
   }
 }

@@ -1,6 +1,6 @@
 package com.swyp.FinQ.global.contract;
 
-import io.swagger.v3.oas.annotations.Operation;
+import com.swyp.FinQ.global.config.ApiDocumentation;
 import org.junit.jupiter.api.Test;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RestController;
@@ -42,17 +42,17 @@ class OperationIdContractTest {
 
         for (Class<?> controller : targets) {
             for (Method method : controller.getDeclaredMethods()) {
-                Operation op = method.getAnnotation(Operation.class);
+                ApiDocumentation documentation = method.getAnnotation(ApiDocumentation.class);
                 String label = controller.getSimpleName() + "#" + method.getName();
 
-                if (op == null || op.operationId().isEmpty()) {
+                if (documentation == null || documentation.id().isBlank()) {
                     missing.add(label);
                     continue;
                 }
 
-                String prev = operationIdToMethod.put(op.operationId(), label);
+                String prev = operationIdToMethod.put(documentation.id(), label);
                 if (prev != null) {
-                    duplicates.add(op.operationId() + " → [" + prev + ", " + label + "]");
+                    duplicates.add(documentation.id() + " → [" + prev + ", " + label + "]");
                 }
             }
         }
@@ -74,13 +74,13 @@ class OperationIdContractTest {
 
         for (Class<?> controller : controllers) {
             for (Method method : controller.getDeclaredMethods()) {
-                Operation op = method.getAnnotation(Operation.class);
-                if (op == null || op.operationId().isEmpty()) continue;
+                ApiDocumentation documentation = method.getAnnotation(ApiDocumentation.class);
+                if (documentation == null || documentation.id().isBlank()) continue;
 
                 String label = controller.getSimpleName() + "#" + method.getName();
-                String prev = operationIdToMethod.put(op.operationId(), label);
+                String prev = operationIdToMethod.put(documentation.id(), label);
                 if (prev != null) {
-                    duplicates.add(op.operationId() + " → [" + prev + ", " + label + "]");
+                    duplicates.add(documentation.id() + " → [" + prev + ", " + label + "]");
                 }
             }
         }

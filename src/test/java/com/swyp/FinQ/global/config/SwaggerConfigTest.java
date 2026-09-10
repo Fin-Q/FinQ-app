@@ -148,9 +148,13 @@ class SwaggerConfigTest extends MySqlContainerSupport {
     void exposesBackendOwners() throws Exception {
         for (ApiOperation operation : getOperations(getApiDocs())) {
             String tag = operation.document().path("tags").get(0).asText();
-            assertThat(operation.document().path("x-owner").asText())
+            String owner = operation.document().path("x-owner").asText();
+            assertThat(owner)
                     .as("backend owner for %s", operation.key())
                     .isEqualTo(EXPECTED_OWNERS_BY_TAG.get(tag));
+            assertThat(operation.document().path("description").asText())
+                    .as("owner appears first for %s", operation.key())
+                    .startsWith("**BE 담당자:** " + owner);
         }
     }
 
@@ -160,7 +164,64 @@ class SwaggerConfigTest extends MySqlContainerSupport {
         assertThat(environment.getProperty("springdoc.swagger-ui.tags-sorter")).isEqualTo("alpha");
         assertThat(environment.getProperty("springdoc.swagger-ui.filter")).isEqualTo("true");
         assertThat(environment.getProperty("springdoc.swagger-ui.doc-expansion")).isEqualTo("none");
+        assertThat(environment.getProperty("springdoc.swagger-ui.display-operation-id")).isEqualTo("true");
         assertThat(environment.getProperty("springdoc.swagger-ui.display-request-duration")).isEqualTo("true");
+        assertThat(environment.getProperty("springdoc.swagger-ui.deep-linking")).isEqualTo("true");
+        assertThat(environment.getProperty("springdoc.swagger-ui.persist-authorization")).isEqualTo("true");
+        assertThat(environment.getProperty("springdoc.swagger-ui.default-model-rendering")).isEqualTo("model");
+        assertThat(environment.getProperty("springdoc.swagger-ui.show-common-extensions")).isEqualTo("true");
+    }
+
+    @Test
+    void documentsUserAndNotificationDtoConstraints() throws Exception {
+        JsonNode schemas = getApiDocs().path("components").path("schemas");
+
+        JsonNode signUp = schemas.path("SignUpRequest");
+        assertThat(textValues(signUp.path("required")))
+                .contains("email", "password", "nickname", "agreements");
+        assertThat(signUp.path("properties").path("email").path("format").asText()).isEqualTo("email");
+        assertThat(signUp.path("properties").path("email").path("maxLength").asInt()).isEqualTo(255);
+        assertThat(signUp.path("properties").path("password").path("minLength").asInt()).isEqualTo(8);
+        assertThat(signUp.path("properties").path("password").path("maxLength").asInt()).isEqualTo(72);
+
+        JsonNode verificationCode = schemas.path("VerificationCodeConfirmRequest")
+                .path("properties").path("verificationCode");
+        assertThat(verificationCode.path("pattern").asText()).isEqualTo("[0-9]{6}");
+        assertThat(verificationCode.path("description").asText()).isNotBlank();
+
+        assertEveryPropertyHasDescription(schemas.path("NotificationSettingUpdateRequest"));
+        assertEveryPropertyHasDescription(schemas.path("PushTokenRegistrationRequest"));
+        assertEveryPropertyHasDescription(schemas.path("NotificationSettingResponse"));
+        assertEveryPropertyHasDescription(schemas.path("PushTokenRegistrationResponse"));
+    }
+
+    @Test
+    void documentsCommonSuccessAndErrorResponses() throws Exception {
+        JsonNode schemas = getApiDocs().path("components").path("schemas");
+        assertEveryPropertyHasDescription(schemas.path("ErrorResponse"));
+        int[] successSchemaCount = {0};
+        schemas.properties().forEach(schema -> {
+            if (schema.getKey().startsWith("SuccessResponse")) {
+                assertEveryPropertyHasDescription(schema.getValue());
+                successSchemaCount[0]++;
+            }
+        });
+        assertThat(successSchemaCount[0]).isPositive();
+
+        for (ApiOperation operation : getOperations(getApiDocs())) {
+            JsonNode responses = operation.document().path("responses");
+            assertThat(responses.has("400")).as("400 response for %s", operation.key()).isTrue();
+            assertThat(responses.has("500")).as("500 response for %s", operation.key()).isTrue();
+            assertThat(responses.path("400").path("content").path("application/json")
+                    .path("examples").path("example").path("value").path("status").asText())
+                    .as("400 example for %s", operation.key())
+                    .isEqualTo("ERROR");
+
+            boolean shouldRequireAuthentication = !PUBLIC_OPERATIONS.contains(operation.key());
+            assertThat(responses.has("401"))
+                    .as("401 response for %s", operation.key())
+                    .isEqualTo(shouldRequireAuthentication);
+        }
     }
 
     private JsonNode getApiDocs() throws Exception {
@@ -186,6 +247,21 @@ class SwaggerConfigTest extends MySqlContainerSupport {
                 })
         );
         return operations;
+    }
+
+    private Set<String> textValues(JsonNode array) {
+        Set<String> values = new HashSet<>();
+        array.forEach(value -> values.add(value.asText()));
+        return values;
+    }
+
+    private void assertEveryPropertyHasDescription(JsonNode schema) {
+        assertThat(schema.isMissingNode()).isFalse();
+        schema.path("properties").properties().forEach(property ->
+                assertThat(property.getValue().path("description").asText())
+                        .as("description for %s", property.getKey())
+                        .isNotBlank()
+        );
     }
 
     private record ApiOperation(String path, String method, JsonNode document) {
