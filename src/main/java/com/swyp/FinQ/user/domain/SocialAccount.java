@@ -51,7 +51,14 @@ public class SocialAccount {
     @Column(name = "provider_user_id", nullable = false, length = 255)
     private String providerUserId;
 
+    @Column(name = "encrypted_refresh_token", length = 2048)
+    private String encryptedRefreshToken;
+
     @CreatedDate
     @Column(name = "linked_at", nullable = false, updatable = false)
     private LocalDateTime linkedAt;
+
+    public void updateEncryptedRefreshToken(String encryptedRefreshToken) {
+        this.encryptedRefreshToken = encryptedRefreshToken;
+    }
 }

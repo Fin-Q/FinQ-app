@@ -67,6 +67,9 @@ apple:
   token-uri: https://appleid.apple.com/auth/token
   client-secret-expiration: 5m
 
+social-oauth:
+  token-encryption-key: ${OAUTH_TOKEN_ENCRYPTION_KEY:}
+
 firebase:
   enabled: ${FIREBASE_ENABLED:false}
   credentials-base64: ${FIREBASE_CREDENTIALS_BASE64:}
