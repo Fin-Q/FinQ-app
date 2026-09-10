@@ -13,7 +13,7 @@ import java.util.UUID;
 public record ErrorResponse(
   @Schema(description = "요청 처리 상태", example = "ERROR")
   ApiResponseStatus status,
-  @Schema(description = "클라이언트 분기 처리용 오류 코드", example = "COMMON-001")
+  @Schema(description = "클라이언트 분기 처리용 오류 코드", example = "COMMON_VALIDATION_ERROR")
   String errorCode,
   @Schema(description = "사용자 또는 개발자가 확인할 오류 메시지", example = "요청 값이 올바르지 않습니다.")
   String message,

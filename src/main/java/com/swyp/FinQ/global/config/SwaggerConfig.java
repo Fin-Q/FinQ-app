@@ -1,6 +1,8 @@
 package com.swyp.FinQ.global.config;
 
 import com.swyp.FinQ.global.exception.ErrorResponse;
+import com.swyp.FinQ.global.exception.ErrorCode;
+import com.swyp.FinQ.global.exception.GlobalErrorCode;
 import io.swagger.v3.core.converter.ModelConverters;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.Components;
@@ -72,12 +74,12 @@ public class SwaggerConfig {
       operation.setOperationId(documentation.id().isBlank() ? null : documentation.id());
       operation.setDescription(withOwner(operation.getDescription(), owner));
       operation.addExtension("x-owner", owner);
-      addCommonErrorResponse(operation, "400", "잘못된 요청 또는 입력값 검증 실패", "COMMON-001");
-      addCommonErrorResponse(operation, "500", "서버 내부 오류", "COMMON-500");
+      addCommonErrorResponse(operation, GlobalErrorCode.COMMON_VALIDATION_ERROR);
+      addCommonErrorResponse(operation, GlobalErrorCode.COMMON_INTERNAL_SERVER_ERROR);
 
       if (documentation.secured()) {
         operation.setSecurity(List.of(new SecurityRequirement().addList(BEARER_AUTH_SCHEME)));
-        addCommonErrorResponse(operation, "401", "인증 정보가 없거나 유효하지 않음", "AUTH-001");
+        addCommonErrorResponse(operation, GlobalErrorCode.AUTH_UNAUTHORIZED);
       } else {
         operation.setSecurity(null);
       }
@@ -96,24 +98,22 @@ public class SwaggerConfig {
 
   private void addCommonErrorResponse(
       io.swagger.v3.oas.models.Operation operation,
-      String responseCode,
-      String description,
-      String errorCode
+      ErrorCode errorCode
   ) {
     MediaType mediaType = new MediaType()
       .schema(new Schema<>().$ref("#/components/schemas/ErrorResponse"))
       .addExamples("example", new Example().value(Map.of(
         "status", "ERROR",
-        "errorCode", errorCode,
-        "message", description,
+        "errorCode", errorCode.errorCode(),
+        "message", errorCode.message(),
         "details", List.of(),
         "traceId", "a1b2c3d4e5f67890"
       )));
 
     operation.getResponses().addApiResponse(
-      responseCode,
+      String.valueOf(errorCode.status().value()),
       new ApiResponse()
-        .description(description)
+        .description(errorCode.message())
         .content(new Content().addMediaType("application/json", mediaType))
     );
   }

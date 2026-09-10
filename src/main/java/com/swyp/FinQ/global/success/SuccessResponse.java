@@ -22,7 +22,4 @@ public record SuccessResponse<T>(
       .body(new SuccessResponse<>(ApiResponseStatus.SUCCESS, code.message(), data));
   }
 
-  public static ResponseEntity<Void> noContent() {
-    return ResponseEntity.noContent().build();
-  }
 }
