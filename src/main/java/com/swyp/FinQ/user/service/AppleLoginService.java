@@ -32,6 +32,7 @@ public class AppleLoginService {
     private final UserRepository userRepository;
     private final AgreementRegistrationService agreementRegistrationService;
     private final AuthTokenService authTokenService;
+    private final OAuthTokenCipher tokenCipher;
     private final Clock clock;
 
     @Transactional
@@ -46,13 +47,19 @@ public class AppleLoginService {
                 .findByProviderAndProviderUserId(SocialProvider.APPLE, identity.providerUserId());
 
         if (existingAccount.isPresent()) {
-            verifyAuthorizationCode(command, identity);
-            return loginExistingUser(existingAccount.get().getUser(), loginAt);
+            AppleAuthorizationResult authorization = verifyAuthorizationCode(command, identity);
+            return loginExistingUser(existingAccount.get(), authorization, loginAt);
         }
         return registerAndLoginNewUser(command, identity, loginAt);
     }
 
-    private AppleLoginResult loginExistingUser(User user, LocalDateTime loginAt) {
+    private AppleLoginResult loginExistingUser(
+            SocialAccount account,
+            AppleAuthorizationResult authorization,
+            LocalDateTime loginAt
+    ) {
+        account.updateEncryptedRefreshToken(tokenCipher.encrypt(authorization.refreshToken()));
+        User user = account.getUser();
         user.updateLastLoginAt(loginAt);
         return toResult(user, false, authTokenService.issue(user));
     }
@@ -64,7 +71,8 @@ public class AppleLoginService {
     ) {
         validateNickname(command.nickname());
         agreementRegistrationService.validateRequired(command.agreements());
-        verifyAuthorizationCode(command, identity);
+        AppleAuthorizationResult authorization = verifyAuthorizationCode(command, identity);
+        String encryptedRefreshToken = tokenCipher.encrypt(authorization.refreshToken());
 
         User user = userRepository.saveAndFlush(User.builder()
                 .nickname(command.nickname())
@@ -77,14 +85,18 @@ public class AppleLoginService {
                 .user(user)
                 .provider(SocialProvider.APPLE)
                 .providerUserId(identity.providerUserId())
+                .encryptedRefreshToken(encryptedRefreshToken)
                 .build());
         agreementRegistrationService.save(user, command.agreements(), loginAt);
 
         return toResult(user, true, authTokenService.issue(user));
     }
 
-    private void verifyAuthorizationCode(AppleLoginCommand command, AppleUserIdentity identity) {
-        appleAuthorizationCodeVerifier.verify(
+    private AppleAuthorizationResult verifyAuthorizationCode(
+            AppleLoginCommand command,
+            AppleUserIdentity identity
+    ) {
+        return appleAuthorizationCodeVerifier.verify(
                 command.authorizationCode(),
                 command.nonce(),
                 identity

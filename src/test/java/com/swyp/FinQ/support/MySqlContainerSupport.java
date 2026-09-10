@@ -24,5 +24,7 @@ public abstract class MySqlContainerSupport {
         registry.add("spring.flyway.enabled", () -> true);
         registry.add("spring.jpa.hibernate.ddl-auto", () -> "validate");
         registry.add("jwt.secret", () -> "ZmlucS10ZXN0LWp3dC1zZWNyZXQta2V5LTMyaXRlcyE=");
+        registry.add("social-oauth.token-encryption-key",
+                () -> "MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=");
     }
 }

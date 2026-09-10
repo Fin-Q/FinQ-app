@@ -17,12 +17,14 @@ import com.swyp.FinQ.user.repository.SocialAccountRepository;
 import com.swyp.FinQ.user.repository.UserAgreementRepository;
 import com.swyp.FinQ.user.repository.UserRepository;
 import com.swyp.FinQ.user.service.TokenHashEncoder;
+import com.swyp.FinQ.user.service.AppleAuthorizationResult;
 import com.swyp.FinQ.user.service.AppleAuthorizationCodeVerifier;
 import com.swyp.FinQ.user.service.AppleIdentityTokenVerifier;
 import com.swyp.FinQ.user.service.AppleUserIdentity;
 import com.swyp.FinQ.user.service.KakaoAccessTokenVerifier;
 import com.swyp.FinQ.user.service.KakaoUserIdentity;
 import com.swyp.FinQ.user.service.PasswordResetMailSender;
+import com.swyp.FinQ.user.service.OAuthTokenCipher;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -83,6 +85,9 @@ class AuthControllerTest extends MySqlContainerSupport {
 
     @Autowired
     private TokenHashEncoder tokenHashEncoder;
+
+    @Autowired
+    private OAuthTokenCipher oAuthTokenCipher;
 
     @MockitoBean
     private PasswordResetMailSender passwordResetMailSender;
@@ -390,6 +395,7 @@ class AuthControllerTest extends MySqlContainerSupport {
     void 신규_Apple_회원가입과_로그인에_성공한다() throws Exception {
         given(appleIdentityTokenVerifier.verify("valid-apple-identity-token", APPLE_RAW_NONCE))
                 .willReturn(new AppleUserIdentity("apple-user-id"));
+        mockAppleAuthorizationResult();
 
         String responseBody = mockMvc.perform(post("/auth/social/apple")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -411,11 +417,13 @@ class AuthControllerTest extends MySqlContainerSupport {
                 .path("data")
                 .path("userId")
                 .asText());
-        assertThat(socialAccountRepository
-                .findByProviderAndProviderUserId(SocialProvider.APPLE, "apple-user-id"))
-                .get()
-                .extracting(account -> account.getUser().getId())
-                .isEqualTo(userId);
+        var socialAccount = socialAccountRepository
+                .findByProviderAndProviderUserId(SocialProvider.APPLE, "apple-user-id")
+                .orElseThrow();
+        assertThat(socialAccount.getUser().getId()).isEqualTo(userId);
+        assertThat(socialAccount.getEncryptedRefreshToken()).doesNotContain("apple-refresh-token");
+        assertThat(oAuthTokenCipher.decrypt(socialAccount.getEncryptedRefreshToken()))
+                .isEqualTo("apple-refresh-token");
         assertThat(userAgreementRepository.findAllByUserId(userId)).hasSize(2);
         assertThat(refreshTokenRepository.findAll()).hasSize(1);
         verify(appleAuthorizationCodeVerifier).verify(
@@ -429,6 +437,7 @@ class AuthControllerTest extends MySqlContainerSupport {
     void 기존_Apple_회원은_닉네임과_약관_없이_로그인한다() throws Exception {
         given(appleIdentityTokenVerifier.verify("valid-apple-identity-token", APPLE_RAW_NONCE))
                 .willReturn(new AppleUserIdentity("apple-user-id"));
+        mockAppleAuthorizationResult();
         mockMvc.perform(post("/auth/social/apple")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(validNewAppleLoginRequest()))
@@ -454,6 +463,14 @@ class AuthControllerTest extends MySqlContainerSupport {
         assertThat(socialAccountRepository.count()).isOne();
         assertThat(userAgreementRepository.count()).isEqualTo(2);
         assertThat(refreshTokenRepository.count()).isEqualTo(2);
+    }
+
+    private void mockAppleAuthorizationResult() {
+        given(appleAuthorizationCodeVerifier.verify(
+                "valid-apple-authorization-code",
+                APPLE_RAW_NONCE,
+                new AppleUserIdentity("apple-user-id")
+        )).willReturn(new AppleAuthorizationResult("apple-refresh-token"));
     }
 
     @Test

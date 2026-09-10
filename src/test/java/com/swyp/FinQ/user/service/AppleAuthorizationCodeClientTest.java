@@ -66,13 +66,21 @@ class AppleAuthorizationCodeClientTest {
                 .andExpect(content().contentType(MediaType.APPLICATION_FORM_URLENCODED))
                 .andExpect(content().formData(expectedForm))
                 .andRespond(withSuccess("""
-                        {"id_token":"exchanged-identity-token"}
+                        {
+                          "id_token":"exchanged-identity-token",
+                          "refresh_token":"apple-refresh-token"
+                        }
                         """, MediaType.APPLICATION_JSON));
         given(identityTokenVerifier.verify("exchanged-identity-token", NONCE))
                 .willReturn(EXPECTED_IDENTITY);
 
-        client.verify(AUTHORIZATION_CODE, NONCE, EXPECTED_IDENTITY);
+        AppleAuthorizationResult result = client.verify(
+                AUTHORIZATION_CODE,
+                NONCE,
+                EXPECTED_IDENTITY
+        );
 
+        assertThat(result.refreshToken()).isEqualTo("apple-refresh-token");
         server.verify();
     }
 
@@ -80,10 +88,24 @@ class AppleAuthorizationCodeClientTest {
     void 다른_사용자의_identity_token이_반환되면_거부한다() {
         server.expect(once(), requestTo("https://appleid.apple.com/auth/token"))
                 .andRespond(withSuccess("""
-                        {"id_token":"other-identity-token"}
+                        {
+                          "id_token":"other-identity-token",
+                          "refresh_token":"apple-refresh-token"
+                        }
                         """, MediaType.APPLICATION_JSON));
         given(identityTokenVerifier.verify("other-identity-token", NONCE))
                 .willReturn(new AppleUserIdentity("other-apple-user-id"));
+
+        assertInvalidAuthorizationCode();
+        server.verify();
+    }
+
+    @Test
+    void refresh_token이_없으면_인증_오류로_변환한다() {
+        server.expect(once(), requestTo("https://appleid.apple.com/auth/token"))
+                .andRespond(withSuccess("""
+                        {"id_token":"exchanged-identity-token"}
+                        """, MediaType.APPLICATION_JSON));
 
         assertInvalidAuthorizationCode();
         server.verify();
