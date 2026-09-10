@@ -8,7 +8,7 @@ import jakarta.validation.constraints.Size;
 public record NicknameUpdateRequest(
         @Schema(description = "변경할 닉네임", example = "핀큐마스터")
         @NotBlank(message = "닉네임은 공백일 수 없습니다")
-        @Size(max = 50, message = "닉네임은 50자 이하여야 합니다")
+        @Size(max = 15, message = "닉네임은 15자 이하여야 합니다")
         String nickname
 ) {
 }

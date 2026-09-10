@@ -139,6 +139,22 @@ class KakaoLoginServiceTest {
         verify(userRepository, never()).saveAndFlush(any(User.class));
     }
 
+    @Test
+    void rejectsNewKakaoUserWithNicknameOverFifteenCharacters() {
+        given(kakaoAccessTokenVerifier.verify("kakao-token"))
+                .willReturn(new KakaoUserIdentity(PROVIDER_USER_ID));
+        given(socialAccountRepository.findByProviderAndProviderUserId(SocialProvider.KAKAO, PROVIDER_USER_ID))
+                .willReturn(Optional.empty());
+
+        assertThatThrownBy(() -> kakaoLoginService.login(
+                new KakaoLoginCommand("kakao-token", "a".repeat(16), requiredAgreements())
+        ))
+                .isInstanceOfSatisfying(BaseException.class, exception ->
+                        assertThat(exception.getCode()).isEqualTo(AuthErrorCode.INVALID_KAKAO_SIGN_UP_INFO));
+
+        verify(userRepository, never()).saveAndFlush(any(User.class));
+    }
+
     private User user(Long id, String nickname) {
         return User.builder()
                 .id(id)

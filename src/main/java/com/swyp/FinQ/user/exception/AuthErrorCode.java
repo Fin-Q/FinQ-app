@@ -56,7 +56,7 @@ public enum AuthErrorCode implements ErrorCode {
     INVALID_KAKAO_SIGN_UP_INFO(
             HttpStatus.BAD_REQUEST,
             "AUTH_INVALID_KAKAO_SIGN_UP_INFO",
-            "신규 Kakao 사용자의 닉네임은 필수이며 50자 이하여야 합니다."
+            "신규 Kakao 사용자의 닉네임은 필수이며 15자 이하여야 합니다."
     ),
     KAKAO_AUTH_SERVER_UNAVAILABLE(
             HttpStatus.SERVICE_UNAVAILABLE,
@@ -76,7 +76,7 @@ public enum AuthErrorCode implements ErrorCode {
     INVALID_APPLE_SIGN_UP_INFO(
             HttpStatus.BAD_REQUEST,
             "AUTH_INVALID_APPLE_SIGN_UP_INFO",
-            "신규 Apple 사용자의 닉네임은 필수이며 50자 이하여야 합니다."
+            "신규 Apple 사용자의 닉네임은 필수이며 15자 이하여야 합니다."
     ),
     APPLE_AUTH_SERVER_UNAVAILABLE(
             HttpStatus.SERVICE_UNAVAILABLE,

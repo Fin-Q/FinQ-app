@@ -29,7 +29,7 @@ public record AppleLoginRequest(
         String nonce,
 
         @Schema(description = "신규 회원 닉네임. 기존 회원은 생략 가능", example = "Minter")
-        @Size(max = 50, message = "닉네임은 50자 이하여야 합니다")
+        @Size(max = 15, message = "닉네임은 15자 이하여야 합니다")
         @Pattern(regexp = ".*\\S.*", message = "닉네임은 공백일 수 없습니다")
         String nickname,
 

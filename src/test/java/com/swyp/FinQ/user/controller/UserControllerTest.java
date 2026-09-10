@@ -426,12 +426,12 @@ class UserControllerTest extends MySqlContainerSupport {
     }
 
     @Test
-    void rejectsNicknameOverFiftyCharacters() throws Exception {
+    void rejectsNicknameOverFifteenCharacters() throws Exception {
         User user = saveUser();
         mockMvc.perform(patch("/users/me/nickname")
                         .header(HttpHeaders.AUTHORIZATION, bearerToken(user.getId()))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"nickname\":\"" + "a".repeat(51) + "\"}"))
+                        .content("{\"nickname\":\"" + "a".repeat(16) + "\"}"))
                 .andExpect(status().isBadRequest());
     }
 
