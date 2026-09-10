@@ -44,7 +44,7 @@ public class UserController {
     @Operation(summary = "회원 탈퇴")
     @ApiDocumentation(
             id = "USER-010", name = "회원 탈퇴", owner = ApiOwner.MINJI,
-            errors = "USER_NOT_FOUND"
+            errors = {"USER_NOT_FOUND", "USER_SOCIAL_ACCOUNT_UNLINK_FAILED"}
     )
     @DeleteMapping
     public ResponseEntity<SuccessResponse<Void>> withdraw(

@@ -282,6 +282,11 @@ class SwaggerConfigTest extends MySqlContainerSupport {
                 .path("responses");
         assertThat(exampleNames(unregister, "404")).containsExactly("PUSH_TOKEN_NOT_FOUND");
 
+        JsonNode withdrawal = operation(apiDocs, "/users/me", "delete").path("responses");
+        assertThat(exampleNames(withdrawal, "404")).containsExactly("USER_NOT_FOUND");
+        assertThat(exampleNames(withdrawal, "503"))
+                .containsExactly("USER_SOCIAL_ACCOUNT_UNLINK_FAILED");
+
         JsonNode streakCalendar = operation(apiDocs, "/streak/calendar", "get").path("responses");
         assertThat(exampleNames(streakCalendar, "400"))
                 .contains("COMMON_VALIDATION_ERROR", "STREAK_MONTH_OUT_OF_RANGE");
