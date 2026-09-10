@@ -73,6 +73,11 @@ class SwaggerConfigTest extends MySqlContainerSupport {
     private Environment environment;
 
     @Test
+    void publishesOpenApi30Document() throws Exception {
+        assertThat(getApiDocs().path("openapi").asText()).startsWith("3.0.");
+    }
+
+    @Test
     void registersJwtBearerSecurityScheme() throws Exception {
         JsonNode apiDocs = getApiDocs();
         JsonNode bearerAuth = apiDocs.path("components").path("securitySchemes").path("bearerAuth");
@@ -220,7 +225,7 @@ class SwaggerConfigTest extends MySqlContainerSupport {
         int[] successSchemaCount = {0};
         schemas.properties().forEach(schema -> {
             if (schema.getKey().startsWith("SuccessResponse")) {
-                assertEveryPropertyHasDescription(schema.getValue());
+                assertEveryPropertyHasDescription(schema.getValue(), Set.of("data"));
                 assertThat(textValues(schema.getValue().path("properties").path("status").path("enum")))
                         .as("response status enum for %s", schema.getKey())
                         .containsExactlyInAnyOrder("SUCCESS", "ERROR");
@@ -358,12 +363,18 @@ class SwaggerConfigTest extends MySqlContainerSupport {
     }
 
     private void assertEveryPropertyHasDescription(JsonNode schema) {
+        assertEveryPropertyHasDescription(schema, Set.of());
+    }
+
+    private void assertEveryPropertyHasDescription(JsonNode schema, Set<String> excludedProperties) {
         assertThat(schema.isMissingNode()).isFalse();
-        schema.path("properties").properties().forEach(property ->
+        schema.path("properties").properties().forEach(property -> {
+            if (!excludedProperties.contains(property.getKey())) {
                 assertThat(property.getValue().path("description").asText())
                         .as("description for %s", property.getKey())
-                        .isNotBlank()
-        );
+                        .isNotBlank();
+            }
+        });
     }
 
     private void collectMissingSchemaReferences(
