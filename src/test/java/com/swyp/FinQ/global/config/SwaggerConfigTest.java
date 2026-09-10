@@ -39,7 +39,7 @@ class SwaggerConfigTest extends MySqlContainerSupport {
 
     private static final Set<String> EXPECTED_OPERATION_IDS = Set.of(
             "USER-001", "USER-002", "USER-003", "USER-004", "USER-005", "USER-006",
-            "USER-007", "USER-008", "USER-009", "USER-011", "USER-012", "USER-013",
+            "USER-007", "USER-008", "USER-009", "USER-010", "USER-011", "USER-012", "USER-013",
             "USER-014", "USER-015", "USER-016", "USER-017", "USER-018",
             "CONTENT-001", "CONTENT-002", "CONTENT-003", "HOME-001",
             "LEARNING-001", "LEARNING-002", "LEARNING-003", "REWARD-001",
@@ -74,7 +74,7 @@ class SwaggerConfigTest extends MySqlContainerSupport {
     void documentsOnlyProtectedOperationsWithBearerAuthentication() throws Exception {
         List<ApiOperation> operations = getOperations(getApiDocs());
 
-        assertThat(operations).hasSize(32);
+        assertThat(operations).hasSize(33);
         for (ApiOperation operation : operations) {
             boolean hasBearerSecurity = operation.document().path("security").isArray()
                     && operation.document().path("security").size() == 1

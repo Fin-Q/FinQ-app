@@ -11,6 +11,7 @@ import com.swyp.FinQ.user.dto.res.MyPageResponse;
 import com.swyp.FinQ.user.dto.res.OnboardingResponse;
 import com.swyp.FinQ.user.service.OnboardingService;
 import com.swyp.FinQ.user.service.UserProfileService;
+import com.swyp.FinQ.user.service.UserWithdrawalService;
 import com.swyp.FinQ.user.success.UserSuccessCode;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -19,6 +20,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -35,6 +37,17 @@ public class UserController {
 
     private final OnboardingService onboardingService;
     private final UserProfileService userProfileService;
+    private final UserWithdrawalService userWithdrawalService;
+
+    @Operation(summary = "회원 탈퇴")
+    @ApiDocumentation(id = "USER-010", name = "회원 탈퇴", owner = "이민지")
+    @DeleteMapping
+    public ResponseEntity<SuccessResponse<Void>> withdraw(
+            @AuthenticationPrincipal Jwt jwt
+    ) {
+        userWithdrawalService.withdraw(Long.valueOf(jwt.getSubject()));
+        return SuccessResponse.of(UserSuccessCode.USER_WITHDRAWN, null);
+    }
 
     @Operation(summary = "마이페이지 조회")
     @ApiDocumentation(id = "USER-016", name = "마이페이지 정보 조회", owner = "이민지")
