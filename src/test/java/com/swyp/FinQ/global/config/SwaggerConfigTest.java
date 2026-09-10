@@ -195,6 +195,35 @@ class SwaggerConfigTest extends MySqlContainerSupport {
         assertEveryPropertyHasDescription(schemas.path("PushTokenRegistrationResponse"));
     }
 
+    @Test
+    void documentsCommonSuccessAndErrorResponses() throws Exception {
+        JsonNode schemas = getApiDocs().path("components").path("schemas");
+        assertEveryPropertyHasDescription(schemas.path("ErrorResponse"));
+        int[] successSchemaCount = {0};
+        schemas.properties().forEach(schema -> {
+            if (schema.getKey().startsWith("SuccessResponse")) {
+                assertEveryPropertyHasDescription(schema.getValue());
+                successSchemaCount[0]++;
+            }
+        });
+        assertThat(successSchemaCount[0]).isPositive();
+
+        for (ApiOperation operation : getOperations(getApiDocs())) {
+            JsonNode responses = operation.document().path("responses");
+            assertThat(responses.has("400")).as("400 response for %s", operation.key()).isTrue();
+            assertThat(responses.has("500")).as("500 response for %s", operation.key()).isTrue();
+            assertThat(responses.path("400").path("content").path("application/json")
+                    .path("examples").path("example").path("value").path("status").asText())
+                    .as("400 example for %s", operation.key())
+                    .isEqualTo("ERROR");
+
+            boolean shouldRequireAuthentication = !PUBLIC_OPERATIONS.contains(operation.key());
+            assertThat(responses.has("401"))
+                    .as("401 response for %s", operation.key())
+                    .isEqualTo(shouldRequireAuthentication);
+        }
+    }
+
     private JsonNode getApiDocs() throws Exception {
         String response = mockMvc.perform(get("/api-docs"))
                 .andExpect(status().isOk())
