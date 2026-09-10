@@ -172,6 +172,29 @@ class SwaggerConfigTest extends MySqlContainerSupport {
         assertThat(environment.getProperty("springdoc.swagger-ui.show-common-extensions")).isEqualTo("true");
     }
 
+    @Test
+    void documentsUserAndNotificationDtoConstraints() throws Exception {
+        JsonNode schemas = getApiDocs().path("components").path("schemas");
+
+        JsonNode signUp = schemas.path("SignUpRequest");
+        assertThat(textValues(signUp.path("required")))
+                .contains("email", "password", "nickname", "agreements");
+        assertThat(signUp.path("properties").path("email").path("format").asText()).isEqualTo("email");
+        assertThat(signUp.path("properties").path("email").path("maxLength").asInt()).isEqualTo(255);
+        assertThat(signUp.path("properties").path("password").path("minLength").asInt()).isEqualTo(8);
+        assertThat(signUp.path("properties").path("password").path("maxLength").asInt()).isEqualTo(72);
+
+        JsonNode verificationCode = schemas.path("VerificationCodeConfirmRequest")
+                .path("properties").path("verificationCode");
+        assertThat(verificationCode.path("pattern").asText()).isEqualTo("[0-9]{6}");
+        assertThat(verificationCode.path("description").asText()).isNotBlank();
+
+        assertEveryPropertyHasDescription(schemas.path("NotificationSettingUpdateRequest"));
+        assertEveryPropertyHasDescription(schemas.path("PushTokenRegistrationRequest"));
+        assertEveryPropertyHasDescription(schemas.path("NotificationSettingResponse"));
+        assertEveryPropertyHasDescription(schemas.path("PushTokenRegistrationResponse"));
+    }
+
     private JsonNode getApiDocs() throws Exception {
         String response = mockMvc.perform(get("/api-docs"))
                 .andExpect(status().isOk())
@@ -195,6 +218,21 @@ class SwaggerConfigTest extends MySqlContainerSupport {
                 })
         );
         return operations;
+    }
+
+    private Set<String> textValues(JsonNode array) {
+        Set<String> values = new HashSet<>();
+        array.forEach(value -> values.add(value.asText()));
+        return values;
+    }
+
+    private void assertEveryPropertyHasDescription(JsonNode schema) {
+        assertThat(schema.isMissingNode()).isFalse();
+        schema.path("properties").properties().forEach(property ->
+                assertThat(property.getValue().path("description").asText())
+                        .as("description for %s", property.getKey())
+                        .isNotBlank()
+        );
     }
 
     private record ApiOperation(String path, String method, JsonNode document) {

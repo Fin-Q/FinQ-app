@@ -6,7 +6,8 @@ import jakarta.validation.constraints.NotNull;
 
 @Schema(description = "프로필 이미지 변경 요청")
 public record ProfileImageUpdateRequest(
-        @Schema(description = "프로필 이미지 코드", example = "PROFILE_02")
+        @Schema(description = "프로필 이미지 코드", example = "PROFILE_02",
+                allowableValues = {"PROFILE_01", "PROFILE_02", "PROFILE_03", "PROFILE_04"})
         @NotNull(message = "프로필 이미지 코드는 필수입니다")
         ProfileImageCode profileImageCode
 ) {

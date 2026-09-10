@@ -13,11 +13,12 @@ import java.util.List;
 public record MyPageResponse(
         @Schema(description = "사용자 ID", example = "1")
         String userId,
-        @Schema(description = "이메일", example = "user@example.com")
+        @Schema(description = "이메일", example = "user@example.com", format = "email")
         String email,
         @Schema(description = "닉네임", example = "핀큐")
         String nickname,
-        @Schema(description = "프로필 이미지 코드", example = "PROFILE_01")
+        @Schema(description = "프로필 이미지 코드", example = "PROFILE_01",
+                allowableValues = {"PROFILE_01", "PROFILE_02", "PROFILE_03", "PROFILE_04"})
         ProfileImageCode profileImageCode,
         @Schema(description = "누적 XP", example = "80")
         int totalXp,
@@ -25,7 +26,8 @@ public record MyPageResponse(
         int currentStreakDays,
         @Schema(description = "알림 활성화 여부", example = "true")
         boolean notificationEnabled,
-        @Schema(description = "온보딩 상태", example = "COMPLETED")
+        @Schema(description = "온보딩 상태", example = "COMPLETED",
+                allowableValues = {"INTEREST_SELECTION", "CHARACTER_GUIDE", "COMPLETED"})
         OnboardingStatus onboardingStatus,
         @Schema(description = "관심 주제")
         List<InterestInfo> interests
