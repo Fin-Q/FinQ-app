@@ -37,6 +37,8 @@ public class SwaggerConfig {
     );
     ModelConverters.getInstance().read(ErrorResponse.class)
       .forEach(components::addSchemas);
+    ModelConverters.getInstance().read(ErrorResponse.FieldDetail.class)
+      .forEach(components::addSchemas);
 
     return new OpenAPI()
       .components(components)
