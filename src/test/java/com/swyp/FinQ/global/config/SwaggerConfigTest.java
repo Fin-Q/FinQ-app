@@ -229,6 +229,19 @@ class SwaggerConfigTest extends MySqlContainerSupport {
         }
     }
 
+    @Test
+    void resolvesEveryLocalSchemaReference() throws Exception {
+        JsonNode apiDocs = getApiDocs();
+        JsonNode schemas = apiDocs.path("components").path("schemas");
+        Set<String> missingSchemas = new HashSet<>();
+
+        collectMissingSchemaReferences(apiDocs, schemas, missingSchemas);
+
+        assertThat(missingSchemas)
+                .as("OpenAPI 문서에서 참조하지만 components.schemas에 등록되지 않은 스키마")
+                .isEmpty();
+    }
+
     private JsonNode getApiDocs() throws Exception {
         String response = mockMvc.perform(get("/api-docs"))
                 .andExpect(status().isOk())
@@ -267,6 +280,31 @@ class SwaggerConfigTest extends MySqlContainerSupport {
                         .as("description for %s", property.getKey())
                         .isNotBlank()
         );
+    }
+
+    private void collectMissingSchemaReferences(
+            JsonNode node,
+            JsonNode schemas,
+            Set<String> missingSchemas
+    ) {
+        if (node.isObject()) {
+            JsonNode reference = node.get("$ref");
+            String schemaPrefix = "#/components/schemas/";
+            if (reference != null && reference.asText().startsWith(schemaPrefix)) {
+                String schemaName = reference.asText().substring(schemaPrefix.length());
+                if (!schemas.has(schemaName)) {
+                    missingSchemas.add(schemaName);
+                }
+            }
+            node.elements().forEachRemaining(child ->
+                    collectMissingSchemaReferences(child, schemas, missingSchemas));
+            return;
+        }
+
+        if (node.isArray()) {
+            node.elements().forEachRemaining(child ->
+                    collectMissingSchemaReferences(child, schemas, missingSchemas));
+        }
     }
 
     private record ApiOperation(String path, String method, JsonNode document) {
