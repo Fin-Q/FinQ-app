@@ -250,10 +250,10 @@ class ContentQueryServiceTest {
                     "문제입니다", "맞다", "틀리다", null, null, "O");
 
             given(contentRepository.findByIdWithCategory(1L)).willReturn(Optional.of(content));
-            given(contentRepository.countByCategoryAndIsPremiumFalse(category)).willReturn(4);
+            given(contentRepository.findByCategoryOrderByDisplayOrder(category)).willReturn(List.of(content, content, content, content));
             given(contentQuestionRepository.findByContent(content)).willReturn(List.of(question));
 
-            ContentDetailResponse response = contentQueryService.getContentDetail(1L);
+            ContentDetailResponse response = contentQueryService.getContentDetail(1L, 1L);
 
             assertThat(response.blocks()).hasSize(3);
             assertThat(response.blocks().get(0).blockType()).isEqualTo("BODY");
@@ -279,10 +279,10 @@ class ContentQueryServiceTest {
                     .build();
 
             given(contentRepository.findByIdWithCategory(1L)).willReturn(Optional.of(content));
-            given(contentRepository.countByCategoryAndIsPremiumFalse(category)).willReturn(1);
+            given(contentRepository.findByCategoryOrderByDisplayOrder(category)).willReturn(List.of(content));
             given(contentQuestionRepository.findByContent(content)).willReturn(List.of());
 
-            ContentDetailResponse response = contentQueryService.getContentDetail(1L);
+            ContentDetailResponse response = contentQueryService.getContentDetail(1L, 1L);
 
             assertThat(response.blocks()).hasSize(1);
             BlockResponse block = response.blocks().get(0);
@@ -308,10 +308,10 @@ class ContentQueryServiceTest {
                     .build();
 
             given(contentRepository.findByIdWithCategory(1L)).willReturn(Optional.of(content));
-            given(contentRepository.countByCategoryAndIsPremiumFalse(category)).willReturn(1);
+            given(contentRepository.findByCategoryOrderByDisplayOrder(category)).willReturn(List.of(content));
             given(contentQuestionRepository.findByContent(content)).willReturn(List.of());
 
-            ContentDetailResponse response = contentQueryService.getContentDetail(1L);
+            ContentDetailResponse response = contentQueryService.getContentDetail(1L, 1L);
 
             BodyBlockResponse body = response.blocks().get(0).body();
             assertThat(body.title()).isEqualTo("사례");
@@ -335,10 +335,10 @@ class ContentQueryServiceTest {
                     .build();
 
             given(contentRepository.findByIdWithCategory(1L)).willReturn(Optional.of(content));
-            given(contentRepository.countByCategoryAndIsPremiumFalse(category)).willReturn(1);
+            given(contentRepository.findByCategoryOrderByDisplayOrder(category)).willReturn(List.of(content));
             given(contentQuestionRepository.findByContent(content)).willReturn(List.of());
 
-            ContentDetailResponse response = contentQueryService.getContentDetail(1L);
+            ContentDetailResponse response = contentQueryService.getContentDetail(1L, 1L);
 
             BodyBlockResponse body = response.blocks().get(0).body();
             assertThat(body.tableImageUrl()).isEqualTo("https://img.com/table.png");
@@ -363,10 +363,10 @@ class ContentQueryServiceTest {
                     "OX 문제입니다", "맞다", "틀리다", null, null, "O");
 
             given(contentRepository.findByIdWithCategory(1L)).willReturn(Optional.of(content));
-            given(contentRepository.countByCategoryAndIsPremiumFalse(category)).willReturn(1);
+            given(contentRepository.findByCategoryOrderByDisplayOrder(category)).willReturn(List.of(content));
             given(contentQuestionRepository.findByContent(content)).willReturn(List.of(oxQuestion));
 
-            ContentDetailResponse response = contentQueryService.getContentDetail(1L);
+            ContentDetailResponse response = contentQueryService.getContentDetail(1L, 1L);
 
             BlockResponse questionBlock = response.blocks().get(0);
             assertThat(questionBlock.questionType()).isEqualTo("OX");
@@ -393,10 +393,10 @@ class ContentQueryServiceTest {
                     "객관식 문제입니다", "보기A", "보기B", "보기C", "보기D", "A");
 
             given(contentRepository.findByIdWithCategory(1L)).willReturn(Optional.of(content));
-            given(contentRepository.countByCategoryAndIsPremiumFalse(category)).willReturn(1);
+            given(contentRepository.findByCategoryOrderByDisplayOrder(category)).willReturn(List.of(content));
             given(contentQuestionRepository.findByContent(content)).willReturn(List.of(scQuestion));
 
-            ContentDetailResponse response = contentQueryService.getContentDetail(1L);
+            ContentDetailResponse response = contentQueryService.getContentDetail(1L, 1L);
 
             BlockResponse questionBlock = response.blocks().get(0);
             assertThat(questionBlock.questionType()).isEqualTo("SINGLE_CHOICE");
@@ -407,11 +407,32 @@ class ContentQueryServiceTest {
         }
 
         @Test
+        @DisplayName("bodyData JSON이 잘못되면 BODY_DATA_PARSE_FAILED 예외가 발생한다")
+        void getContentDetail_bodyDataParseFailed() {
+            Category category = createCategory(1L, CategoryCode.SAL, "월급 관리");
+            Content content = Content.builder()
+                    .id(1L)
+                    .contentCode("SAL-01")
+                    .title("제목")
+                    .category(category)
+                    .displayOrder(1)
+                    .isPremium(false)
+                    .bodyData("not-valid-json")
+                    .build();
+
+            given(contentRepository.findByIdWithCategory(1L)).willReturn(Optional.of(content));
+            given(contentRepository.findByCategoryOrderByDisplayOrder(category)).willReturn(List.of(content));
+
+            assertThatThrownBy(() -> contentQueryService.getContentDetail(1L, 1L))
+                    .isInstanceOf(BaseException.class);
+        }
+
+        @Test
         @DisplayName("존재하지 않는 콘텐츠 ID이면 예외가 발생한다")
         void getContentDetail_notFound() {
             given(contentRepository.findByIdWithCategory(999L)).willReturn(Optional.empty());
 
-            assertThatThrownBy(() -> contentQueryService.getContentDetail(999L))
+            assertThatThrownBy(() -> contentQueryService.getContentDetail(999L, 1L))
                     .isInstanceOf(BaseException.class);
         }
     }

@@ -43,6 +43,10 @@ public class LearningGradeService {
         Content content = contentRepository.findById(contentId)
                 .orElseThrow(() -> BaseException.of(ContentErrorCode.CONTENT_NOT_FOUND));
 
+        if (content.isPremium()) {
+            throw BaseException.of(ContentErrorCode.PREMIUM_CONTENT_ACCESS_DENIED);
+        }
+
         ContentQuestion question = contentQuestionRepository.findById(questionId)
                 .orElseThrow(() -> BaseException.of(LearningErrorCode.QUESTION_NOT_FOUND));
 

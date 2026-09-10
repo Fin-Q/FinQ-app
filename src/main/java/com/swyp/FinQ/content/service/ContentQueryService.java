@@ -127,12 +127,21 @@ public class ContentQueryService {
                 .toList();
     }
 
-    public ContentDetailResponse getContentDetail(Long contentId) {
+    public ContentDetailResponse getContentDetail(Long contentId, Long userId) {
         Content content = contentRepository.findByIdWithCategory(contentId)
                 .orElseThrow(() -> BaseException.of(ContentErrorCode.CONTENT_NOT_FOUND));
 
         Category category = content.getCategory();
-        int totalContentsInCategory = contentRepository.countByCategoryAndIsPremiumFalse(category);
+        List<Content> freeContents = contentRepository.findByCategoryOrderByDisplayOrder(category)
+                .stream().filter(c -> !c.isPremium()).toList();
+        int totalContentsInCategory = freeContents.size();
+        int contentOrder = 1;
+        for (int i = 0; i < freeContents.size(); i++) {
+            if (freeContents.get(i).getId().equals(content.getId())) {
+                contentOrder = i + 1;
+                break;
+            }
+        }
 
         List<BlockResponse> blocks = new ArrayList<>();
 
@@ -167,7 +176,7 @@ public class ContentQueryService {
                 content.getTitle(),
                 content.getSource(),
                 content.getReferenceDate(),
-                content.getDisplayOrder(),
+                contentOrder,
                 totalContentsInCategory,
                 blocks
         );
@@ -180,8 +189,8 @@ public class ContentQueryService {
         try {
             return objectMapper.readValue(bodyData, new TypeReference<>() {});
         } catch (Exception e) {
-            log.warn("body_data JSON 파싱 실패: {}", e.getMessage());
-            return List.of();
+            log.error("body_data JSON 파싱 실패: {}", e.getMessage());
+            throw BaseException.of(ContentErrorCode.BODY_DATA_PARSE_FAILED);
         }
     }
 

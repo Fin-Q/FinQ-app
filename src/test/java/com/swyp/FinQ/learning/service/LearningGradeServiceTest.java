@@ -223,6 +223,24 @@ class LearningGradeServiceTest {
         }
 
         @Test
+        @DisplayName("프리미엄 콘텐츠에 채점을 시도하면 예외가 발생한다")
+        void premium_content_access_denied() {
+            Content premiumContent = Content.builder()
+                    .id(1L)
+                    .contentCode("SAL-P1")
+                    .title("프리미엄 콘텐츠")
+                    .displayOrder(1)
+                    .isPremium(true)
+                    .build();
+
+            given(contentRepository.findById(1L)).willReturn(Optional.of(premiumContent));
+
+            assertThatThrownBy(() -> learningGradeService.gradeContentAnswer(
+                    USER_ID, 1L, 1L, "A"))
+                    .isInstanceOf(BaseException.class);
+        }
+
+        @Test
         @DisplayName("존재하지 않는 콘텐츠이면 예외가 발생한다")
         void content_not_found() {
             given(contentRepository.findById(99L)).willReturn(Optional.empty());
