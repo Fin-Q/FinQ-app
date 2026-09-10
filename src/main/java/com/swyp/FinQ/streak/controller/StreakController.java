@@ -2,6 +2,7 @@ package com.swyp.FinQ.streak.controller;
 
 import com.swyp.FinQ.global.success.SuccessResponse;
 import com.swyp.FinQ.global.config.ApiDocumentation;
+import com.swyp.FinQ.global.config.ApiOwner;
 import com.swyp.FinQ.global.config.ApiTags;
 import com.swyp.FinQ.streak.dto.res.StreakCalendarResponse;
 import com.swyp.FinQ.streak.dto.res.StreakStatusResponse;
@@ -31,7 +32,7 @@ public class StreakController {
     private final StreakQueryService streakQueryService;
 
     @Operation(summary = "현재 스트릭 상태 조회", description = "현재 스트릭과 다음 보너스까지 남은 일수를 조회합니다.")
-    @ApiDocumentation(id = "STREAK-002", name = "현재 스트릭 요약 조회", owner = "이민지")
+    @ApiDocumentation(id = "STREAK-002", name = "현재 스트릭 요약 조회", owner = ApiOwner.MINJI)
     @GetMapping("/status")
     public ResponseEntity<SuccessResponse<StreakStatusResponse>> getStatus(
             @AuthenticationPrincipal Jwt jwt
@@ -41,7 +42,7 @@ public class StreakController {
     }
 
     @Operation(summary = "월간 스트릭 조회", description = "가입 월부터 현재 월까지의 스트릭 인정 날짜를 조회합니다.")
-    @ApiDocumentation(id = "STREAK-001", name = "월간 스트릭 조회", owner = "이민지")
+    @ApiDocumentation(id = "STREAK-001", name = "월간 스트릭 조회", owner = ApiOwner.MINJI)
     @GetMapping("/calendar")
     public ResponseEntity<SuccessResponse<StreakCalendarResponse>> getCalendar(
             @AuthenticationPrincipal Jwt jwt,

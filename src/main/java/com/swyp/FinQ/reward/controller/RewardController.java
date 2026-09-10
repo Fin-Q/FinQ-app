@@ -2,6 +2,7 @@ package com.swyp.FinQ.reward.controller;
 
 import com.swyp.FinQ.global.success.SuccessResponse;
 import com.swyp.FinQ.global.config.ApiDocumentation;
+import com.swyp.FinQ.global.config.ApiOwner;
 import com.swyp.FinQ.global.config.ApiTags;
 import com.swyp.FinQ.reward.dto.res.RewardStatusResponse;
 import com.swyp.FinQ.reward.service.XpQueryService;
@@ -27,7 +28,7 @@ public class RewardController {
     @Operation(
             description = "누적 XP, 레벨, 캐릭터 성장 단계를 조회합니다."
     )
-    @ApiDocumentation(id = "REWARD-001", name = "보상 상태 조회", owner = "yezanee")
+    @ApiDocumentation(id = "REWARD-001", name = "보상 상태 조회", owner = ApiOwner.YEZANEE)
     @GetMapping("/status")
     public ResponseEntity<SuccessResponse<RewardStatusResponse>> getRewardStatus(
             @AuthenticationPrincipal Jwt jwt

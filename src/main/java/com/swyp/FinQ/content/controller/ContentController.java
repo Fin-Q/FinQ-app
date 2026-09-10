@@ -7,6 +7,7 @@ import com.swyp.FinQ.content.dto.res.KnowledgeMapResponse;
 import com.swyp.FinQ.content.service.ContentQueryService;
 import com.swyp.FinQ.content.success.ContentSuccessCode;
 import com.swyp.FinQ.global.config.ApiDocumentation;
+import com.swyp.FinQ.global.config.ApiOwner;
 import com.swyp.FinQ.global.config.ApiTags;
 import com.swyp.FinQ.global.success.SuccessResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -30,7 +31,7 @@ public class ContentController {
     @Operation(
             description = "전체 카테고리 목록과 사용자별 진행률을 조회합니다."
     )
-    @ApiDocumentation(id = "CONTENT-001", name = "지식맵 조회", owner = "yezanee")
+    @ApiDocumentation(id = "CONTENT-001", name = "지식맵 조회", owner = ApiOwner.YEZANEE)
     @GetMapping("/knowledge-map")
     public ResponseEntity<SuccessResponse<KnowledgeMapResponse>> getKnowledgeMap(
             @AuthenticationPrincipal Jwt jwt
@@ -42,7 +43,7 @@ public class ContentController {
     @Operation(
             description = "카테고리별 콘텐츠 목록과 완료 상태를 조회합니다."
     )
-    @ApiDocumentation(id = "CONTENT-002", name = "카테고리 상세 조회", owner = "yezanee")
+    @ApiDocumentation(id = "CONTENT-002", name = "카테고리 상세 조회", owner = ApiOwner.YEZANEE)
     @GetMapping("/categories/{categoryCode}")
     public ResponseEntity<SuccessResponse<CategoryDetailResponse>> getCategoryDetail(
             @AuthenticationPrincipal Jwt jwt,
@@ -55,7 +56,7 @@ public class ContentController {
     @Operation(
             description = "본문, 핵심정리, 문제를 블록 배열로 한 번에 조회합니다."
     )
-    @ApiDocumentation(id = "CONTENT-003", name = "콘텐츠 상세 조회", owner = "yezanee")
+    @ApiDocumentation(id = "CONTENT-003", name = "콘텐츠 상세 조회", owner = ApiOwner.YEZANEE)
     @GetMapping("/contents/{contentId}")
     public ResponseEntity<SuccessResponse<ContentDetailResponse>> getContentDetail(
             @AuthenticationPrincipal Jwt jwt,
