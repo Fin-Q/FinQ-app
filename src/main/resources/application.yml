@@ -24,7 +24,12 @@ springdoc:
     tags-sorter: alpha
     filter: true
     doc-expansion: none
+    display-operation-id: true
     display-request-duration: true
+    deep-linking: true
+    persist-authorization: true
+    default-model-rendering: model
+    show-common-extensions: true
   api-docs:
     path: /api-docs
   model-converters:

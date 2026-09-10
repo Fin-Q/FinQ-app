@@ -148,9 +148,13 @@ class SwaggerConfigTest extends MySqlContainerSupport {
     void exposesBackendOwners() throws Exception {
         for (ApiOperation operation : getOperations(getApiDocs())) {
             String tag = operation.document().path("tags").get(0).asText();
-            assertThat(operation.document().path("x-owner").asText())
+            String owner = operation.document().path("x-owner").asText();
+            assertThat(owner)
                     .as("backend owner for %s", operation.key())
                     .isEqualTo(EXPECTED_OWNERS_BY_TAG.get(tag));
+            assertThat(operation.document().path("description").asText())
+                    .as("owner appears first for %s", operation.key())
+                    .startsWith("**BE 담당자:** " + owner);
         }
     }
 
@@ -160,7 +164,12 @@ class SwaggerConfigTest extends MySqlContainerSupport {
         assertThat(environment.getProperty("springdoc.swagger-ui.tags-sorter")).isEqualTo("alpha");
         assertThat(environment.getProperty("springdoc.swagger-ui.filter")).isEqualTo("true");
         assertThat(environment.getProperty("springdoc.swagger-ui.doc-expansion")).isEqualTo("none");
+        assertThat(environment.getProperty("springdoc.swagger-ui.display-operation-id")).isEqualTo("true");
         assertThat(environment.getProperty("springdoc.swagger-ui.display-request-duration")).isEqualTo("true");
+        assertThat(environment.getProperty("springdoc.swagger-ui.deep-linking")).isEqualTo("true");
+        assertThat(environment.getProperty("springdoc.swagger-ui.persist-authorization")).isEqualTo("true");
+        assertThat(environment.getProperty("springdoc.swagger-ui.default-model-rendering")).isEqualTo("model");
+        assertThat(environment.getProperty("springdoc.swagger-ui.show-common-extensions")).isEqualTo("true");
     }
 
     private JsonNode getApiDocs() throws Exception {

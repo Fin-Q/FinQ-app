@@ -1,6 +1,5 @@
 package com.swyp.FinQ.global.config;
 
-import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.info.Info;
@@ -41,13 +40,7 @@ public class SwaggerConfig {
       .info(new Info()
         .title("FinQ API")
         .description("FinQ 금융 학습 서비스 API 문서")
-        .version("v1.0.0"))
-      .components(new Components()
-        .addSecuritySchemes("bearerAuth", new SecurityScheme()
-          .type(SecurityScheme.Type.HTTP)
-          .scheme("bearer")
-          .bearerFormat("JWT")
-          .description("JWT Access Token을 입력하세요.")));
+        .version("v1.0.0"));
   }
 
   @Bean
@@ -81,6 +74,6 @@ public class SwaggerConfig {
     if (description == null || description.isBlank()) {
       return ownerDescription;
     }
-    return description + "\n\n" + ownerDescription;
+    return ownerDescription + "\n\n" + description;
   }
 }
