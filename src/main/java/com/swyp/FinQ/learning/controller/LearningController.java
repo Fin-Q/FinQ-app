@@ -2,6 +2,7 @@ package com.swyp.FinQ.learning.controller;
 
 import com.swyp.FinQ.global.success.SuccessResponse;
 import com.swyp.FinQ.global.config.ApiDocumentation;
+import com.swyp.FinQ.global.config.ApiTags;
 import com.swyp.FinQ.learning.dto.req.AnswerRequest;
 import com.swyp.FinQ.learning.dto.res.ContentAnswerResponse;
 import com.swyp.FinQ.learning.dto.res.QuizAnswerResponse;
@@ -26,7 +27,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
-@Tag(name = "Learning", description = "학습 채점 및 심화퀴즈 API")
+@Tag(name = ApiTags.LEARNING, description = "학습 채점 및 심화퀴즈 API")
 @SecurityRequirement(name = "bearerAuth")
 @RestController
 @RequiredArgsConstructor

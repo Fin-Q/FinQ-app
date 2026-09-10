@@ -2,6 +2,7 @@ package com.swyp.FinQ.notification.controller;
 
 import com.swyp.FinQ.global.security.token.JwtClaimNames;
 import com.swyp.FinQ.global.config.ApiDocumentation;
+import com.swyp.FinQ.global.config.ApiTags;
 import com.swyp.FinQ.global.success.SuccessResponse;
 import com.swyp.FinQ.notification.dto.req.NotificationSettingUpdateRequest;
 import com.swyp.FinQ.notification.dto.req.PushTokenRegistrationRequest;
@@ -29,7 +30,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-@Tag(name = "NOTI", description = "푸시 토큰 및 알림 설정 API")
+@Tag(name = ApiTags.NOTI, description = "푸시 토큰 및 알림 설정 API")
 @Validated
 @RestController
 @RequestMapping("/users/me")

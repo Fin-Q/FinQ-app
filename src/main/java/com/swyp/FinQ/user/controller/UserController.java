@@ -1,6 +1,7 @@
 package com.swyp.FinQ.user.controller;
 
 import com.swyp.FinQ.global.config.ApiDocumentation;
+import com.swyp.FinQ.global.config.ApiTags;
 import com.swyp.FinQ.global.success.SuccessResponse;
 import com.swyp.FinQ.user.dto.req.InterestSelectionRequest;
 import com.swyp.FinQ.user.dto.req.NicknameUpdateRequest;
@@ -29,7 +30,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-@Tag(name = "USER", description = "사용자 온보딩 및 프로필 API")
+@Tag(name = ApiTags.USER, description = "사용자 온보딩 및 프로필 API")
 @RestController
 @RequestMapping("/users/me")
 @RequiredArgsConstructor

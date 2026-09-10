@@ -2,6 +2,7 @@ package com.swyp.FinQ.reward.controller;
 
 import com.swyp.FinQ.global.success.SuccessResponse;
 import com.swyp.FinQ.global.config.ApiDocumentation;
+import com.swyp.FinQ.global.config.ApiTags;
 import com.swyp.FinQ.reward.dto.res.RewardStatusResponse;
 import com.swyp.FinQ.reward.service.XpQueryService;
 import com.swyp.FinQ.reward.success.RewardSuccessCode;
@@ -18,7 +19,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-@Tag(name = "Reward", description = "보상 및 레벨 API")
+@Tag(name = ApiTags.REWARD, description = "보상 및 레벨 API")
 @SecurityRequirement(name = "bearerAuth")
 @RestController
 @RequestMapping("/rewards")
