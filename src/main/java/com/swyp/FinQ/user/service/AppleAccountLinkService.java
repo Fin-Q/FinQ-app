@@ -12,10 +12,21 @@ public class AppleAccountLinkService {
     private final AppleIdentityTokenVerifier identityTokenVerifier;
     private final AppleAuthorizationCodeVerifier authorizationCodeVerifier;
     private final SocialAccountLinkService accountLinkService;
+    private final OAuthTokenCipher tokenCipher;
 
     public SocialAccountLinkResponse link(Long userId, AppleAccountLinkRequest request) {
         AppleUserIdentity identity = identityTokenVerifier.verify(request.identityToken(), request.nonce());
-        authorizationCodeVerifier.verify(request.authorizationCode(), request.nonce(), identity);
-        return accountLinkService.link(userId, SocialProvider.APPLE, identity.providerUserId());
+        AppleAuthorizationResult authorization = authorizationCodeVerifier.verify(
+                request.authorizationCode(),
+                request.nonce(),
+                identity
+        );
+        String encryptedRefreshToken = tokenCipher.encrypt(authorization.refreshToken());
+        return accountLinkService.link(
+                userId,
+                SocialProvider.APPLE,
+                identity.providerUserId(),
+                encryptedRefreshToken
+        );
     }
 }

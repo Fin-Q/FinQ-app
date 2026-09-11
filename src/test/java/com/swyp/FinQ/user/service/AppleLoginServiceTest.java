@@ -41,6 +41,8 @@ class AppleLoginServiceTest {
     private static final String IDENTITY_TOKEN = "apple-identity-token";
     private static final String AUTHORIZATION_CODE = "apple-authorization-code";
     private static final String NONCE = "0123456789abcdef0123456789abcdef";
+    private static final String REFRESH_TOKEN = "apple-refresh-token";
+    private static final String ENCRYPTED_REFRESH_TOKEN = "v1.iv.encrypted-refresh-token";
 
     @Mock
     private AppleIdentityTokenVerifier appleIdentityTokenVerifier;
@@ -60,6 +62,9 @@ class AppleLoginServiceTest {
     @Mock
     private AuthTokenService authTokenService;
 
+    @Mock
+    private OAuthTokenCipher tokenCipher;
+
     private AppleLoginService appleLoginService;
 
     @BeforeEach
@@ -72,6 +77,7 @@ class AppleLoginServiceTest {
                 userRepository,
                 agreementRegistrationService,
                 authTokenService,
+                tokenCipher,
                 clock
         );
     }
@@ -85,6 +91,7 @@ class AppleLoginServiceTest {
                 .providerUserId(PROVIDER_USER_ID)
                 .build();
         mockVerifiedIdentity();
+        mockAuthorizationResult();
         given(socialAccountRepository.findByProviderAndProviderUserId(SocialProvider.APPLE, PROVIDER_USER_ID))
                 .willReturn(Optional.of(account));
         given(authTokenService.issue(user)).willReturn(tokens());
@@ -96,6 +103,7 @@ class AppleLoginServiceTest {
         assertThat(result.isNewUser()).isFalse();
         assertThat(result.accessToken()).isEqualTo("finq-access-token");
         assertThat(user.getLastLoginAt()).isEqualTo("2026-09-08T12:00:00");
+        assertThat(account.getEncryptedRefreshToken()).isEqualTo(ENCRYPTED_REFRESH_TOKEN);
         verify(userRepository, never()).saveAndFlush(any(User.class));
         verify(agreementRegistrationService, never()).validateRequired(any());
     }
@@ -105,6 +113,7 @@ class AppleLoginServiceTest {
         List<AgreementRequest> agreements = requiredAgreements();
         User savedUser = user(2L, "신규회원");
         mockVerifiedIdentity();
+        mockAuthorizationResult();
         given(socialAccountRepository.findByProviderAndProviderUserId(SocialProvider.APPLE, PROVIDER_USER_ID))
                 .willReturn(Optional.empty());
         given(userRepository.saveAndFlush(any(User.class))).willReturn(savedUser);
@@ -125,12 +134,14 @@ class AppleLoginServiceTest {
         assertThat(accountCaptor.getValue().getProvider()).isEqualTo(SocialProvider.APPLE);
         assertThat(accountCaptor.getValue().getProviderUserId()).isEqualTo(PROVIDER_USER_ID);
         assertThat(accountCaptor.getValue().getUser()).isSameAs(savedUser);
+        assertThat(accountCaptor.getValue().getEncryptedRefreshToken()).isEqualTo(ENCRYPTED_REFRESH_TOKEN);
     }
 
     @Test
     void Identity_Token_검증_후_Authorization_Code를_검증한다() {
         User user = user(1L, "기존회원");
         mockVerifiedIdentity();
+        mockAuthorizationResult();
         given(socialAccountRepository.findByProviderAndProviderUserId(SocialProvider.APPLE, PROVIDER_USER_ID))
                 .willReturn(Optional.of(SocialAccount.builder()
                         .user(user)
@@ -200,6 +211,13 @@ class AppleLoginServiceTest {
     private void mockVerifiedIdentity() {
         AppleUserIdentity identity = new AppleUserIdentity(PROVIDER_USER_ID);
         given(appleIdentityTokenVerifier.verify(IDENTITY_TOKEN, NONCE)).willReturn(identity);
+    }
+
+    private void mockAuthorizationResult() {
+        AppleUserIdentity identity = new AppleUserIdentity(PROVIDER_USER_ID);
+        given(appleAuthorizationCodeVerifier.verify(AUTHORIZATION_CODE, NONCE, identity))
+                .willReturn(new AppleAuthorizationResult(REFRESH_TOKEN));
+        given(tokenCipher.encrypt(REFRESH_TOKEN)).willReturn(ENCRYPTED_REFRESH_TOKEN);
     }
 
     private AppleLoginCommand command(String nickname, List<AgreementRequest> agreements) {

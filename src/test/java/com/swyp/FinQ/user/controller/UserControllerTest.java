@@ -5,6 +5,7 @@ import com.swyp.FinQ.content.domain.CategoryCode;
 import com.swyp.FinQ.content.domain.Content;
 import com.swyp.FinQ.content.repository.CategoryRepository;
 import com.swyp.FinQ.content.repository.ContentRepository;
+import com.swyp.FinQ.global.exception.BaseException;
 import com.swyp.FinQ.global.security.token.IssuedTokenPair;
 import com.swyp.FinQ.global.security.token.JwtTokenProvider;
 import com.swyp.FinQ.learning.domain.UserCategoryCompletion;
@@ -35,7 +36,10 @@ import com.swyp.FinQ.user.repository.SocialAccountRepository;
 import com.swyp.FinQ.user.repository.UserAgreementRepository;
 import com.swyp.FinQ.user.repository.UserInterestRepository;
 import com.swyp.FinQ.user.repository.UserRepository;
+import com.swyp.FinQ.user.exception.UserErrorCode;
+import com.swyp.FinQ.user.service.AppleTokenRevoker;
 import com.swyp.FinQ.user.service.AuthTokenService;
+import com.swyp.FinQ.user.service.KakaoAccountUnlinker;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import org.junit.jupiter.api.Test;
@@ -47,12 +51,15 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.BDDMockito.willThrow;
+import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -107,6 +114,12 @@ class UserControllerTest extends MySqlContainerSupport {
 
     @Autowired
     private AuthTokenService authTokenService;
+
+    @MockitoBean
+    private KakaoAccountUnlinker kakaoAccountUnlinker;
+
+    @MockitoBean
+    private AppleTokenRevoker appleTokenRevoker;
 
     @Autowired
     private XpHistoryRepository xpHistoryRepository;
@@ -211,12 +224,38 @@ class UserControllerTest extends MySqlContainerSupport {
         assertThat(xpHistoryRepository.existsById(xpHistory.getId())).isFalse();
         assertThat(streakLogRepository.existsById(streakLog.getId())).isFalse();
         assertThat(pushTokenRepository.existsById(pushToken.getId())).isFalse();
+        verify(kakaoAccountUnlinker).unlink("withdrawal-kakao-user");
 
         mockMvc.perform(post("/auth/token/refresh")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"refreshToken\":\"" + tokens.refreshToken() + "\"}"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.errorCode").value("AUTH_INVALID_REFRESH_TOKEN"));
+    }
+
+    @Test
+    void keepsUserWhenSocialAccountUnlinkFails() throws Exception {
+        User user = saveUser();
+        SocialAccount socialAccount = socialAccountRepository.save(SocialAccount.builder()
+                .user(user)
+                .provider(SocialProvider.KAKAO)
+                .providerUserId("unlink-failure-user")
+                .build());
+        willThrow(BaseException.of(UserErrorCode.SOCIAL_ACCOUNT_UNLINK_FAILED))
+                .given(kakaoAccountUnlinker)
+                .unlink("unlink-failure-user");
+        entityManager.flush();
+        entityManager.clear();
+
+        mockMvc.perform(delete("/users/me")
+                        .header(HttpHeaders.AUTHORIZATION, bearerToken(user.getId())))
+                .andExpect(status().isServiceUnavailable())
+                .andExpect(jsonPath("$.status").value("ERROR"))
+                .andExpect(jsonPath("$.errorCode").value("USER_SOCIAL_ACCOUNT_UNLINK_FAILED"));
+
+        entityManager.clear();
+        assertThat(userRepository.existsById(user.getId())).isTrue();
+        assertThat(socialAccountRepository.existsById(socialAccount.getId())).isTrue();
     }
 
     @Test

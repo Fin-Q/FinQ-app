@@ -11,7 +11,9 @@ import com.swyp.FinQ.user.service.KakaoAccessTokenVerifier;
 import com.swyp.FinQ.user.service.KakaoUserIdentity;
 import com.swyp.FinQ.user.service.AppleIdentityTokenVerifier;
 import com.swyp.FinQ.user.service.AppleAuthorizationCodeVerifier;
+import com.swyp.FinQ.user.service.AppleAuthorizationResult;
 import com.swyp.FinQ.user.service.AppleUserIdentity;
+import com.swyp.FinQ.user.service.OAuthTokenCipher;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -46,6 +48,7 @@ class SocialAccountControllerTest extends MySqlContainerSupport {
     @Autowired RefreshTokenRepository sessions;
     @Autowired JwtTokenProvider tokens;
     @Autowired PlatformTransactionManager transactions;
+    @Autowired OAuthTokenCipher tokenCipher;
     @MockitoBean KakaoAccessTokenVerifier verifier;
     @MockitoBean AppleIdentityTokenVerifier appleIdentityVerifier;
     @MockitoBean AppleAuthorizationCodeVerifier appleCodeVerifier;
@@ -60,6 +63,7 @@ class SocialAccountControllerTest extends MySqlContainerSupport {
         User user = user();
         AppleUserIdentity identity = new AppleUserIdentity(UUID.randomUUID().toString());
         given(appleIdentityVerifier.verify("identity-token", NONCE)).willReturn(identity);
+        mockAppleAuthorization(identity, "code-1", "code-2", "code-3");
         String first = mvc.perform(post(APPLE_PATH).header("Authorization", bearer(user))
                         .contentType(MediaType.APPLICATION_JSON).content(appleBody("code-1", NONCE)))
                 .andExpect(status().isOk())
@@ -82,6 +86,11 @@ class SocialAccountControllerTest extends MySqlContainerSupport {
         assertThat(after.getPassword()).isEqualTo(user.getPassword());
         assertThat(after.getNickname()).isEqualTo(user.getNickname());
         assertThat(after.getTotalXp()).isEqualTo(80);
+        SocialAccount appleAccount = accounts
+                .findByProviderAndProviderUserId(SocialProvider.APPLE, identity.providerUserId())
+                .orElseThrow();
+        assertThat(tokenCipher.decrypt(appleAccount.getEncryptedRefreshToken()))
+                .isEqualTo("apple-refresh-token");
     }
 
     @Test
@@ -158,6 +167,7 @@ class SocialAccountControllerTest extends MySqlContainerSupport {
         accounts.saveAndFlush(SocialAccount.builder().user(owner).provider(SocialProvider.APPLE)
                 .providerUserId(identity.providerUserId()).build());
         given(appleIdentityVerifier.verify("identity-token", NONCE)).willReturn(identity);
+        mockAppleAuthorization(identity, "code");
         mvc.perform(post(APPLE_PATH).header("Authorization", bearer(caller))
                         .contentType(MediaType.APPLICATION_JSON).content(appleBody("code", NONCE)))
                 .andExpect(status().isConflict());
@@ -172,6 +182,7 @@ class SocialAccountControllerTest extends MySqlContainerSupport {
                 .providerUserId(UUID.randomUUID().toString()).build());
         AppleUserIdentity identity = new AppleUserIdentity(UUID.randomUUID().toString());
         given(appleIdentityVerifier.verify("identity-token", NONCE)).willReturn(identity);
+        mockAppleAuthorization(identity, "code");
         mvc.perform(post(APPLE_PATH).header("Authorization", bearer(user))
                         .contentType(MediaType.APPLICATION_JSON).content(appleBody("code", NONCE)))
                 .andExpect(status().isConflict());
@@ -180,6 +191,13 @@ class SocialAccountControllerTest extends MySqlContainerSupport {
 
     private String appleBody(String code, String nonce) throws Exception {
         return json.writeValueAsString(Map.of("identityToken", "identity-token", "authorizationCode", code, "nonce", nonce));
+    }
+
+    private void mockAppleAuthorization(AppleUserIdentity identity, String... authorizationCodes) {
+        for (String authorizationCode : authorizationCodes) {
+            given(appleCodeVerifier.verify(authorizationCode, NONCE, identity))
+                    .willReturn(new AppleAuthorizationResult("apple-refresh-token"));
+        }
     }
 
     @AfterEach

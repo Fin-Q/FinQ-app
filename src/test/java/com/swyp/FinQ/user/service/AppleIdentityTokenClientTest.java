@@ -56,6 +56,7 @@ class AppleIdentityTokenClientTest {
                 URI.create(ISSUER),
                 URI.create("https://appleid.apple.com/auth/keys"),
                 URI.create("https://appleid.apple.com/auth/token"),
+                URI.create("https://appleid.apple.com/auth/revoke"),
                 Duration.ofMinutes(5)
         );
         signingKey = generateRsaKey("apple-test-key");

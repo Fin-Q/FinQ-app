@@ -14,6 +14,7 @@ public record AppleProperties(
         URI issuer,
         URI jwkSetUri,
         URI tokenUri,
+        URI revokeUri,
         Duration clientSecretExpiration
 ) {
 }

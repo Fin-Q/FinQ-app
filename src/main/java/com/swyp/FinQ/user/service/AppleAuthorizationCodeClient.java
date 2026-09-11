@@ -34,11 +34,17 @@ public class AppleAuthorizationCodeClient implements AppleAuthorizationCodeVerif
     }
 
     @Override
-    public void verify(String authorizationCode, String nonce, AppleUserIdentity expectedIdentity) {
+    public AppleAuthorizationResult verify(
+            String authorizationCode,
+            String nonce,
+            AppleUserIdentity expectedIdentity
+    ) {
         validateRequest(authorizationCode, nonce, expectedIdentity);
 
         AppleTokenResponse response = exchange(authorizationCode);
-        if (response == null || !StringUtils.hasText(response.identityToken())) {
+        if (response == null
+                || !StringUtils.hasText(response.identityToken())
+                || !StringUtils.hasText(response.refreshToken())) {
             throw BaseException.of(AuthErrorCode.INVALID_APPLE_AUTHORIZATION_CODE);
         }
 
@@ -46,6 +52,7 @@ public class AppleAuthorizationCodeClient implements AppleAuthorizationCodeVerif
         if (!expectedIdentity.providerUserId().equals(exchangedIdentity.providerUserId())) {
             throw BaseException.of(AuthErrorCode.INVALID_APPLE_AUTHORIZATION_CODE);
         }
+        return new AppleAuthorizationResult(response.refreshToken());
     }
 
     private AppleTokenResponse exchange(String authorizationCode) {
@@ -89,7 +96,8 @@ public class AppleAuthorizationCodeClient implements AppleAuthorizationCodeVerif
     }
 
     private record AppleTokenResponse(
-            @JsonProperty("id_token") String identityToken
+            @JsonProperty("id_token") String identityToken,
+            @JsonProperty("refresh_token") String refreshToken
     ) {
     }
 }
