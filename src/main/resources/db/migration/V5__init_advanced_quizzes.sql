@@ -61,7 +61,7 @@ INSERT INTO advanced_quiz (question_code, category_id, quiz_order, question_body
  '투자는 기대수익률 하나만으로 판단하기 어려워요. 위험, 비용, 기간, 분산 여부, 투자 시점 등 여러 요소를 함께 살펴봐야 해요.',
  NOW()),
 
--- ETF-DEEP (주식 및 ETF → STK)
+-- ETF-DEEP (주식·ETF → STK)
 ('ETF-DEEP-01', (SELECT category_id FROM category WHERE category_code = 'STK'), 1,
  '코스피가 상승했는데 내가 가진 한 종목은 하락했습니다. 이 상황을 가장 적절하게 설명한 것은 무엇일까요?',
  '주가지수는 한 기업의 주가만 나타내기 때문에 생긴 현상이다.',
@@ -92,7 +92,7 @@ INSERT INTO advanced_quiz (question_code, category_id, quiz_order, question_body
  'ETF는 단순히 이름이나 최근 수익률만 보고 판단하기보다 어떤 자산이나 지수를 따라가는지, 어떻게 구성되고 운용되는지, 어떤 비용과 옵션이 있는지를 함께 살펴봐야 해요.',
  NOW()),
 
--- TAX-DEEP (세금 및 절세 계좌)
+-- TAX-DEEP (세금·절세계좌)
 ('TAX-DEEP-01', (SELECT category_id FROM category WHERE category_code = 'TAX'), 1,
  '같은 금융상품에 투자하더라도 일반계좌와 절세계좌에서 세후 결과가 달라질 수 있는 이유로 가장 적절한 것은 무엇일까요?',
  '절세계좌에서는 투자 손실이 발생하지 않기 때문에',
