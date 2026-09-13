@@ -20,6 +20,9 @@ public record MyPageResponse(
         @Schema(description = "프로필 이미지 코드", example = "PROFILE_01",
                 allowableValues = {"PROFILE_01", "PROFILE_02", "PROFILE_03", "PROFILE_04"})
         ProfileImageCode profileImageCode,
+        @Schema(description = "프로필 기본 이미지의 공개 HTTPS URL. 선택 테두리·체크 및 편집 아이콘은 앱에서 표시",
+                example = "https://assets.example.com/profile-images/profile_01.png", format = "uri")
+        String profileImageUrl,
         @Schema(description = "누적 XP", example = "80")
         int totalXp,
         @Schema(description = "현재 연속 스트릭 일수", example = "3")
@@ -35,6 +38,7 @@ public record MyPageResponse(
 
     public static MyPageResponse of(
             User user,
+            String profileImageUrl,
             int totalXp,
             int currentStreak,
             List<UserInterest> interests
@@ -44,6 +48,7 @@ public record MyPageResponse(
                 user.getEmail(),
                 user.getNickname(),
                 user.getProfileImageCode(),
+                profileImageUrl,
                 totalXp,
                 currentStreak,
                 user.isNotificationEnabled(),

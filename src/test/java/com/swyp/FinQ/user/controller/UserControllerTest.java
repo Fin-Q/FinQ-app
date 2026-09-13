@@ -44,6 +44,7 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -486,6 +487,8 @@ class UserControllerTest extends MySqlContainerSupport {
                 .andExpect(jsonPath("$.data.email").value("onboarding@example.com"))
                 .andExpect(jsonPath("$.data.nickname").value("Minter"))
                 .andExpect(jsonPath("$.data.profileImageCode").value("PROFILE_01"))
+                .andExpect(jsonPath("$.data.profileImageUrl")
+                        .value("https://assets.example.com/profile-images/profile_01.png"))
                 .andExpect(jsonPath("$.data.totalXp").value(80))
                 .andExpect(jsonPath("$.data.level").doesNotExist())
                 .andExpect(jsonPath("$.data.currentStreakDays").value(3))
@@ -517,26 +520,37 @@ class UserControllerTest extends MySqlContainerSupport {
         assertThat(updatedUser.getProfileImageCode()).isEqualTo(ProfileImageCode.PROFILE_01);
     }
 
-    @Test
-    void updatesProfileImageWithoutChangingNickname() throws Exception {
+    @ParameterizedTest
+    @EnumSource(ProfileImageCode.class)
+    void updatesProfileImageWithoutChangingNickname(ProfileImageCode code) throws Exception {
         User user = saveUser();
+        String expectedUrl = "https://assets.example.com/profile-images/" + code.getFileName();
 
         mockMvc.perform(patch("/users/me/profile-image")
                         .header(HttpHeaders.AUTHORIZATION, bearerToken(user.getId()))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                  "profileImageCode": "PROFILE_04"
+                                  "profileImageCode": "%s"
                                 }
-                                """))
+                                """.formatted(code.name())))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.message").value("프로필 이미지 변경에 성공했습니다."))
-                .andExpect(jsonPath("$.data.profileImageCode").value("PROFILE_04"))
-                .andExpect(jsonPath("$.data.length()").value(1));
+                .andExpect(jsonPath("$.data.profileImageCode").value(code.name()))
+                .andExpect(jsonPath("$.data.profileImageUrl").value(expectedUrl))
+                .andExpect(jsonPath("$.data.length()").value(2));
 
+        entityManager.flush();
+        entityManager.clear();
         User updatedUser = userRepository.findById(user.getId()).orElseThrow();
         assertThat(updatedUser.getNickname()).isEqualTo("Minter");
-        assertThat(updatedUser.getProfileImageCode()).isEqualTo(ProfileImageCode.PROFILE_04);
+        assertThat(updatedUser.getProfileImageCode()).isEqualTo(code);
+
+        mockMvc.perform(get("/users/me")
+                        .header(HttpHeaders.AUTHORIZATION, bearerToken(user.getId())))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.profileImageCode").value(code.name()))
+                .andExpect(jsonPath("$.data.profileImageUrl").value(expectedUrl));
     }
 
     @Test

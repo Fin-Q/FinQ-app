@@ -24,6 +24,7 @@ public class UserProfileService {
     private final UserRepository userRepository;
     private final UserInterestRepository userInterestRepository;
     private final StreakQueryService streakQueryService;
+    private final ProfileImageUrlResolver profileImageUrlResolver;
 
     @Transactional(readOnly = true)
     public MyPageResponse getMyPage(Long userId) {
@@ -47,7 +48,10 @@ public class UserProfileService {
     public ProfileImageUpdateResponse updateProfileImage(Long userId, ProfileImageUpdateRequest request) {
         User user = getUser(userId);
         user.updateProfile(null, request.profileImageCode());
-        return new ProfileImageUpdateResponse(user.getProfileImageCode());
+        return new ProfileImageUpdateResponse(
+                user.getProfileImageCode(),
+                profileImageUrlResolver.resolve(user.getProfileImageCode())
+        );
     }
 
     private User getUser(Long userId) {
@@ -58,6 +62,7 @@ public class UserProfileService {
     private MyPageResponse toResponse(User user) {
         return MyPageResponse.of(
                 user,
+                profileImageUrlResolver.resolve(user.getProfileImageCode()),
                 user.getTotalXp(),
                 streakQueryService.getCurrentStreak(user.getId()),
                 userInterestRepository.findAllWithCategoryByUserId(user.getId())
