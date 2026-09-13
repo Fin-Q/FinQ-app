@@ -14,7 +14,7 @@ public record ContentDetailResponse(
         Long categoryId,
         @Schema(description = "카테고리명", example = "월급 관리")
         String categoryName,
-        @Schema(description = "콘텐츠 제목", example = "월급 관리의 시작")
+        @Schema(description = "콘텐츠 제목", example = "현금흐름")
         String title,
         @Schema(description = "출처", example = "금융감독원")
         String source,
@@ -30,23 +30,19 @@ public record ContentDetailResponse(
 
     @Schema(description = "콘텐츠 블록. blockType에 따라 포함되는 필드가 다릅니다. "
             + "null인 필드는 JSON에서 생략됩니다(NON_NULL). "
-            + "BODY → bodyType, body 포함 / SUMMARY → summaryContent 포함 / "
+            + "BODY → order, title, content 포함 / "
             + "QUESTION → questionId, questionStage, questionType, questionBody, options 포함")
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public record BlockResponse(
-            @Schema(description = "블록 순서", example = "1")
-            int order,
-            @Schema(description = "블록 유형", example = "BODY", allowableValues = {"BODY", "SUMMARY", "QUESTION"})
+            @Schema(description = "페이지 순서 (BODY 블록 전용, QUESTION에서는 생략)", example = "1")
+            Integer order,
+            @Schema(description = "블록 유형", example = "BODY", allowableValues = {"BODY", "QUESTION"})
             String blockType,
-            @Schema(description = "본문 유형 (BODY 블록 전용, 그 외 blockType에서는 생략). "
-                    + "EXPLANATION=설명형 / CASE=사례형 / COMPARISON=비교형",
-                    example = "EXPLANATION", allowableValues = {"EXPLANATION", "CASE", "COMPARISON"})
-            String bodyType,
-            @Schema(description = "본문 데이터 (BODY 블록 전용, 그 외 blockType에서는 생략)")
-            BodyBlockResponse body,
-            @Schema(description = "핵심 정리 내용 (SUMMARY 블록 전용, 그 외 blockType에서는 생략)")
-            String summaryContent,
-            @Schema(description = "문제 ID (QUESTION 블록 전용, 그 외 blockType에서는 생략)", example = "1")
+            @Schema(description = "페이지 제목 (BODY 블록 전용)")
+            String title,
+            @Schema(description = "콘텐츠 항목 목록 (BODY 블록 전용)")
+            List<ContentItemResponse> content,
+            @Schema(description = "문제 ID (QUESTION 블록 전용)", example = "1")
             Long questionId,
             @Schema(description = "문제 단계 (QUESTION 블록 전용). "
                     + "P1=1차 확인 문제 / P2=2차 확인 문제 / F=최종 확인 문제",
@@ -63,44 +59,41 @@ public record ContentDetailResponse(
             List<OptionResponse> options
     ) {
 
-        public static BlockResponse ofBody(int order, String bodyType, BodyBlockResponse body) {
-            return new BlockResponse(order, "BODY", bodyType, body, null, null, null, null, null, null);
+        public static BlockResponse ofBody(int order, String title, List<ContentItemResponse> content) {
+            return new BlockResponse(order, "BODY", title, content, null, null, null, null, null);
         }
 
-        public static BlockResponse ofSummary(int order, String summaryContent) {
-            return new BlockResponse(order, "SUMMARY", null, null, summaryContent, null, null, null, null, null);
-        }
-
-        public static BlockResponse ofQuestion(int order, Long questionId, String questionStage,
+        public static BlockResponse ofQuestion(Long questionId, String questionStage,
                                                 String questionType, String questionBody,
                                                 List<OptionResponse> options) {
-            return new BlockResponse(order, "QUESTION", null, null, null,
+            return new BlockResponse(null, "QUESTION", null, null,
                     questionId, questionStage, questionType, questionBody, options);
         }
     }
 
-    @Schema(description = "본문 블록 데이터. bodyType에 따라 포함되는 필드가 다릅니다. "
+    @Schema(description = "콘텐츠 항목. type에 따라 포함되는 필드가 다릅니다. "
             + "null인 필드는 JSON에서 생략됩니다(NON_NULL). "
-            + "EXPLANATION → title, description, additionalDescription / "
-            + "CASE → title, description, imageUrl / "
-            + "COMPARISON → title, description, imageUrl, tableImageUrl")
+            + "TEXT → text / BOX → items / IMAGE → imageUrl / CAPTION → text")
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    public record BodyBlockResponse(
-            @Schema(description = "본문 제목", example = "월급 관리란?")
+    public record ContentItemResponse(
+            @Schema(description = "항목 유형", example = "TEXT", allowableValues = {"TEXT", "BOX", "IMAGE", "CAPTION"})
+            String type,
+            @Schema(description = "텍스트 (TEXT, CAPTION 전용). **볼드** 마크다운 지원, 줄바꿈은 \\n")
+            String text,
+            @Schema(description = "박스 항목 목록 (BOX 전용)")
+            List<BoxItemResponse> items,
+            @Schema(description = "이미지 URL (IMAGE 전용)")
+            String imageUrl
+    ) {
+    }
+
+    @Schema(description = "박스 항목")
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record BoxItemResponse(
+            @Schema(description = "박스 항목 제목 (선택)")
             String title,
-            @Schema(description = "설명", example = "월급을 효율적으로 관리하는 방법입니다.")
-            String description,
-            @Schema(description = "추가 설명 (EXPLANATION 전용, 그 외 bodyType에서는 생략)")
-            String additionalDescription,
-            @Schema(description = "사례/비교 이미지 URL (CASE, COMPARISON 전용, EXPLANATION에서는 생략). "
-                    + "CASE=사례 관련 이미지 / COMPARISON=비교 관련 이미지. "
-                    + "※ tableImageUrl과 구분: imageUrl은 본문 이미지, tableImageUrl은 '표' 전용 이미지. "
-                    + "imageUrl 보유 콘텐츠: SAL-01(block 3), INV-02(block 3), INV-03(block 3), ETF-01(block 3)")
-            String imageUrl,
-            @Schema(description = "표 이미지 URL (COMPARISON 전용, 그 외 bodyType에서는 생략). "
-                    + "비교형에서 '표'로 분리된 이미지. imageUrl(본문 이미지)과 별도로 존재. "
-                    + "tableImageUrl 보유 콘텐츠: SAL-04(block 3), TAX-09(block 3)")
-            String tableImageUrl
+            @Schema(description = "박스 항목 내용")
+            String text
     ) {
     }
 

@@ -9,7 +9,7 @@ import com.swyp.FinQ.content.domain.QuestionType;
 import com.swyp.FinQ.content.dto.res.CategoryDetailResponse;
 import com.swyp.FinQ.content.dto.res.ContentDetailResponse;
 import com.swyp.FinQ.content.dto.res.ContentDetailResponse.BlockResponse;
-import com.swyp.FinQ.content.dto.res.ContentDetailResponse.BodyBlockResponse;
+import com.swyp.FinQ.content.dto.res.ContentDetailResponse.ContentItemResponse;
 import com.swyp.FinQ.content.dto.res.KnowledgeMapResponse;
 import com.swyp.FinQ.content.repository.CategoryContentCount;
 import com.swyp.FinQ.content.repository.CategoryRepository;
@@ -231,9 +231,14 @@ class ContentQueryServiceTest {
         }
 
         @Test
-        @DisplayName("BODY, SUMMARY, QUESTION 블록이 order 순으로 정렬된다")
+        @DisplayName("BODY와 QUESTION 블록이 올바른 순서로 조립된다")
         void getContentDetail_blocksOrderedCorrectly() {
             Category category = createCategory(1L, CategoryCode.SAL, "월급 관리");
+            String bodyData = """
+                    [
+                      {"order":1,"title":"도입","content":[{"type":"TEXT","text":"텍스트1"}]},
+                      {"order":2,"title":"현금흐름","content":[{"type":"TEXT","text":"텍스트2"}]}
+                    ]""";
             Content content = Content.builder()
                     .id(1L)
                     .contentCode("SAL-01")
@@ -242,15 +247,14 @@ class ContentQueryServiceTest {
                     .source("금융감독원")
                     .displayOrder(1)
                     .isPremium(false)
-                    .bodyData("[{\"bodyType\":\"EXPLANATION\",\"order\":1,\"title\":\"제목\",\"description\":\"설명\"}]")
-                    .summaryContent("핵심 정리 내용")
+                    .bodyData(bodyData)
                     .build();
 
             ContentQuestion question = createQuestion(1L, content, ContentStage.P1, QuestionType.OX,
                     "문제입니다", "맞다", "틀리다", null, null, "O");
 
             given(contentRepository.findByIdWithCategory(1L)).willReturn(Optional.of(content));
-            given(contentRepository.findByCategoryOrderByDisplayOrder(category)).willReturn(List.of(content, content, content, content));
+            given(contentRepository.findByCategoryOrderByDisplayOrder(category)).willReturn(List.of(content));
             given(contentQuestionRepository.findByContent(content)).willReturn(List.of(question));
 
             ContentDetailResponse response = contentQueryService.getContentDetail(1L, 1L);
@@ -258,16 +262,21 @@ class ContentQueryServiceTest {
             assertThat(response.blocks()).hasSize(3);
             assertThat(response.blocks().get(0).blockType()).isEqualTo("BODY");
             assertThat(response.blocks().get(0).order()).isEqualTo(1);
-            assertThat(response.blocks().get(1).blockType()).isEqualTo("QUESTION");
+            assertThat(response.blocks().get(1).blockType()).isEqualTo("BODY");
             assertThat(response.blocks().get(1).order()).isEqualTo(2);
-            assertThat(response.blocks().get(2).blockType()).isEqualTo("SUMMARY");
-            assertThat(response.blocks().get(2).order()).isEqualTo(5);
+            assertThat(response.blocks().get(2).blockType()).isEqualTo("QUESTION");
+            assertThat(response.blocks().get(2).order()).isNull();
         }
 
         @Test
-        @DisplayName("EXPLANATION 타입은 description과 additionalDescription을 포함한다")
-        void getContentDetail_explanationBody() {
+        @DisplayName("TEXT 타입 content가 올바르게 매핑된다")
+        void getContentDetail_textContent() {
             Category category = createCategory(1L, CategoryCode.SAL, "월급 관리");
+            String bodyData = """
+                    [{"order":1,"title":"도입","content":[
+                      {"type":"TEXT","text":"첫 번째 텍스트"},
+                      {"type":"TEXT","text":"두 번째 텍스트"}
+                    ]}]""";
             Content content = Content.builder()
                     .id(1L)
                     .contentCode("SAL-01")
@@ -275,7 +284,7 @@ class ContentQueryServiceTest {
                     .category(category)
                     .displayOrder(1)
                     .isPremium(false)
-                    .bodyData("[{\"bodyType\":\"EXPLANATION\",\"order\":1,\"title\":\"본문 제목\",\"description\":\"본문 설명\",\"additionalDescription\":\"추가 설명\"}]")
+                    .bodyData(bodyData)
                     .build();
 
             given(contentRepository.findByIdWithCategory(1L)).willReturn(Optional.of(content));
@@ -286,17 +295,21 @@ class ContentQueryServiceTest {
 
             assertThat(response.blocks()).hasSize(1);
             BlockResponse block = response.blocks().get(0);
-            assertThat(block.bodyType()).isEqualTo("EXPLANATION");
-            BodyBlockResponse body = block.body();
-            assertThat(body.title()).isEqualTo("본문 제목");
-            assertThat(body.description()).isEqualTo("본문 설명");
-            assertThat(body.additionalDescription()).isEqualTo("추가 설명");
+            assertThat(block.title()).isEqualTo("도입");
+            assertThat(block.content()).hasSize(2);
+            assertThat(block.content().get(0).type()).isEqualTo("TEXT");
+            assertThat(block.content().get(0).text()).isEqualTo("첫 번째 텍스트");
+            assertThat(block.content().get(1).text()).isEqualTo("두 번째 텍스트");
         }
 
         @Test
-        @DisplayName("CASE 타입은 imageUrl과 description을 포함한다")
-        void getContentDetail_caseBody() {
+        @DisplayName("BOX 타입 content가 올바르게 매핑된다")
+        void getContentDetail_boxContent() {
             Category category = createCategory(1L, CategoryCode.SAL, "월급 관리");
+            String bodyData = """
+                    [{"order":1,"title":"현금흐름","content":[
+                      {"type":"BOX","items":[{"text":"항목1"},{"title":"제목","text":"항목2"}]}
+                    ]}]""";
             Content content = Content.builder()
                     .id(1L)
                     .contentCode("SAL-01")
@@ -304,7 +317,7 @@ class ContentQueryServiceTest {
                     .category(category)
                     .displayOrder(1)
                     .isPremium(false)
-                    .bodyData("[{\"bodyType\":\"CASE\",\"order\":1,\"title\":\"사례\",\"description\":\"사례 설명\",\"imageUrl\":\"https://img.com/case.png\"}]")
+                    .bodyData(bodyData)
                     .build();
 
             given(contentRepository.findByIdWithCategory(1L)).willReturn(Optional.of(content));
@@ -313,17 +326,22 @@ class ContentQueryServiceTest {
 
             ContentDetailResponse response = contentQueryService.getContentDetail(1L, 1L);
 
-            BodyBlockResponse body = response.blocks().get(0).body();
-            assertThat(body.title()).isEqualTo("사례");
-            assertThat(body.imageUrl()).isEqualTo("https://img.com/case.png");
-            assertThat(body.description()).isEqualTo("사례 설명");
-            assertThat(body.additionalDescription()).isNull();
+            ContentItemResponse boxItem = response.blocks().get(0).content().get(0);
+            assertThat(boxItem.type()).isEqualTo("BOX");
+            assertThat(boxItem.items()).hasSize(2);
+            assertThat(boxItem.items().get(0).title()).isNull();
+            assertThat(boxItem.items().get(0).text()).isEqualTo("항목1");
+            assertThat(boxItem.items().get(1).title()).isEqualTo("제목");
         }
 
         @Test
-        @DisplayName("COMPARISON 타입은 tableImageUrl과 imageUrl을 포함한다")
-        void getContentDetail_comparisonBody() {
+        @DisplayName("IMAGE 타입 content가 올바르게 매핑된다")
+        void getContentDetail_imageContent() {
             Category category = createCategory(1L, CategoryCode.SAL, "월급 관리");
+            String bodyData = """
+                    [{"order":1,"title":"사례","content":[
+                      {"type":"IMAGE","imageUrl":"https://img.com/test.png"}
+                    ]}]""";
             Content content = Content.builder()
                     .id(1L)
                     .contentCode("SAL-01")
@@ -331,7 +349,7 @@ class ContentQueryServiceTest {
                     .category(category)
                     .displayOrder(1)
                     .isPremium(false)
-                    .bodyData("[{\"bodyType\":\"COMPARISON\",\"order\":1,\"title\":\"비교\",\"description\":\"비교 설명\",\"tableImageUrl\":\"https://img.com/table.png\",\"imageUrl\":\"https://img.com/img.png\"}]")
+                    .bodyData(bodyData)
                     .build();
 
             given(contentRepository.findByIdWithCategory(1L)).willReturn(Optional.of(content));
@@ -340,10 +358,9 @@ class ContentQueryServiceTest {
 
             ContentDetailResponse response = contentQueryService.getContentDetail(1L, 1L);
 
-            BodyBlockResponse body = response.blocks().get(0).body();
-            assertThat(body.tableImageUrl()).isEqualTo("https://img.com/table.png");
-            assertThat(body.imageUrl()).isEqualTo("https://img.com/img.png");
-            assertThat(body.description()).isEqualTo("비교 설명");
+            ContentItemResponse imageItem = response.blocks().get(0).content().get(0);
+            assertThat(imageItem.type()).isEqualTo("IMAGE");
+            assertThat(imageItem.imageUrl()).isEqualTo("https://img.com/test.png");
         }
 
         @Test

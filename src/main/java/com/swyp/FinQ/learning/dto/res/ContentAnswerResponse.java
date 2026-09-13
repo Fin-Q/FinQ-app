@@ -17,11 +17,10 @@ public record ContentAnswerResponse(
         @Schema(description = "정답 보기 ID", example = "A")
         String correctOptionId,
         @Schema(description = "다음 행동 지시. "
-                + "NEXT_BODY=다음 본문 블록으로 이동 / NEXT_SUMMARY=핵심 정리 블록으로 이동 / "
-                + "NEXT_QUESTION=다음 문제 블록으로 이동 / CONTENT_COMPLETED=콘텐츠 학습 완료 / "
+                + "NEXT_BODY=다음 본문 블록으로 이동 / CONTENT_COMPLETED=콘텐츠 학습 완료 / "
                 + "RETRY=오답, 같은 문제 재시도",
                 example = "NEXT_BODY",
-                allowableValues = {"NEXT_BODY", "NEXT_SUMMARY", "NEXT_QUESTION", "CONTENT_COMPLETED", "RETRY"})
+                allowableValues = {"NEXT_BODY", "CONTENT_COMPLETED", "RETRY"})
         String nextAction,
         @JsonInclude(JsonInclude.Include.ALWAYS)
         @Schema(description = "콘텐츠 최초 완료 시 보상 결과. "

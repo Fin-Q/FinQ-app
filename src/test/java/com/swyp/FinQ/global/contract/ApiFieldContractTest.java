@@ -112,23 +112,22 @@ class ApiFieldContractTest {
                 true,
                 null
         );
-        ContentDetailResponse.BodyBlockResponse comparisonBody =
-                new ContentDetailResponse.BodyBlockResponse(
-                        "비교",
-                        "비교 설명",
+        ContentDetailResponse.ContentItemResponse imageItem =
+                new ContentDetailResponse.ContentItemResponse(
+                        "IMAGE",
                         null,
-                        "https://example.com/image.png",
-                        "https://example.com/table.png"
+                        null,
+                        "https://example.com/image.png"
                 );
 
         JsonNode quizJson = objectMapper.valueToTree(quizAnswer);
-        JsonNode bodyJson = objectMapper.valueToTree(comparisonBody);
+        JsonNode itemJson = objectMapper.valueToTree(imageItem);
 
         assertThat(quizJson.path("isLastQuestion").asBoolean()).isTrue();
         assertThat(quizJson.has("lastQuestion")).isFalse();
-        assertThat(bodyJson.path("tableImageUrl").asText())
-                .isEqualTo("https://example.com/table.png");
-        assertThat(bodyJson.has("tableData")).isFalse();
+        assertThat(itemJson.path("imageUrl").asText())
+                .isEqualTo("https://example.com/image.png");
+        assertThat(itemJson.path("type").asText()).isEqualTo("IMAGE");
     }
 
     @Test
