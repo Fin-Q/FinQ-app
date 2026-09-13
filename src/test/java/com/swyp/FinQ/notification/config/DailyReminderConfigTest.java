@@ -16,12 +16,10 @@ class DailyReminderConfigTest {
             .withBean(PushNotificationService.class, () -> mock(PushNotificationService.class));
 
     @Test
-    void registersExactlyOneCronTaskWhenBothFlagsAndRoutingDataAreConfigured() {
-        runner.withPropertyValues("firebase.enabled=true", "notification.daily-reminder.enabled=true",
-                "notification.daily-reminder.data.screen=HOME").run(context -> {
+    void registersExactlyOneCronTaskWithoutRoutingDataWhenBothFlagsAreEnabled() {
+        runner.withPropertyValues("firebase.enabled=true", "notification.daily-reminder.enabled=true").run(context -> {
             assertThat(context).hasNotFailed().hasSingleBean(DailyLearningReminderScheduler.class);
             assertThat(context.getBean(ScheduledAnnotationBeanPostProcessor.class).getScheduledTasks()).hasSize(1);
-            assertThat(context.getBean(DailyReminderProperties.class).data()).containsEntry("screen", "HOME");
         });
     }
 
@@ -36,18 +34,5 @@ class DailyReminderConfigTest {
                         .doesNotHaveBean(ScheduledAnnotationBeanPostProcessor.class);
             });
         }
-    }
-
-    @Test
-    void refusesActivationWithoutRoutingData() {
-        runner.withPropertyValues("firebase.enabled=true", "notification.daily-reminder.enabled=true")
-                .run(context -> assertThat(context).hasFailed());
-    }
-
-    @Test
-    void refusesActivationWithBlankRoutingValue() {
-        runner.withPropertyValues("firebase.enabled=true", "notification.daily-reminder.enabled=true",
-                        "notification.daily-reminder.data.screen= ")
-                .run(context -> assertThat(context).hasFailed());
     }
 }

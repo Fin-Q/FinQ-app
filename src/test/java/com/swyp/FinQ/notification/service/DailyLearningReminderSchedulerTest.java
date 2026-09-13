@@ -1,6 +1,5 @@
 package com.swyp.FinQ.notification.service;
 
-import com.swyp.FinQ.notification.config.DailyReminderProperties;
 import com.swyp.FinQ.notification.dto.info.PushNotificationMessage;
 import com.swyp.FinQ.notification.dto.info.PushNotificationSendResult;
 import org.junit.jupiter.api.Test;
@@ -13,7 +12,6 @@ import org.springframework.scheduling.support.CronExpression;
 
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
-import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -31,11 +29,11 @@ class DailyLearningReminderSchedulerTest {
     private PushNotificationService service;
 
     private DailyLearningReminderScheduler scheduler() {
-        return new DailyLearningReminderScheduler(service, new DailyReminderProperties(Map.of("screen", "HOME")));
+        return new DailyLearningReminderScheduler(service);
     }
 
     @Test
-    void sendsFixedCopyAndConfiguredRoutingData() {
+    void sendsFixedCopyWithoutRoutingData() {
         when(service.sendToEnabledUsers(any())).thenReturn(new PushNotificationSendResult(501, 499, 2, 1));
         scheduler().sendDailyReminder();
 
@@ -43,7 +41,7 @@ class DailyLearningReminderSchedulerTest {
         verify(service).sendToEnabledUsers(message.capture());
         assertThat(message.getValue().title()).isEqualTo("오늘의 금융 질문, 궁금하지 않나요?");
         assertThat(message.getValue().body()).isEqualTo("3분이면 하나씩 알아갈 수 있어요.");
-        assertThat(message.getValue().data()).containsExactlyEntriesOf(Map.of("screen", "HOME"));
+        assertThat(message.getValue().data()).isEmpty();
     }
 
     @Test
