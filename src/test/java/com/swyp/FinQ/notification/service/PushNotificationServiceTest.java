@@ -4,23 +4,122 @@ import com.swyp.FinQ.notification.domain.PushToken;
 import com.swyp.FinQ.notification.dto.info.PushNotificationMessage;
 import com.swyp.FinQ.notification.dto.info.PushNotificationSendResult;
 import com.swyp.FinQ.notification.repository.PushTokenRepository;
+import com.swyp.FinQ.notification.exception.PushNotificationDeliveryException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 import java.util.Map;
+import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.times;
 
 @ExtendWith(MockitoExtension.class)
 class PushNotificationServiceTest {
+
+    @ParameterizedTest
+    @ValueSource(ints = {0, 1, 499, 500, 501, 1001})
+    void sendsEnabledUsersInBatchesOfAtMost500(int tokenCount) {
+        List<PushToken> tokens = tokens(tokenCount);
+        stubCursorQuery(tokens);
+        PushNotificationMessage message = message();
+        if (tokenCount > 0) {
+            when(fcmClient.send(anyList(), eq(message))).thenAnswer(invocation -> {
+                List<String> batch = invocation.getArgument(0);
+                assertThat(batch).hasSizeLessThanOrEqualTo(500);
+                return batch.stream().map(token -> new FcmSendOutcome(token, FcmSendStatus.SUCCESS)).toList();
+            });
+        }
+
+        PushNotificationSendResult result = service().sendToEnabledUsers(message);
+
+        assertThat(result).isEqualTo(new PushNotificationSendResult(tokenCount, tokenCount, 0, 0));
+        verify(fcmClient, times((tokenCount + 499) / 500)).send(anyList(), eq(message));
+        verifyNoInteractions(pushTokenCleanupService);
+    }
+
+    @Test
+    void continuesAfterRequestLevelFailureWithoutDeletingTokens() {
+        stubCursorQuery(tokens(501));
+        PushNotificationMessage message = message();
+        when(fcmClient.send(anyList(), eq(message)))
+                .thenThrow(new PushNotificationDeliveryException("request failed", new RuntimeException()))
+                .thenReturn(List.of(new FcmSendOutcome("token-501", FcmSendStatus.SUCCESS)));
+
+        assertThat(service().sendToEnabledUsers(message))
+                .isEqualTo(new PushNotificationSendResult(501, 1, 500, 0));
+        verify(fcmClient, times(2)).send(anyList(), eq(message));
+        verifyNoInteractions(pushTokenCleanupService);
+    }
+
+    @Test
+    void aggregatesInvalidAndTemporaryFailuresAcrossBatches() {
+        stubCursorQuery(tokens(501));
+        PushNotificationMessage message = message();
+        when(fcmClient.send(anyList(), eq(message))).thenAnswer(invocation -> {
+            List<String> batch = invocation.getArgument(0);
+            return batch.stream().map(token -> new FcmSendOutcome(token,
+                    token.equals("token-500") ? FcmSendStatus.INVALID_TOKEN
+                            : token.equals("token-501") ? FcmSendStatus.FAILED : FcmSendStatus.SUCCESS)).toList();
+        });
+        when(pushTokenCleanupService.removeInvalidToken("token-500")).thenReturn(true);
+
+        assertThat(service().sendToEnabledUsers(message))
+                .isEqualTo(new PushNotificationSendResult(501, 499, 2, 1));
+        verify(pushTokenCleanupService).removeInvalidToken("token-500");
+        verify(pushTokenCleanupService, never()).removeInvalidToken("token-501");
+    }
+
+    @Test
+    void alsoSplitsSingleUserSendingAt500Tokens() {
+        when(pushTokenRepository.findAllByUser_IdAndUser_NotificationEnabledTrue(1L)).thenReturn(tokens(501));
+        PushNotificationMessage message = message();
+        when(fcmClient.send(anyList(), eq(message))).thenAnswer(invocation -> {
+            List<String> batch = invocation.getArgument(0);
+            assertThat(batch).hasSizeLessThanOrEqualTo(500);
+            return batch.stream().map(token -> new FcmSendOutcome(token, FcmSendStatus.SUCCESS)).toList();
+        });
+
+        assertThat(service().sendToUser(1L, message)).isEqualTo(new PushNotificationSendResult(501, 501, 0, 0));
+        verify(fcmClient, times(2)).send(anyList(), eq(message));
+    }
+
+    private List<PushToken> tokens(int count) {
+        return IntStream.rangeClosed(1, count)
+                .mapToObj(index -> PushToken.builder().id((long) index).fcmToken("token-" + index).build())
+                .toList();
+    }
+
+    private void stubCursorQuery(List<PushToken> tokens) {
+        when(pushTokenRepository.findByUser_NotificationEnabledTrueAndIdGreaterThanOrderByIdAsc(
+                anyLong(), any(Pageable.class))).thenAnswer(invocation -> {
+            long cursor = invocation.getArgument(0);
+            Pageable pageable = invocation.getArgument(1);
+            assertThat(pageable.getPageNumber()).isZero();
+            assertThat(pageable.getPageSize()).isEqualTo(500);
+            return tokens.stream().filter(token -> token.getId() > cursor)
+                    .limit(pageable.getPageSize()).toList();
+        });
+    }
+
+    private PushNotificationService service() {
+        return new PushNotificationService(pushTokenRepository, fcmClient, pushTokenCleanupService);
+    }
 
     @Mock
     private PushTokenRepository pushTokenRepository;

@@ -2,6 +2,7 @@ package com.swyp.FinQ.notification.repository;
 
 import com.swyp.FinQ.notification.domain.PushToken;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 import java.util.Optional;
@@ -15,6 +16,9 @@ public interface PushTokenRepository extends JpaRepository<PushToken, Long> {
     Optional<PushToken> findByUser_IdAndDeviceId(Long userId, String deviceId);
 
     List<PushToken> findAllByUser_IdAndUser_NotificationEnabledTrue(Long userId);
+
+    List<PushToken> findByUser_NotificationEnabledTrueAndIdGreaterThanOrderByIdAsc(
+            Long afterId, Pageable pageable);
 
     boolean existsByFcmTokenHash(String fcmTokenHash);
 

@@ -76,5 +76,9 @@ firebase:
   enabled: ${FIREBASE_ENABLED:false}
   credentials-base64: ${FIREBASE_CREDENTIALS_BASE64:}
 
+notification:
+  daily-reminder:
+    enabled: ${DAILY_REMINDER_ENABLED:false}
+
 profile-image:
   base-url: ${PROFILE_IMAGE_BASE_URL:}
