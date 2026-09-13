@@ -26,5 +26,7 @@ public abstract class MySqlContainerSupport {
         registry.add("jwt.secret", () -> "ZmlucS10ZXN0LWp3dC1zZWNyZXQta2V5LTMyaXRlcyE=");
         registry.add("social-oauth.token-encryption-key",
                 () -> "MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=");
+        registry.add("profile-image.base-url",
+                () -> "https://assets.example.com/profile-images");
     }
 }
