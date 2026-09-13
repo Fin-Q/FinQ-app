@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.PageRequest;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -30,6 +31,30 @@ class PushTokenRepositoryTest extends MySqlContainerSupport {
 
     @Autowired
     private EntityManager entityManager;
+
+    @Test
+    @DisplayName("알림 동의 사용자만 ID 커서로 조회하며 앞 배치 삭제 후에도 다음 토큰을 누락하지 않는다")
+    void findsEnabledTokensByCursorWithoutOffset() {
+        User enabled = createUser();
+        User disabled = createUser();
+        disabled.updateNotificationEnabled(false);
+        PushToken first = pushTokenRepository.saveAndFlush(createPushToken(enabled, "first", "first-token"));
+        pushTokenRepository.saveAndFlush(createPushToken(disabled, "disabled", "disabled-token"));
+        PushToken last = pushTokenRepository.saveAndFlush(createPushToken(enabled, "last", "last-token"));
+        entityManager.flush();
+        entityManager.clear();
+
+        assertThat(pushTokenRepository.findByUser_NotificationEnabledTrueAndIdGreaterThanOrderByIdAsc(
+                0L, PageRequest.of(0, 1))).extracting(PushToken::getId).containsExactly(first.getId());
+
+        pushTokenRepository.deleteById(first.getId());
+        pushTokenRepository.flush();
+        entityManager.clear();
+        assertThat(pushTokenRepository.findByUser_NotificationEnabledTrueAndIdGreaterThanOrderByIdAsc(
+                first.getId(), PageRequest.of(0, 1))).extracting(PushToken::getId).containsExactly(last.getId());
+        assertThat(pushTokenRepository.findByUser_NotificationEnabledTrueAndIdGreaterThanOrderByIdAsc(
+                last.getId(), PageRequest.of(0, 1))).isEmpty();
+    }
 
     @Test
     @DisplayName("기기 ID와 FCM 토큰으로 푸시 토큰을 조회한다")
