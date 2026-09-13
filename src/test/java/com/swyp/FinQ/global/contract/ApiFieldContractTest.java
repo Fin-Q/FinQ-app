@@ -11,6 +11,10 @@ import com.swyp.FinQ.notification.dto.req.PushTokenRegistrationRequest;
 import com.swyp.FinQ.notification.dto.res.PushTokenUnregistrationResponse;
 import com.swyp.FinQ.notification.domain.PushPlatform;
 import com.swyp.FinQ.user.domain.OnboardingStatus;
+import com.swyp.FinQ.user.domain.ProfileImageCode;
+import com.swyp.FinQ.user.dto.req.ProfileImageUpdateRequest;
+import com.swyp.FinQ.user.dto.res.MyPageResponse;
+import com.swyp.FinQ.user.dto.res.ProfileImageUpdateResponse;
 import com.swyp.FinQ.user.dto.res.TokenRefreshResponse;
 import org.junit.jupiter.api.Test;
 
@@ -19,6 +23,27 @@ import java.time.OffsetDateTime;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class ApiFieldContractTest {
+
+    @Test
+    void serializesProfileImageCodeAndUrlWhileKeepingTheRequestCodeOnly() {
+        String url = "https://assets.example.com/profile-images/profile_02.png";
+        MyPageResponse myPage = new MyPageResponse(
+                "1", "user@example.com", "핀큐", ProfileImageCode.PROFILE_02,
+                url, 80, 3, true, OnboardingStatus.COMPLETED, java.util.List.of());
+        ProfileImageUpdateResponse updated = new ProfileImageUpdateResponse(ProfileImageCode.PROFILE_02, url);
+
+        for (Object response : java.util.List.of(myPage, updated)) {
+            JsonNode json = objectMapper.valueToTree(response);
+            assertThat(json.path("profileImageCode").asText()).isEqualTo("PROFILE_02");
+            assertThat(json.path("profileImageUrl").asText()).isEqualTo(url);
+            assertThat(json.has("imageUrl")).isFalse();
+        }
+        assertThat(objectMapper.valueToTree(updated).size()).isEqualTo(2);
+
+        JsonNode request = objectMapper.valueToTree(new ProfileImageUpdateRequest(ProfileImageCode.PROFILE_02));
+        assertThat(request.size()).isEqualTo(1);
+        assertThat(request.path("profileImageCode").asText()).isEqualTo("PROFILE_02");
+    }
 
     @Test
     void includesExplicitNullResultsForIncorrectAndRepeatedAnswers() {

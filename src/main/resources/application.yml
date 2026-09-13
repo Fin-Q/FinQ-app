@@ -75,3 +75,6 @@ social-oauth:
 firebase:
   enabled: ${FIREBASE_ENABLED:false}
   credentials-base64: ${FIREBASE_CREDENTIALS_BASE64:}
+
+profile-image:
+  base-url: ${PROFILE_IMAGE_BASE_URL:}

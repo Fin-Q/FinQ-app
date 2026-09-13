@@ -217,6 +217,28 @@ class SwaggerConfigTest extends MySqlContainerSupport {
     }
 
     @Test
+    void documentsProfileImageUrlsWithoutChangingTheCodeOnlyRequest() throws Exception {
+        JsonNode schemas = getApiDocs().path("components").path("schemas");
+
+        for (String name : List.of("MyPageResponse", "ProfileImageUpdateResponse")) {
+            JsonNode properties = schemas.path(name).path("properties");
+            JsonNode url = properties.path("profileImageUrl");
+            assertThat(url.path("type").asText()).as(name).isEqualTo("string");
+            assertThat(url.path("format").asText()).as(name).isEqualTo("uri");
+            assertThat(url.path("example").asText()).as(name).startsWith("https://");
+            assertThat(url.path("description").asText()).as(name).contains("앱에서 표시");
+            assertThat(textValues(properties.path("profileImageCode").path("enum")))
+                    .as(name).containsExactlyInAnyOrder("PROFILE_01", "PROFILE_02", "PROFILE_03", "PROFILE_04");
+            assertThat(properties.has("imageUrl")).as(name).isFalse();
+        }
+
+        JsonNode request = schemas.path("ProfileImageUpdateRequest");
+        assertThat(request.path("properties").size()).isEqualTo(1);
+        assertThat(request.path("properties").has("profileImageCode")).isTrue();
+        assertThat(textValues(request.path("required"))).contains("profileImageCode");
+    }
+
+    @Test
     void documentsCommonSuccessAndErrorResponses() throws Exception {
         JsonNode schemas = getApiDocs().path("components").path("schemas");
         assertThat(textValues(schemas.path("ErrorResponse").path("properties").path("status").path("enum")))
