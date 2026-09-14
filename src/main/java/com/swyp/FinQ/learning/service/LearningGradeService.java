@@ -133,22 +133,6 @@ public class LearningGradeService {
             return NextAction.CONTENT_COMPLETED;
         }
 
-        Content content = question.getContent();
-        int currentBlockOrder = stage.getBlockOrder();
-        int nextQuestionBlockOrder = stage.nextQuestionStage().getBlockOrder();
-
-        boolean hasSummaryBetween = (currentBlockOrder < ContentStage.SUMMARY_BLOCK_ORDER
-                && nextQuestionBlockOrder > ContentStage.SUMMARY_BLOCK_ORDER)
-                && content.getSummaryContent() != null;
-
-        if (hasSummaryBetween) {
-            return NextAction.NEXT_SUMMARY;
-        }
-
-        if (currentBlockOrder + 1 < nextQuestionBlockOrder) {
-            return NextAction.NEXT_BODY;
-        }
-
-        return NextAction.NEXT_QUESTION;
+        return NextAction.NEXT_BODY;
     }
 }

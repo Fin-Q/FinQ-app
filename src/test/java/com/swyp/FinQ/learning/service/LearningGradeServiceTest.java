@@ -330,33 +330,9 @@ class LearningGradeServiceTest {
         }
 
         @Test
-        @DisplayName("P2 정답 시 요약 콘텐츠가 있으면 NEXT_SUMMARY를 반환한다")
-        void p2_correct_with_summary_returns_next_summary() {
+        @DisplayName("P2 정답 시 NEXT_BODY를 반환한다")
+        void p2_correct_returns_next_body() {
             Content content = createContent(1L);
-            ContentQuestion question = createQuestion(1L, content, ContentStage.P2,
-                    QuestionType.SINGLE_CHOICE, "A");
-
-            given(contentRepository.findById(1L)).willReturn(Optional.of(content));
-            given(contentQuestionRepository.findById(1L)).willReturn(Optional.of(question));
-
-            ContentAnswerResponse response = learningGradeService.gradeContentAnswer(
-                    USER_ID, 1L, 1L, "A");
-
-            // P2 blockOrder=4, next(F) blockOrder=6, SUMMARY_BLOCK_ORDER=5
-            // 4 < 5 && 6 > 5 && summaryContent != null → NEXT_SUMMARY
-            assertThat(response.nextAction()).isEqualTo("NEXT_SUMMARY");
-        }
-
-        @Test
-        @DisplayName("P2 정답 시 요약 콘텐츠가 없으면 NEXT_BODY를 반환한다")
-        void p2_correct_without_summary_returns_next_body() {
-            Content content = Content.builder()
-                    .id(1L)
-                    .contentCode("C1")
-                    .title("테스트")
-                    .summaryContent(null)
-                    .displayOrder(1)
-                    .build();
             ContentQuestion question = createQuestion(1L, content, ContentStage.P2,
                     QuestionType.SINGLE_CHOICE, "A");
 

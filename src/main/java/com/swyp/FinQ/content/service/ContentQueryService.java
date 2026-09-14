@@ -2,18 +2,18 @@ package com.swyp.FinQ.content.service;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.swyp.FinQ.content.domain.BodyType;
 import com.swyp.FinQ.content.domain.Category;
 import com.swyp.FinQ.content.domain.CategoryCode;
 import com.swyp.FinQ.content.domain.CompletionStatus;
 import com.swyp.FinQ.content.domain.Content;
 import com.swyp.FinQ.content.domain.ContentQuestion;
-import com.swyp.FinQ.content.domain.ContentStage;
 import com.swyp.FinQ.content.dto.info.BodyBlockDataInfo;
 
 import com.swyp.FinQ.content.dto.res.CategoryDetailResponse;
 import com.swyp.FinQ.content.dto.res.ContentDetailResponse;
 import com.swyp.FinQ.content.dto.res.ContentDetailResponse.BlockResponse;
+import com.swyp.FinQ.content.dto.res.ContentDetailResponse.BoxItemResponse;
+import com.swyp.FinQ.content.dto.res.ContentDetailResponse.ContentItemResponse;
 import com.swyp.FinQ.content.dto.res.ContentDetailResponse.OptionResponse;
 import com.swyp.FinQ.content.dto.res.KnowledgeMapResponse;
 import com.swyp.FinQ.content.exception.ContentErrorCode;
@@ -83,7 +83,7 @@ public class ContentQueryService {
         Set<Long> completedContentIds = learningProgressService.getCompletedContentIds(userId, allContents);
 
         List<CategoryDetailResponse.ContentSummary> contentSummaries = buildContentSummaries(freeContents, completedContentIds);
-        List<CategoryDetailResponse.PremiumContentSummary> premiumSummaries = buildPremiumSummaries(premiumContents);
+        List<CategoryDetailResponse.PremiumContentSummary> premiumSummaries = buildPremiumSummaries(premiumContents, completedContentIds);
 
         int completedCount = (int) freeContents.stream()
                 .filter(c -> completedContentIds.contains(c.getId()))
@@ -116,14 +116,27 @@ public class ContentQueryService {
     private List<CategoryDetailResponse.ContentSummary> buildContentSummaries(
             List<Content> freeContents, Set<Long> completedContentIds) {
         return freeContents.stream()
-                .map(content -> new CategoryDetailResponse.ContentSummary(
-                        content.getId(),
-                        content.getContentCode(),
-                        content.getTitle(),
-                        content.getDescription(),
-                        CompletionStatus.of(completedContentIds.contains(content.getId())).name(),
-                        content.getDisplayOrder()
-                ))
+                .map(content -> {
+                    String title = null;
+                    String description = null;
+                    List<BodyBlockDataInfo> bodyBlocks = parseBodyData(content.getBodyData());
+                    if (!bodyBlocks.isEmpty()) {
+                        title = bodyBlocks.get(0).title();
+                        List<BodyBlockDataInfo.ContentItem> items = bodyBlocks.get(0).content();
+                        if (items != null && !items.isEmpty()) {
+                            description = items.get(0).text();
+                        }
+                    }
+                    return new CategoryDetailResponse.ContentSummary(
+                            content.getId(),
+                            content.getContentCode(),
+                            content.getTitle(),
+                            title,
+                            description,
+                            CompletionStatus.of(completedContentIds.contains(content.getId())).name(),
+                            content.getDisplayOrder()
+                    );
+                })
                 .toList();
     }
 
@@ -143,31 +156,46 @@ public class ContentQueryService {
             }
         }
 
-        List<BlockResponse> blocks = new ArrayList<>();
-
         // BODY 블록 조립
         List<BodyBlockDataInfo> bodyBlocks = parseBodyData(content.getBodyData());
+        List<BlockResponse> bodyBlockResponses = new ArrayList<>();
         for (BodyBlockDataInfo bd : bodyBlocks) {
-            ContentDetailResponse.BodyBlockResponse body = buildBodyBlock(bd);
-            blocks.add(BlockResponse.ofBody(bd.order(), bd.bodyType(), body));
+            List<ContentItemResponse> contentItems = mapContentItems(bd.content());
+            bodyBlockResponses.add(BlockResponse.ofBody(bd.order(), bd.title(), contentItems));
         }
+        bodyBlockResponses.sort(Comparator.comparingInt(BlockResponse::order));
 
-        // SUMMARY 블록 조립
-        if (content.getSummaryContent() != null) {
-            blocks.add(BlockResponse.ofSummary(ContentStage.SUMMARY_BLOCK_ORDER, content.getSummaryContent()));
-        }
-
-        // QUESTION 블록 조립
+        // QUESTION 블록을 afterPageOrder 기준으로 매핑
         List<ContentQuestion> questions = contentQuestionRepository.findByContent(content);
+        Map<Integer, List<BlockResponse>> questionsByPageOrder = new java.util.LinkedHashMap<>();
+        List<BlockResponse> unmappedQuestions = new ArrayList<>();
+
         for (ContentQuestion q : questions) {
-            String stage = q.getContentStage().name();
-            int order = q.getContentStage().getBlockOrder();
             List<OptionResponse> options = buildOptions(q);
-            blocks.add(BlockResponse.ofQuestion(order, q.getId(), stage,
-                    q.getQuestionType().name(), q.getQuestionBody(), options));
+            BlockResponse questionBlock = BlockResponse.ofQuestion(q.getId(), q.getContentStage().name(),
+                    q.getQuestionType().name(), q.getQuestionBody(), options);
+
+            int afterPage = q.getAfterPageOrder();
+            if (afterPage > 0) {
+                questionsByPageOrder.computeIfAbsent(afterPage, k -> new ArrayList<>()).add(questionBlock);
+            } else {
+                unmappedQuestions.add(questionBlock);
+            }
         }
 
-        blocks.sort(Comparator.comparingInt(BlockResponse::order));
+        // BODY와 QUESTION을 올바른 순서로 조합
+        List<BlockResponse> blocks = new ArrayList<>();
+        for (BlockResponse body : bodyBlockResponses) {
+            blocks.add(body);
+
+            List<BlockResponse> questionsAfterPage = questionsByPageOrder.get(body.order());
+            if (questionsAfterPage != null) {
+                blocks.addAll(questionsAfterPage);
+            }
+        }
+
+        // 매핑되지 않은 QUESTION 블록 추가
+        blocks.addAll(unmappedQuestions);
 
         return new ContentDetailResponse(
                 content.getId(),
@@ -182,6 +210,24 @@ public class ContentQueryService {
         );
     }
 
+    private List<ContentItemResponse> mapContentItems(List<BodyBlockDataInfo.ContentItem> items) {
+        if (items == null) {
+            return List.of();
+        }
+        return items.stream()
+                .map(item -> new ContentItemResponse(
+                        item.type(),
+                        item.text(),
+                        item.items() != null
+                                ? item.items().stream()
+                                        .map(box -> new BoxItemResponse(box.title(), box.text()))
+                                        .toList()
+                                : null,
+                        item.imageUrl()
+                ))
+                .toList();
+    }
+
     private List<BodyBlockDataInfo> parseBodyData(String bodyData) {
         if (bodyData == null || bodyData.isBlank()) {
             return List.of();
@@ -194,30 +240,34 @@ public class ContentQueryService {
         }
     }
 
-    private ContentDetailResponse.BodyBlockResponse buildBodyBlock(BodyBlockDataInfo bd) {
-        BodyType type = BodyType.valueOf(bd.bodyType());
-
-        return new ContentDetailResponse.BodyBlockResponse(
-                bd.title(),
-                type.includes(BodyType.BodyField.DESC) ? bd.description() : null,
-                type.includes(BodyType.BodyField.ADD_DESC) ? bd.additionalDescription() : null,
-                type.includes(BodyType.BodyField.IMG) ? bd.imageUrl() : null,
-                type.includes(BodyType.BodyField.TABLE_IMG) ? bd.tableImageUrl() : null
-        );
-    }
-
     private List<OptionResponse> buildOptions(ContentQuestion q) {
         return q.getOptions().stream()
                 .map(opt -> new OptionResponse(opt.getKey(), opt.getValue()))
                 .toList();
     }
 
-    private List<CategoryDetailResponse.PremiumContentSummary> buildPremiumSummaries(List<Content> premiumContents) {
+    private List<CategoryDetailResponse.PremiumContentSummary> buildPremiumSummaries(
+            List<Content> premiumContents, Set<Long> completedContentIds) {
         return premiumContents.stream()
-                .map(content -> new CategoryDetailResponse.PremiumContentSummary(
-                        content.getId(),
-                        content.getTitle()
-                ))
+                .map(content -> {
+                    String title = null;
+                    String description = null;
+                    List<BodyBlockDataInfo> bodyBlocks = parseBodyData(content.getBodyData());
+                    if (!bodyBlocks.isEmpty()) {
+                        title = bodyBlocks.get(0).title();
+                        List<BodyBlockDataInfo.ContentItem> items = bodyBlocks.get(0).content();
+                        if (items != null && !items.isEmpty()) {
+                            description = items.get(0).text();
+                        }
+                    }
+                    return new CategoryDetailResponse.PremiumContentSummary(
+                            content.getId(),
+                            List.of(content.getTitle()),
+                            title,
+                            description,
+                            CompletionStatus.of(completedContentIds.contains(content.getId())).name()
+                    );
+                })
                 .toList();
     }
 }

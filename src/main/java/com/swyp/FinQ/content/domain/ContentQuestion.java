@@ -74,6 +74,9 @@ public class ContentQuestion {
     @Column(name = "correct_answer", nullable = false, length = 1)
     private String correctAnswer;
 
+    @Column(name = "after_page_order", nullable = false)
+    private int afterPageOrder;
+
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
