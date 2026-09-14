@@ -37,8 +37,8 @@ public record CategoryDetailResponse(
             Long contentId,
             @Schema(description = "콘텐츠 코드", example = "SAL-01")
             String contentCode,
-            @Schema(description = "키워드", example = "현금흐름")
-            String keyword,
+            @Schema(description = "키워드", example = "[\"현금흐름\"]")
+            List<String> keyword,
             @Schema(description = "콘텐츠 제목 (본문 첫 페이지 제목)", example = "도입")
             String title,
             @Schema(description = "콘텐츠 소개글 (본문 첫 페이지 첫 번째 텍스트)", example = "**월급은 들어왔는데 왜 매달 남는 돈이 없을까요?**")
@@ -54,7 +54,7 @@ public record CategoryDetailResponse(
     public record PremiumContentSummary(
             @Schema(description = "프리미엄 콘텐츠 ID", example = "6")
             Long contentId,
-            @Schema(description = "키워드", example = "[\"월급관리·저축습관\"]")
+            @Schema(description = "키워드", example = "[\"월급관리\", \"저축습관\"]")
             List<String> keyword,
             @Schema(description = "프리미엄 콘텐츠 제목", example = "돈이 모이는 사람들은 월급날 뭐가 다를까요?")
             String title,

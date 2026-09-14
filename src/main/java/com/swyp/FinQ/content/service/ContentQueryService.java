@@ -28,6 +28,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -130,7 +131,7 @@ public class ContentQueryService {
                     return new CategoryDetailResponse.ContentSummary(
                             content.getId(),
                             content.getContentCode(),
-                            content.getTitle(),
+                            Arrays.asList(content.getTitle().split("·")),
                             title,
                             description,
                             CompletionStatus.of(completedContentIds.contains(content.getId())).name(),
@@ -262,7 +263,7 @@ public class ContentQueryService {
                     }
                     return new CategoryDetailResponse.PremiumContentSummary(
                             content.getId(),
-                            List.of(content.getTitle()),
+                            Arrays.asList(content.getTitle().split("·")),
                             title,
                             description,
                             CompletionStatus.of(completedContentIds.contains(content.getId())).name()
