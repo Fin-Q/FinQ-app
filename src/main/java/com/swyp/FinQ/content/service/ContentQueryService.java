@@ -83,7 +83,7 @@ public class ContentQueryService {
         Set<Long> completedContentIds = learningProgressService.getCompletedContentIds(userId, allContents);
 
         List<CategoryDetailResponse.ContentSummary> contentSummaries = buildContentSummaries(freeContents, completedContentIds);
-        List<CategoryDetailResponse.PremiumContentSummary> premiumSummaries = buildPremiumSummaries(premiumContents);
+        List<CategoryDetailResponse.PremiumContentSummary> premiumSummaries = buildPremiumSummaries(premiumContents, completedContentIds);
 
         int completedCount = (int) freeContents.stream()
                 .filter(c -> completedContentIds.contains(c.getId()))
@@ -246,7 +246,8 @@ public class ContentQueryService {
                 .toList();
     }
 
-    private List<CategoryDetailResponse.PremiumContentSummary> buildPremiumSummaries(List<Content> premiumContents) {
+    private List<CategoryDetailResponse.PremiumContentSummary> buildPremiumSummaries(
+            List<Content> premiumContents, Set<Long> completedContentIds) {
         return premiumContents.stream()
                 .map(content -> {
                     String title = null;
@@ -261,9 +262,10 @@ public class ContentQueryService {
                     }
                     return new CategoryDetailResponse.PremiumContentSummary(
                             content.getId(),
-                            content.getTitle(),
+                            List.of(content.getTitle()),
                             title,
-                            description
+                            description,
+                            CompletionStatus.of(completedContentIds.contains(content.getId())).name()
                     );
                 })
                 .toList();

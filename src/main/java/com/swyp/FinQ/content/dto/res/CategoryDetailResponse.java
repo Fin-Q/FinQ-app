@@ -54,12 +54,14 @@ public record CategoryDetailResponse(
     public record PremiumContentSummary(
             @Schema(description = "프리미엄 콘텐츠 ID", example = "6")
             Long contentId,
-            @Schema(description = "키워드", example = "월급관리·저축습관")
-            String keyword,
+            @Schema(description = "키워드", example = "[\"월급관리·저축습관\"]")
+            List<String> keyword,
             @Schema(description = "프리미엄 콘텐츠 제목", example = "돈이 모이는 사람들은 월급날 뭐가 다를까요?")
             String title,
             @Schema(description = "프리미엄 콘텐츠 소개글", example = "같은 월급을 받아도 돈을 나누는 순서와 남겨두는 방식은 달라요.")
-            String description
+            String description,
+            @Schema(description = "완료 상태", example = "INCOMPLETE", allowableValues = {"INCOMPLETE", "COMPLETED"})
+            String completionStatus
     ) {
     }
 }

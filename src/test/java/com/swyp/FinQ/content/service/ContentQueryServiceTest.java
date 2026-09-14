@@ -191,9 +191,10 @@ class ContentQueryServiceTest {
             CategoryDetailResponse response = contentQueryService.getCategoryDetail(CategoryCode.SAL, userId);
 
             assertThat(response.contents()).hasSize(1);
-            assertThat(response.contents().get(0).title()).isEqualTo("일반");
+            assertThat(response.contents().get(0).keyword()).isEqualTo("일반");
             assertThat(response.premiumContents()).hasSize(1);
-            assertThat(response.premiumContents().get(0).title()).isEqualTo("프리미엄");
+            assertThat(response.premiumContents().get(0).keyword()).containsExactly("프리미엄");
+            assertThat(response.premiumContents().get(0).completionStatus()).isEqualTo("INCOMPLETE");
         }
 
         @Test
