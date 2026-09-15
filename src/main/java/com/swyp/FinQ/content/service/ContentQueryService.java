@@ -266,7 +266,8 @@ public class ContentQueryService {
                             Arrays.asList(content.getTitle().split("·")),
                             title,
                             description,
-                            CompletionStatus.of(completedContentIds.contains(content.getId())).name()
+                            CompletionStatus.of(completedContentIds.contains(content.getId())).name(),
+                            content.getDisplayOrder()
                     );
                 })
                 .toList();
