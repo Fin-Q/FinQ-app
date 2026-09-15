@@ -87,7 +87,7 @@ class PushNotificationServiceTest {
 
     @Test
     void alsoSplitsSingleUserSendingAt500Tokens() {
-        when(pushTokenRepository.findAllByUser_IdAndUser_NotificationEnabledTrue(1L)).thenReturn(tokens(501));
+        when(pushTokenRepository.findAllByUser_IdAndUser_NotificationEnabledTrueAndActiveTrue(1L)).thenReturn(tokens(501));
         PushNotificationMessage message = message();
         when(fcmClient.send(anyList(), eq(message))).thenAnswer(invocation -> {
             List<String> batch = invocation.getArgument(0);
@@ -106,7 +106,7 @@ class PushNotificationServiceTest {
     }
 
     private void stubCursorQuery(List<PushToken> tokens) {
-        when(pushTokenRepository.findByUser_NotificationEnabledTrueAndIdGreaterThanOrderByIdAsc(
+        when(pushTokenRepository.findByUser_NotificationEnabledTrueAndActiveTrueAndIdGreaterThanOrderByIdAsc(
                 anyLong(), any(Pageable.class))).thenAnswer(invocation -> {
             long cursor = invocation.getArgument(0);
             Pageable pageable = invocation.getArgument(1);
@@ -143,7 +143,7 @@ class PushNotificationServiceTest {
     @DisplayName("알림이 활성화된 사용자의 토큰에 발송하고 영구 무효 토큰만 정리한다")
     void sendsAndRemovesOnlyInvalidTokens() {
         PushNotificationMessage message = message();
-        when(pushTokenRepository.findAllByUser_IdAndUser_NotificationEnabledTrue(1L))
+        when(pushTokenRepository.findAllByUser_IdAndUser_NotificationEnabledTrueAndActiveTrue(1L))
                 .thenReturn(List.of(firstToken, secondToken, thirdToken));
         when(firstToken.getFcmToken()).thenReturn("success-token");
         when(secondToken.getFcmToken()).thenReturn("invalid-token");
@@ -173,7 +173,7 @@ class PushNotificationServiceTest {
     @Test
     @DisplayName("발송 가능한 토큰이 없으면 FCM을 호출하지 않는다")
     void skipsSendingWithoutTokens() {
-        when(pushTokenRepository.findAllByUser_IdAndUser_NotificationEnabledTrue(1L))
+        when(pushTokenRepository.findAllByUser_IdAndUser_NotificationEnabledTrueAndActiveTrue(1L))
                 .thenReturn(List.of());
 
         PushNotificationSendResult result = new PushNotificationService(

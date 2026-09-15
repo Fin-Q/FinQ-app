@@ -26,6 +26,8 @@ import com.swyp.FinQ.user.service.KakaoUserIdentity;
 import com.swyp.FinQ.user.service.PasswordResetMailSender;
 import com.swyp.FinQ.user.service.OAuthTokenCipher;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -600,7 +602,7 @@ class AuthControllerTest extends MySqlContainerSupport {
                 .andExpect(jsonPath("$.data").doesNotExist());
 
         assertThat(refreshTokenRepository.findByTokenHash(tokenHashEncoder.encode(refreshToken))).isEmpty();
-        assertThat(pushTokenRepository.findByDeviceId("device-1")).isEmpty();
+        assertThat(pushTokenRepository.findByDeviceId("device-1").orElseThrow().isActive()).isFalse();
 
         mockMvc.perform(post("/auth/token/refresh")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -627,8 +629,8 @@ class AuthControllerTest extends MySqlContainerSupport {
         assertThat(refreshTokenRepository.findByTokenHash(
                 tokenHashEncoder.encode(secondSession.path("refreshToken").asText())
         )).isPresent();
-        assertThat(pushTokenRepository.findByDeviceId("device-1")).isEmpty();
-        assertThat(pushTokenRepository.findByDeviceId("device-2")).isPresent();
+        assertThat(pushTokenRepository.findByDeviceId("device-1").orElseThrow().isActive()).isFalse();
+        assertThat(pushTokenRepository.findByDeviceId("device-2").orElseThrow().isActive()).isTrue();
     }
 
     @Test
@@ -636,6 +638,32 @@ class AuthControllerTest extends MySqlContainerSupport {
         mockMvc.perform(post("/auth/logout"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.errorCode").value("AUTH_UNAUTHORIZED"));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"fcm-token-1", "renewed-fcm-token"})
+    void reactivatesExistingDeviceRegistrationAfterLogout(String newFcmToken) throws Exception {
+        saveUser("user@example.com", "Password123!");
+        JsonNode firstSession = login();
+        registerPushToken(firstSession.path("accessToken").asText(), "device-1", "fcm-token-1");
+        Long registrationId = pushTokenRepository.findByDeviceId("device-1").orElseThrow().getId();
+
+        mockMvc.perform(post("/auth/logout")
+                        .header("Authorization", "Bearer " + firstSession.path("accessToken").asText()))
+                .andExpect(status().isOk());
+        assertThat(pushTokenRepository.findByDeviceId("device-1").orElseThrow().isActive()).isFalse();
+
+        JsonNode nextSession = login();
+        registerPushToken(nextSession.path("accessToken").asText(), "device-1", newFcmToken);
+
+        var registration = pushTokenRepository.findByDeviceId("device-1").orElseThrow();
+        assertThat(registration.getId()).isEqualTo(registrationId);
+        assertThat(registration.isActive()).isTrue();
+        assertThat(registration.getFcmToken()).isEqualTo(newFcmToken);
+        assertThat(registration.getFcmTokenHash()).isEqualTo(tokenHashEncoder.encode(newFcmToken));
+        assertThat(registration.getSessionId()).isEqualTo(refreshTokenRepository.findByTokenHash(
+                tokenHashEncoder.encode(nextSession.path("refreshToken").asText())).orElseThrow().getSessionId());
+        assertThat(pushTokenRepository.count()).isEqualTo(1);
     }
 
     @Test
