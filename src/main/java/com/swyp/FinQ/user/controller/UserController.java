@@ -9,6 +9,7 @@ import com.swyp.FinQ.user.dto.req.NicknameUpdateRequest;
 import com.swyp.FinQ.user.dto.req.ProfileImageUpdateRequest;
 import com.swyp.FinQ.user.dto.res.NicknameUpdateResponse;
 import com.swyp.FinQ.user.dto.res.ProfileImageUpdateResponse;
+import com.swyp.FinQ.user.dto.res.ProfileImageResponse;
 import com.swyp.FinQ.user.dto.res.MyPageResponse;
 import com.swyp.FinQ.user.dto.res.OnboardingResponse;
 import com.swyp.FinQ.user.service.OnboardingService;
@@ -152,6 +153,21 @@ public class UserController {
         return SuccessResponse.of(
                 UserSuccessCode.NICKNAME_UPDATED,
                 userProfileService.updateNickname(Long.valueOf(jwt.getSubject()), request)
+        );
+    }
+
+    @Operation(summary = "현재 사용자 프로필 이미지 조회")
+    @ApiDocumentation(
+            name = "현재 사용자 프로필 이미지 조회", owner = ApiOwner.MINJI,
+            errors = "USER_NOT_FOUND"
+    )
+    @GetMapping("/profile-image")
+    public ResponseEntity<SuccessResponse<ProfileImageResponse>> getProfileImage(
+            @AuthenticationPrincipal Jwt jwt
+    ) {
+        return SuccessResponse.of(
+                UserSuccessCode.PROFILE_IMAGE_RETRIEVED,
+                userProfileService.getProfileImage(Long.valueOf(jwt.getSubject()))
         );
     }
 
