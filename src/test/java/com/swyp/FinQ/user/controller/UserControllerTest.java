@@ -496,6 +496,42 @@ class UserControllerTest extends MySqlContainerSupport {
                 .andExpect(jsonPath("$.data.interests[0].categoryCode").value("SAL"));
     }
 
+    @ParameterizedTest
+    @EnumSource(ProfileImageCode.class)
+    void retrievesOnlyCurrentUsersProfileImage(ProfileImageCode code) throws Exception {
+        User user = saveUser();
+        user.updateProfile(null, code);
+        entityManager.flush();
+        entityManager.clear();
+
+        mockMvc.perform(get("/users/me/profile-image")
+                        .header(HttpHeaders.AUTHORIZATION, bearerToken(user.getId())))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("SUCCESS"))
+                .andExpect(jsonPath("$.message").value("프로필 이미지 조회에 성공했습니다."))
+                .andExpect(jsonPath("$.data.length()").value(2))
+                .andExpect(jsonPath("$.data.profileImageCode").value(code.name()))
+                .andExpect(jsonPath("$.data.profileImageUrl")
+                        .value("https://assets.example.com/profile-images/" + code.getFileName()));
+    }
+
+    @Test
+    void rejectsProfileImageQueryWithoutAccessToken() throws Exception {
+        mockMvc.perform(get("/users/me/profile-image"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.status").value("ERROR"))
+                .andExpect(jsonPath("$.errorCode").value("AUTH_UNAUTHORIZED"));
+    }
+
+    @Test
+    void rejectsProfileImageQueryForMissingUser() throws Exception {
+        mockMvc.perform(get("/users/me/profile-image")
+                        .header(HttpHeaders.AUTHORIZATION, bearerToken(Long.MAX_VALUE)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value("ERROR"))
+                .andExpect(jsonPath("$.errorCode").value("USER_NOT_FOUND"));
+    }
+
     @Test
     void updatesNicknameWithoutChangingProfileImage() throws Exception {
         User user = saveUser();
@@ -545,6 +581,12 @@ class UserControllerTest extends MySqlContainerSupport {
         User updatedUser = userRepository.findById(user.getId()).orElseThrow();
         assertThat(updatedUser.getNickname()).isEqualTo("Minter");
         assertThat(updatedUser.getProfileImageCode()).isEqualTo(code);
+
+        mockMvc.perform(get("/users/me/profile-image")
+                        .header(HttpHeaders.AUTHORIZATION, bearerToken(user.getId())))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.profileImageCode").value(code.name()))
+                .andExpect(jsonPath("$.data.profileImageUrl").value(expectedUrl));
 
         mockMvc.perform(get("/users/me")
                         .header(HttpHeaders.AUTHORIZATION, bearerToken(user.getId())))

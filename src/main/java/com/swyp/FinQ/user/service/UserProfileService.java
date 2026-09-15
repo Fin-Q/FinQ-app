@@ -7,6 +7,7 @@ import com.swyp.FinQ.user.dto.req.NicknameUpdateRequest;
 import com.swyp.FinQ.user.dto.req.ProfileImageUpdateRequest;
 import com.swyp.FinQ.user.dto.res.NicknameUpdateResponse;
 import com.swyp.FinQ.user.dto.res.ProfileImageUpdateResponse;
+import com.swyp.FinQ.user.dto.res.ProfileImageResponse;
 import com.swyp.FinQ.user.dto.res.MyPageResponse;
 import com.swyp.FinQ.user.exception.UserErrorCode;
 import com.swyp.FinQ.user.repository.UserInterestRepository;
@@ -30,6 +31,15 @@ public class UserProfileService {
     public MyPageResponse getMyPage(Long userId) {
         User user = getUser(userId);
         return toResponse(user);
+    }
+
+    @Transactional(readOnly = true)
+    public ProfileImageResponse getProfileImage(Long userId) {
+        User user = getUser(userId);
+        return new ProfileImageResponse(
+                user.getProfileImageCode(),
+                profileImageUrlResolver.resolve(user.getProfileImageCode())
+        );
     }
 
     @Transactional
