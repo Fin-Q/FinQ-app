@@ -61,7 +61,9 @@ public record CategoryDetailResponse(
             @Schema(description = "프리미엄 콘텐츠 소개글", example = "같은 월급을 받아도 돈을 나누는 순서와 남겨두는 방식은 달라요.")
             String description,
             @Schema(description = "완료 상태", example = "INCOMPLETE", allowableValues = {"INCOMPLETE", "COMPLETED"})
-            String completionStatus
+            String completionStatus,
+            @Schema(description = "카테고리 내 프리미엄 콘텐츠 순서", example = "1")
+            int order
     ) {
     }
 }
