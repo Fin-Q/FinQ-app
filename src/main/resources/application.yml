@@ -82,3 +82,6 @@ notification:
 
 profile-image:
   base-url: ${PROFILE_IMAGE_BASE_URL:}
+
+character-image:
+  base-url: ${CHARACTER_IMAGE_BASE_URL:}

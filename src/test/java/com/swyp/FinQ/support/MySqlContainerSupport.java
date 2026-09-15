@@ -28,5 +28,7 @@ public abstract class MySqlContainerSupport {
                 () -> "MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=");
         registry.add("profile-image.base-url",
                 () -> "https://assets.example.com/profile-images");
+        registry.add("character-image.base-url",
+                () -> "https://assets.example.com/character-images");
     }
 }
