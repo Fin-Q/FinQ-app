@@ -64,6 +64,14 @@ public class PushToken extends BaseTimeEntity {
     @Column(name = "platform", nullable = false, length = 20)
     private PushPlatform platform;
 
+    @Builder.Default
+    @Column(name = "active", nullable = false)
+    private boolean active = true;
+
+    public void deactivate() {
+        this.active = false;
+    }
+
     public void updateRegistration(
             User user,
             String sessionId,

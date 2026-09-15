@@ -68,6 +68,21 @@ class PushTokenRepositoryTest extends MySqlContainerSupport {
     }
 
     @Test
+    void preservesInactiveTokenRegistration() {
+        PushToken saved = pushTokenRepository.saveAndFlush(createPushToken(createUser(), "inactive-device", "inactive-token"));
+        assertThat(saved.isActive()).isTrue();
+
+        saved.deactivate();
+        entityManager.flush();
+        entityManager.clear();
+
+        PushToken inactive = pushTokenRepository.findByDeviceId("inactive-device").orElseThrow();
+        assertThat(inactive.isActive()).isFalse();
+        assertThat(inactive.getId()).isEqualTo(saved.getId());
+        assertThat(inactive.getFcmToken()).isEqualTo("inactive-token");
+    }
+
+    @Test
     @DisplayName("동일한 기기 ID를 중복 저장할 수 없다")
     void rejectDuplicateDeviceId() {
         User user = createUser();
