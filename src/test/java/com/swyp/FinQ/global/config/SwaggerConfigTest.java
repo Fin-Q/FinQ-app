@@ -50,6 +50,7 @@ class SwaggerConfigTest extends MySqlContainerSupport {
 
     private static final Set<String> EXPECTED_UNASSIGNED_OPERATIONS = Set.of(
             "get /auth/agreements",
+            "get /users/me/profile-image",
             "put /users/me/interests"
     );
 
@@ -91,7 +92,7 @@ class SwaggerConfigTest extends MySqlContainerSupport {
     void documentsOnlyProtectedOperationsWithBearerAuthentication() throws Exception {
         List<ApiOperation> operations = getOperations(getApiDocs());
 
-        assertThat(operations).hasSize(33);
+        assertThat(operations).hasSize(34);
         for (ApiOperation operation : operations) {
             boolean hasBearerSecurity = operation.document().path("security").isArray()
                     && operation.document().path("security").size() == 1
@@ -220,7 +221,7 @@ class SwaggerConfigTest extends MySqlContainerSupport {
     void documentsProfileImageUrlsWithoutChangingTheCodeOnlyRequest() throws Exception {
         JsonNode schemas = getApiDocs().path("components").path("schemas");
 
-        for (String name : List.of("MyPageResponse", "ProfileImageUpdateResponse")) {
+        for (String name : List.of("MyPageResponse", "ProfileImageUpdateResponse", "ProfileImageResponse")) {
             JsonNode properties = schemas.path(name).path("properties");
             JsonNode url = properties.path("profileImageUrl");
             assertThat(url.path("type").asText()).as(name).isEqualTo("string");
@@ -236,6 +237,22 @@ class SwaggerConfigTest extends MySqlContainerSupport {
         assertThat(request.path("properties").size()).isEqualTo(1);
         assertThat(request.path("properties").has("profileImageCode")).isTrue();
         assertThat(textValues(request.path("required"))).contains("profileImageCode");
+    }
+
+    @Test
+    void documentsCurrentProfileImageQueryContract() throws Exception {
+        JsonNode apiDocs = getApiDocs();
+        JsonNode operation = apiDocs.path("paths").path("/users/me/profile-image").path("get");
+        assertThat(operation.isMissingNode()).isFalse();
+        assertThat(operation.has("requestBody")).isFalse();
+        assertThat(operation.path("security").get(0).has("bearerAuth")).isTrue();
+        assertThat(operation.path("responses").has("200")).isTrue();
+        assertThat(exampleNames(operation.path("responses"), "404")).containsExactly("USER_NOT_FOUND");
+
+        JsonNode schema = apiDocs.path("components").path("schemas").path("ProfileImageResponse");
+        assertThat(schema.path("properties").size()).isEqualTo(2);
+        assertThat(textValues(schema.path("required")))
+                .containsExactlyInAnyOrder("profileImageCode", "profileImageUrl");
     }
 
     @Test
