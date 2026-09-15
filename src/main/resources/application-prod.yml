@@ -8,3 +8,7 @@ spring:
 
 cors:
   allowed-origins: ${CORS_ALLOWED_ORIGINS:}
+
+streak:
+  statistics:
+    enabled: ${STREAK_STATISTICS_ENABLED:true}

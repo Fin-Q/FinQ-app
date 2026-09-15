@@ -85,3 +85,7 @@ profile-image:
 
 character-image:
   base-url: ${CHARACTER_IMAGE_BASE_URL:}
+
+streak:
+  statistics:
+    enabled: ${STREAK_STATISTICS_ENABLED:false}
