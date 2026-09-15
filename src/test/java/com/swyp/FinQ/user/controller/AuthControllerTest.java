@@ -600,7 +600,7 @@ class AuthControllerTest extends MySqlContainerSupport {
                 .andExpect(jsonPath("$.data").doesNotExist());
 
         assertThat(refreshTokenRepository.findByTokenHash(tokenHashEncoder.encode(refreshToken))).isEmpty();
-        assertThat(pushTokenRepository.findByDeviceId("device-1")).isEmpty();
+        assertThat(pushTokenRepository.findByDeviceId("device-1").orElseThrow().isActive()).isFalse();
 
         mockMvc.perform(post("/auth/token/refresh")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -627,8 +627,8 @@ class AuthControllerTest extends MySqlContainerSupport {
         assertThat(refreshTokenRepository.findByTokenHash(
                 tokenHashEncoder.encode(secondSession.path("refreshToken").asText())
         )).isPresent();
-        assertThat(pushTokenRepository.findByDeviceId("device-1")).isEmpty();
-        assertThat(pushTokenRepository.findByDeviceId("device-2")).isPresent();
+        assertThat(pushTokenRepository.findByDeviceId("device-1").orElseThrow().isActive()).isFalse();
+        assertThat(pushTokenRepository.findByDeviceId("device-2").orElseThrow().isActive()).isTrue();
     }
 
     @Test

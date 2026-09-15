@@ -44,15 +44,15 @@ class PushTokenRepositoryTest extends MySqlContainerSupport {
         entityManager.flush();
         entityManager.clear();
 
-        assertThat(pushTokenRepository.findByUser_NotificationEnabledTrueAndIdGreaterThanOrderByIdAsc(
+        assertThat(pushTokenRepository.findByUser_NotificationEnabledTrueAndActiveTrueAndIdGreaterThanOrderByIdAsc(
                 0L, PageRequest.of(0, 1))).extracting(PushToken::getId).containsExactly(first.getId());
 
         pushTokenRepository.deleteById(first.getId());
         pushTokenRepository.flush();
         entityManager.clear();
-        assertThat(pushTokenRepository.findByUser_NotificationEnabledTrueAndIdGreaterThanOrderByIdAsc(
+        assertThat(pushTokenRepository.findByUser_NotificationEnabledTrueAndActiveTrueAndIdGreaterThanOrderByIdAsc(
                 first.getId(), PageRequest.of(0, 1))).extracting(PushToken::getId).containsExactly(last.getId());
-        assertThat(pushTokenRepository.findByUser_NotificationEnabledTrueAndIdGreaterThanOrderByIdAsc(
+        assertThat(pushTokenRepository.findByUser_NotificationEnabledTrueAndActiveTrueAndIdGreaterThanOrderByIdAsc(
                 last.getId(), PageRequest.of(0, 1))).isEmpty();
     }
 

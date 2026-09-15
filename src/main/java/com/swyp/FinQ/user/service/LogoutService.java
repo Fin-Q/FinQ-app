@@ -15,7 +15,7 @@ public class LogoutService {
 
     @Transactional
     public void logout(Long userId, String sessionId) {
-        pushTokenRepository.deleteByUser_IdAndSessionId(userId, sessionId);
+        pushTokenRepository.deactivateByUserIdAndSessionId(userId, sessionId);
         refreshTokenRepository.deleteByUser_IdAndSessionId(userId, sessionId);
     }
 }

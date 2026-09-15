@@ -30,7 +30,7 @@ public class PushNotificationService {
             PushNotificationMessage message
     ) {
         List<String> tokens = pushTokenRepository
-                .findAllByUser_IdAndUser_NotificationEnabledTrue(userId)
+                .findAllByUser_IdAndUser_NotificationEnabledTrueAndActiveTrue(userId)
                 .stream()
                 .map(PushToken::getFcmToken)
                 .toList();
@@ -47,7 +47,7 @@ public class PushNotificationService {
         PushNotificationSendResult result = PushNotificationSendResult.empty();
         while (true) {
             List<PushToken> batch = pushTokenRepository
-                    .findByUser_NotificationEnabledTrueAndIdGreaterThanOrderByIdAsc(
+                    .findByUser_NotificationEnabledTrueAndActiveTrueAndIdGreaterThanOrderByIdAsc(
                             afterId, PageRequest.of(0, BATCH_SIZE));
             if (batch.isEmpty()) {
                 return result;

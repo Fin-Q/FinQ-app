@@ -84,5 +84,6 @@ public class PushToken extends BaseTimeEntity {
         this.fcmToken = fcmToken;
         this.fcmTokenHash = fcmTokenHash;
         this.platform = platform;
+        this.active = true;
     }
 }
