@@ -12,6 +12,13 @@ public record HomeResponse(
         int level,
         @Schema(description = "캐릭터 성장 단계 (레벨과 동일한 숫자 값)", example = "2")
         int characterStage,
+        @Schema(
+                description = "현재 레벨에 해당하는 캐릭터 이미지 URL",
+                example = "https://assets.example.com/character-images/character_02.png",
+                format = "uri",
+                requiredMode = Schema.RequiredMode.REQUIRED
+        )
+        String characterImageUrl,
         @Schema(description = "누적 경험치", example = "120")
         int totalXp,
         @Schema(description = "현재 연속 학습 일수", example = "3")

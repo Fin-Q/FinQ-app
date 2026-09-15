@@ -239,6 +239,21 @@ class SwaggerConfigTest extends MySqlContainerSupport {
     }
 
     @Test
+    void documentsHomeCharacterImageUrlAsRequiredUri() throws Exception {
+        JsonNode homeResponse = getApiDocs()
+                .path("components")
+                .path("schemas")
+                .path("HomeResponse");
+        JsonNode characterImageUrl = homeResponse.path("properties").path("characterImageUrl");
+
+        assertThat(characterImageUrl.path("type").asText()).isEqualTo("string");
+        assertThat(characterImageUrl.path("format").asText()).isEqualTo("uri");
+        assertThat(characterImageUrl.path("example").asText()).startsWith("https://");
+        assertThat(characterImageUrl.path("description").asText()).contains("현재 레벨");
+        assertThat(textValues(homeResponse.path("required"))).contains("characterImageUrl");
+    }
+
+    @Test
     void documentsCommonSuccessAndErrorResponses() throws Exception {
         JsonNode schemas = getApiDocs().path("components").path("schemas");
         assertThat(textValues(schemas.path("ErrorResponse").path("properties").path("status").path("enum")))
