@@ -28,10 +28,15 @@ public class TokenRefreshService {
     private final TokenHashEncoder tokenHashEncoder;
     private final RefreshTokenRepository refreshTokenRepository;
     private final AuthTokenService authTokenService;
+    private final ExpiredSessionCleanupService expiredSessionCleanupService;
     private final Clock clock;
 
     @Transactional
     public TokenRefreshResponse refresh(TokenRefreshRequest request) {
+        if (expiredSessionCleanupService.cleanupIfExpired(tokenHashEncoder.encode(request.refreshToken()))) {
+            throw BaseException.of(AuthErrorCode.INVALID_REFRESH_TOKEN);
+        }
+
         RefreshTokenClaims claims = parse(request.refreshToken());
         RefreshToken storedToken = refreshTokenRepository.findBySessionId(claims.sessionId())
                 .orElseThrow(() -> BaseException.of(AuthErrorCode.INVALID_REFRESH_TOKEN));
