@@ -6,6 +6,7 @@ import com.swyp.FinQ.content.domain.Content;
 import com.swyp.FinQ.content.repository.ContentRepository;
 import com.swyp.FinQ.home.dto.res.HomeResponse;
 import com.swyp.FinQ.learning.repository.UserContentCompletionRepository;
+import com.swyp.FinQ.reward.domain.Level;
 import com.swyp.FinQ.streak.service.StreakQueryService;
 import com.swyp.FinQ.user.domain.User;
 import com.swyp.FinQ.user.domain.UserInterest;
@@ -15,6 +16,8 @@ import org.springframework.data.domain.Pageable;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -51,6 +54,40 @@ class HomeQueryServiceTest {
 
     @Mock
     private StreakQueryService streakQueryService;
+
+    @Mock
+    private CharacterImageUrlResolver characterImageUrlResolver;
+
+    @ParameterizedTest
+    @CsvSource({
+            "0, LV1, 1, character_01.png",
+            "80, LV2, 2, character_02.png",
+            "180, LV3, 3, character_03.png",
+            "300, LV4, 4, character_04.png"
+    })
+    void returnsCharacterImageUrlForCurrentLevel(
+            int totalXp,
+            Level level,
+            int expectedLevel,
+            String fileName
+    ) {
+        User user = User.builder()
+                .id(1L)
+                .nickname("Minter")
+                .totalXp(totalXp)
+                .build();
+        String imageUrl = "https://assets.example.com/character-images/" + fileName;
+        given(userRepository.findById(1L)).willReturn(Optional.of(user));
+        given(userInterestRepository.findAllWithCategoryByUserId(1L)).willReturn(List.of());
+        given(streakQueryService.getCurrentStreak(1L)).willReturn(0);
+        given(characterImageUrlResolver.resolve(level)).willReturn(imageUrl);
+
+        HomeResponse response = homeQueryService.getHome(1L);
+
+        assertThat(response.level()).isEqualTo(expectedLevel);
+        assertThat(response.characterStage()).isEqualTo(expectedLevel);
+        assertThat(response.characterImageUrl()).isEqualTo(imageUrl);
+    }
 
     @Test
     void usesLogBasedCurrentStreakInsteadOfStoredValue() {

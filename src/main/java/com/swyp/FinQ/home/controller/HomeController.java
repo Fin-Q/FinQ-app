@@ -24,7 +24,7 @@ public class HomeController {
     private final HomeQueryService homeQueryService;
 
     @Operation(
-            description = "사용자 정보, 캐릭터/레벨, XP, 스트릭, 추천 질문 카드를 조회합니다."
+            description = "사용자 정보, 현재 레벨의 캐릭터 이미지 URL, XP, 스트릭, 추천 질문 카드를 조회합니다."
     )
     @ApiDocumentation(id = "HOME-001", name = "홈 화면 조회", owner = ApiOwner.YEZANEE)
     @GetMapping("/home")

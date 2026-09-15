@@ -104,6 +104,26 @@ class ApiFieldContractTest {
     }
 
     @Test
+    void serializesHomeCharacterImageUrl() {
+        String imageUrl = "https://assets.example.com/character-images/character_02.png";
+        HomeResponse response = new HomeResponse(
+                "핀큐",
+                2,
+                2,
+                imageUrl,
+                120,
+                3,
+                java.util.List.of()
+        );
+
+        JsonNode json = objectMapper.valueToTree(response);
+
+        assertThat(json.path("characterImageUrl").asText()).isEqualTo(imageUrl);
+        assertThat(json.path("level").asInt()).isEqualTo(2);
+        assertThat(json.path("characterStage").asInt()).isEqualTo(2);
+    }
+
+    @Test
     void serializesLearningAndContentFieldNames() {
         QuizAnswerResponse quizAnswer = QuizAnswerResponse.correct(
                 "해설",

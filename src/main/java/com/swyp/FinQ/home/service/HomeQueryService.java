@@ -38,6 +38,7 @@ public class HomeQueryService {
     private final ContentRepository contentRepository;
     private final UserContentCompletionRepository userContentCompletionRepository;
     private final StreakQueryService streakQueryService;
+    private final CharacterImageUrlResolver characterImageUrlResolver;
 
     @Transactional
     public HomeResponse getHome(Long userId) {
@@ -51,6 +52,7 @@ public class HomeQueryService {
                 user.getNickname(),
                 level.getValue(),
                 level.getValue(),
+                characterImageUrlResolver.resolve(level),
                 user.getTotalXp(),
                 streakQueryService.getCurrentStreak(userId),
                 questions
