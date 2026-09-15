@@ -158,7 +158,7 @@ public class UserController {
 
     @Operation(summary = "현재 사용자 프로필 이미지 조회")
     @ApiDocumentation(
-            name = "현재 사용자 프로필 이미지 조회", owner = ApiOwner.MINJI,
+            id = "USER-019", name = "현재 사용자 프로필 이미지 조회", owner = ApiOwner.MINJI,
             errors = "USER_NOT_FOUND"
     )
     @GetMapping("/profile-image")
