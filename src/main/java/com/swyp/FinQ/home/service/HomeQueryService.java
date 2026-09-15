@@ -22,7 +22,9 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -67,7 +69,8 @@ public class HomeQueryService {
             List<Long> cachedIds = parseCachedIds(user.getHomeQuestionIds());
             if (!cachedIds.isEmpty()) {
                 List<Content> contents = contentRepository.findAllByIdWithCategory(cachedIds);
-                if (!contents.isEmpty()) {
+                if (contents.size() == QUESTION_CARD_COUNT
+                        && cachedIds.stream().distinct().count() == QUESTION_CARD_COUNT) {
                     return toQuestionCards(user.getId(), contents, cachedIds);
                 }
             }
@@ -114,12 +117,11 @@ public class HomeQueryService {
                 ? parseCachedIds(user.getHomeQuestionIds())
                 : List.of();
 
-        if (categoryIds.size() == 1) {
-            return pickContentsForSingleCategory(user.getId(), categoryIds.get(0), previousIds);
-        }
+        List<Content> selected = categoryIds.size() == 1
+                ? pickContentsForSingleCategory(user.getId(), categoryIds.get(0), previousIds)
+                : pickContentsForTwoCategories(user.getId(), categoryIds.get(0), categoryIds.get(1), previousIds);
 
-        // 카테고리 2개: 홀짝 날짜 기반 2:1 교차 출제
-        return pickContentsForTwoCategories(user.getId(), categoryIds.get(0), categoryIds.get(1), previousIds);
+        return fillQuestionCards(user.getId(), categoryIds, selected);
     }
 
     private List<Content> pickContentsForSingleCategory(Long userId, Long categoryId, List<Long> excludeIds) {
@@ -227,8 +229,48 @@ public class HomeQueryService {
         return shuffled.subList(0, count);
     }
 
+    private List<Content> fillQuestionCards(Long userId, List<Long> categoryIds, List<Content> selected) {
+        Map<Long, Content> uniqueContents = new LinkedHashMap<>();
+        addUntilFull(uniqueContents, selected);
+
+        if (uniqueContents.size() < QUESTION_CARD_COUNT) {
+            addUntilFull(
+                    uniqueContents,
+                    contentRepository.findIncompleteContentsByCategories(
+                            userId,
+                            categoryIds,
+                            PageRequest.of(0, RANDOM_POOL_SIZE)
+                    )
+            );
+        }
+
+        if (uniqueContents.size() < QUESTION_CARD_COUNT) {
+            addUntilFull(
+                    uniqueContents,
+                    contentRepository.findCompletedContentsByCategories(
+                            userId,
+                            categoryIds,
+                            PageRequest.of(0, RANDOM_POOL_SIZE)
+                    )
+            );
+        }
+
+        return new ArrayList<>(uniqueContents.values());
+    }
+
+    private void addUntilFull(Map<Long, Content> selected, List<Content> candidates) {
+        List<Content> shuffled = new ArrayList<>(candidates);
+        Collections.shuffle(shuffled);
+        for (Content candidate : shuffled) {
+            selected.putIfAbsent(candidate.getId(), candidate);
+            if (selected.size() == QUESTION_CARD_COUNT) {
+                return;
+            }
+        }
+    }
+
     private List<HomeResponse.QuestionCard> toQuestionCards(Long userId, List<Content> contents, List<Long> orderedIds) {
-        java.util.Map<Long, Content> contentMap = contents.stream()
+        Map<Long, Content> contentMap = contents.stream()
                 .collect(Collectors.toMap(Content::getId, c -> c));
 
         List<Content> ordered = orderedIds.stream()
