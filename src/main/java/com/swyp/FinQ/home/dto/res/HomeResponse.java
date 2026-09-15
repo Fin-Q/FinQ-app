@@ -23,7 +23,10 @@ public record HomeResponse(
         int totalXp,
         @Schema(description = "현재 연속 학습 일수", example = "3")
         int currentStreak,
-        @Schema(description = "추천 질문 카드 목록")
+        @Schema(
+                description = "추천 질문 카드 목록. 추천 가능한 콘텐츠가 3개 이상이면 3개 반환",
+                requiredMode = Schema.RequiredMode.REQUIRED
+        )
         List<QuestionCard> questions
 ) {
 

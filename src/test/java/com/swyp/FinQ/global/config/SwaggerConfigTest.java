@@ -250,7 +250,14 @@ class SwaggerConfigTest extends MySqlContainerSupport {
         assertThat(characterImageUrl.path("format").asText()).isEqualTo("uri");
         assertThat(characterImageUrl.path("example").asText()).startsWith("https://");
         assertThat(characterImageUrl.path("description").asText()).contains("현재 레벨");
-        assertThat(textValues(homeResponse.path("required"))).contains("characterImageUrl");
+        assertThat(textValues(homeResponse.path("required")))
+                .contains("characterImageUrl", "questions");
+
+        JsonNode questions = homeResponse.path("properties").path("questions");
+        assertThat(questions.path("type").asText()).isEqualTo("array");
+        assertThat(questions.path("description").asText()).contains("3개");
+        assertThat(questions.path("items").path("$ref").asText())
+                .isEqualTo("#/components/schemas/QuestionCard");
     }
 
     @Test
