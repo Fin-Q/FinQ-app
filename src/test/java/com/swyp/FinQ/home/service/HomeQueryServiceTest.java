@@ -1,5 +1,6 @@
 package com.swyp.FinQ.home.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.swyp.FinQ.content.domain.Category;
 import com.swyp.FinQ.content.domain.CategoryCode;
 import com.swyp.FinQ.content.domain.Content;
@@ -20,6 +21,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
@@ -57,6 +59,9 @@ class HomeQueryServiceTest {
 
     @Mock
     private CharacterImageUrlResolver characterImageUrlResolver;
+
+    @Spy
+    private ObjectMapper objectMapper = new ObjectMapper();
 
     @ParameterizedTest
     @CsvSource({
@@ -121,6 +126,7 @@ class HomeQueryServiceTest {
                 .contentCode("SAL-01")
                 .category(category)
                 .title("캐시된 콘텐츠 1")
+                .bodyData("[{\"order\":1,\"title\":\"월급은 왜 남지 않을까요?\",\"content\":[]}]")
                 .displayOrder(1)
                 .isPremium(false)
                 .build();
@@ -159,7 +165,73 @@ class HomeQueryServiceTest {
 
         assertThat(response.questions()).hasSize(3);
         assertThat(response.questions().get(0).contentId()).isEqualTo(10L);
+        assertThat(response.questions().get(0).title()).isEqualTo("월급은 왜 남지 않을까요?");
         verify(userRepository, never()).updateHomeQuestionCache(any(), any(), any());
+    }
+
+    @Test
+    void returnsQuestionTitleFromFirstBodyBlock() {
+        Category category = category(2L, CategoryCode.SAL, "월급 관리");
+        User user = User.builder().id(1L).nickname("Minter").totalXp(0).build();
+        UserInterest interest = UserInterest.builder().user(user).category(category).build();
+        Content content = Content.builder()
+                .id(10L)
+                .contentCode("SAL-01")
+                .category(category)
+                .title("현금흐름")
+                .bodyData("[{\"order\":2,\"title\":\"두 번째 페이지\",\"content\":[]},"
+                        + "{\"order\":1,\"title\":\"월급은 들어왔는데 왜 매달 남는 돈이 없을까요?\",\"content\":[]}]")
+                .displayOrder(1)
+                .isPremium(false)
+                .build();
+
+        given(userRepository.findById(1L)).willReturn(Optional.of(user));
+        given(userInterestRepository.findAllWithCategoryByUserId(1L)).willReturn(List.of(interest));
+        given(contentRepository.findIncompleteContentsByCategoryNoExclude(
+                eq(1L), eq(2L), any(Pageable.class)
+        )).willReturn(List.of(content));
+        given(userContentCompletionRepository.findCompletedContentIdsByUserIdAndContentIn(
+                1L, List.of(content)
+        )).willReturn(Set.of());
+        given(streakQueryService.getCurrentStreak(1L)).willReturn(0);
+
+        HomeResponse response = homeQueryService.getHome(1L);
+
+        assertThat(response.questions()).singleElement()
+                .extracting(HomeResponse.QuestionCard::title)
+                .isEqualTo("월급은 들어왔는데 왜 매달 남는 돈이 없을까요?");
+    }
+
+    @Test
+    void fallsBackToContentTitleWhenBodyDataIsInvalid() {
+        Category category = category(2L, CategoryCode.SAL, "월급 관리");
+        User user = User.builder().id(1L).nickname("Minter").totalXp(0).build();
+        UserInterest interest = UserInterest.builder().user(user).category(category).build();
+        Content content = Content.builder()
+                .id(10L)
+                .contentCode("SAL-01")
+                .category(category)
+                .title("현금흐름")
+                .bodyData("invalid-json")
+                .displayOrder(1)
+                .isPremium(false)
+                .build();
+
+        given(userRepository.findById(1L)).willReturn(Optional.of(user));
+        given(userInterestRepository.findAllWithCategoryByUserId(1L)).willReturn(List.of(interest));
+        given(contentRepository.findIncompleteContentsByCategoryNoExclude(
+                eq(1L), eq(2L), any(Pageable.class)
+        )).willReturn(List.of(content));
+        given(userContentCompletionRepository.findCompletedContentIdsByUserIdAndContentIn(
+                1L, List.of(content)
+        )).willReturn(Set.of());
+        given(streakQueryService.getCurrentStreak(1L)).willReturn(0);
+
+        HomeResponse response = homeQueryService.getHome(1L);
+
+        assertThat(response.questions()).singleElement()
+                .extracting(HomeResponse.QuestionCard::title)
+                .isEqualTo("현금흐름");
     }
 
     @Test

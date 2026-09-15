@@ -1,7 +1,10 @@
 package com.swyp.FinQ.home.service;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.swyp.FinQ.content.domain.CompletionStatus;
 import com.swyp.FinQ.content.domain.Content;
+import com.swyp.FinQ.content.dto.info.BodyBlockDataInfo;
 import com.swyp.FinQ.content.repository.ContentRepository;
 import com.swyp.FinQ.global.exception.BaseException;
 import com.swyp.FinQ.home.dto.res.HomeResponse;
@@ -14,6 +17,7 @@ import com.swyp.FinQ.user.exception.UserErrorCode;
 import com.swyp.FinQ.user.repository.UserInterestRepository;
 import com.swyp.FinQ.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,6 +33,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class HomeQueryService {
 
@@ -41,6 +46,7 @@ public class HomeQueryService {
     private final UserContentCompletionRepository userContentCompletionRepository;
     private final StreakQueryService streakQueryService;
     private final CharacterImageUrlResolver characterImageUrlResolver;
+    private final ObjectMapper objectMapper;
 
     @Transactional
     public HomeResponse getHome(Long userId) {
@@ -94,7 +100,7 @@ public class HomeQueryService {
                         content.getId(),
                         content.getCategory().getCategoryCode().name(),
                         content.getCategory().getCategoryName(),
-                        content.getTitle(),
+                        resolveQuestionTitle(content),
                         completedIds.contains(content.getId())
                                 ? CompletionStatus.COMPLETED.name()
                                 : CompletionStatus.INCOMPLETE.name()
@@ -288,12 +294,31 @@ public class HomeQueryService {
                         content.getId(),
                         content.getCategory().getCategoryCode().name(),
                         content.getCategory().getCategoryName(),
-                        content.getTitle(),
+                        resolveQuestionTitle(content),
                         completedIds.contains(content.getId())
                                 ? CompletionStatus.COMPLETED.name()
                                 : CompletionStatus.INCOMPLETE.name()
                 ))
                 .toList();
+    }
+
+    private String resolveQuestionTitle(Content content) {
+        String bodyData = content.getBodyData();
+        if (bodyData == null || bodyData.isBlank()) {
+            return content.getTitle();
+        }
+
+        try {
+            List<BodyBlockDataInfo> bodyBlocks = objectMapper.readValue(bodyData, new TypeReference<>() {});
+            return bodyBlocks.stream()
+                    .filter(block -> block.title() != null && !block.title().isBlank())
+                    .min(java.util.Comparator.comparingInt(BodyBlockDataInfo::order))
+                    .map(BodyBlockDataInfo::title)
+                    .orElse(content.getTitle());
+        } catch (Exception exception) {
+            log.warn("홈 질문 카드 body_data 파싱 실패: contentId={}", content.getId(), exception);
+            return content.getTitle();
+        }
     }
 
     private List<Long> parseCachedIds(String ids) {
