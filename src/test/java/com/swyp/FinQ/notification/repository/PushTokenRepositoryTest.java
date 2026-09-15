@@ -83,6 +83,37 @@ class PushTokenRepositoryTest extends MySqlContainerSupport {
     }
 
     @Test
+    void excludesInactiveTokensFromBothDeliveryQueries() {
+        User user = createUser();
+        PushToken active = pushTokenRepository.saveAndFlush(createPushToken(user, "active-device", "active-token"));
+        PushToken inactive = pushTokenRepository.saveAndFlush(createPushToken(user, "inactive-device", "inactive-token"));
+        inactive.deactivate();
+        entityManager.flush();
+        entityManager.clear();
+
+        assertThat(pushTokenRepository.findAllByUser_IdAndUser_NotificationEnabledTrueAndActiveTrue(user.getId()))
+                .extracting(PushToken::getId).containsExactly(active.getId());
+        assertThat(pushTokenRepository.findByUser_NotificationEnabledTrueAndActiveTrueAndIdGreaterThanOrderByIdAsc(
+                0L, PageRequest.of(0, 500)))
+                .extracting(PushToken::getId).containsExactly(active.getId());
+        assertThat(pushTokenRepository.findByDeviceId("inactive-device")).isPresent();
+    }
+
+    @Test
+    void deactivatesOnlyMatchingUserAndSessionAndIsIdempotent() {
+        User user = createUser();
+        User otherUser = createUser();
+        PushToken target = pushTokenRepository.saveAndFlush(createPushToken(user, "target-device", "target-token"));
+        PushToken other = pushTokenRepository.saveAndFlush(createPushToken(otherUser, "other-device", "other-token"));
+
+        assertThat(pushTokenRepository.deactivateByUserIdAndSessionId(user.getId(), "wrong-session")).isZero();
+        assertThat(pushTokenRepository.deactivateByUserIdAndSessionId(user.getId(), target.getSessionId())).isEqualTo(1);
+        assertThat(pushTokenRepository.deactivateByUserIdAndSessionId(user.getId(), target.getSessionId())).isZero();
+        assertThat(pushTokenRepository.findById(target.getId()).orElseThrow().isActive()).isFalse();
+        assertThat(pushTokenRepository.findById(other.getId()).orElseThrow().isActive()).isTrue();
+    }
+
+    @Test
     @DisplayName("동일한 기기 ID를 중복 저장할 수 없다")
     void rejectDuplicateDeviceId() {
         User user = createUser();
