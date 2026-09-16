@@ -5,6 +5,7 @@ import com.swyp.FinQ.reward.domain.XpType;
 import com.swyp.FinQ.reward.dto.info.XpResultInfo;
 import com.swyp.FinQ.reward.repository.XpHistoryRepository;
 import com.swyp.FinQ.user.domain.User;
+import com.swyp.FinQ.user.repository.UserRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -29,6 +30,9 @@ class XpGrantServiceTest {
 
     @Mock
     private XpHistoryRepository xpHistoryRepository;
+
+    @Mock
+    private UserRepository userRepository;
 
     private User createUser(Long id, int totalXp) {
         return User.builder()

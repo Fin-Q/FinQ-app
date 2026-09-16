@@ -7,6 +7,7 @@ import com.swyp.FinQ.reward.domain.XpType;
 import com.swyp.FinQ.reward.dto.info.XpResultInfo;
 import com.swyp.FinQ.reward.repository.XpHistoryRepository;
 import com.swyp.FinQ.user.domain.User;
+import com.swyp.FinQ.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -17,6 +18,7 @@ import java.time.LocalDate;
 public class XpGrantService {
 
     private final XpHistoryRepository xpHistoryRepository;
+    private final UserRepository userRepository;
 
     /**
      * 신규 콘텐츠 최초 완료 시 XP 지급 (+10XP)
@@ -63,6 +65,7 @@ public class XpGrantService {
         xpHistoryRepository.save(xpHistory);
 
         user.addXp(xpAmount);
+        userRepository.save(user);
 
         int newTotalXp = user.getTotalXp();
         Level newLevel = Level.from(newTotalXp);

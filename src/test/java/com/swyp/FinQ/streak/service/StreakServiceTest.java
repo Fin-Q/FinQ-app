@@ -6,6 +6,7 @@ import com.swyp.FinQ.reward.service.XpGrantService;
 import com.swyp.FinQ.streak.dto.info.StreakRecordResult;
 import com.swyp.FinQ.streak.repository.StreakLogRepository;
 import com.swyp.FinQ.user.domain.User;
+import com.swyp.FinQ.user.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -34,6 +35,9 @@ class StreakServiceTest {
     @Mock
     private XpGrantService xpGrantService;
 
+    @Mock
+    private UserRepository userRepository;
+
     private StreakService streakService;
 
     @BeforeEach
@@ -42,7 +46,7 @@ class StreakServiceTest {
                 Instant.parse("2026-09-07T15:00:00Z"),
                 ZoneId.of("Asia/Seoul")
         );
-        streakService = new StreakService(streakLogRepository, xpGrantService, fixedClock);
+        streakService = new StreakService(streakLogRepository, xpGrantService, userRepository, fixedClock);
     }
 
     @Test
