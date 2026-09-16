@@ -7,6 +7,7 @@ import com.swyp.FinQ.streak.domain.StreakCalculator;
 import com.swyp.FinQ.streak.dto.info.StreakRecordResult;
 import com.swyp.FinQ.streak.repository.StreakLogRepository;
 import com.swyp.FinQ.user.domain.User;
+import com.swyp.FinQ.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,6 +21,7 @@ public class StreakService {
 
     private final StreakLogRepository streakLogRepository;
     private final XpGrantService xpGrantService;
+    private final UserRepository userRepository;
     private final Clock streakClock;
 
     @Transactional
@@ -33,6 +35,7 @@ public class StreakService {
 
         int currentStreak = nextCurrentStreak(user, today);
         user.updateStreak(currentStreak, today);
+        userRepository.save(user);
 
         int bonusXp = StreakCalculator.calculateBonusXp(currentStreak);
         XpResultInfo bonusXpResult = bonusXp == 0
