@@ -45,7 +45,7 @@ class DailyLearningReminderSchedulerTest {
     }
 
     @Test
-    void schedulesAt10AmSeoulEachDayIndependentOfServerTimezone() throws Exception {
+    void schedulesAt10PmSeoulEachDayIndependentOfServerTimezone() throws Exception {
         Scheduled annotation = DailyLearningReminderScheduler.class.getMethod("sendDailyReminder")
                 .getAnnotation(Scheduled.class);
         assertThat(annotation.zone()).isEqualTo("Asia/Seoul");
@@ -53,7 +53,7 @@ class DailyLearningReminderSchedulerTest {
         ZoneId seoul = ZoneId.of(annotation.zone());
         ZonedDateTime before = ZonedDateTime.parse("2026-09-13T00:59:59Z").withZoneSameInstant(seoul);
         ZonedDateTime first = cron.next(before);
-        assertThat(first).isEqualTo(ZonedDateTime.parse("2026-09-13T10:00:00+09:00[Asia/Seoul]"));
+        assertThat(first).isEqualTo(ZonedDateTime.parse("2026-09-13T22:00:00+09:00[Asia/Seoul]"));
         assertThat(cron.next(first)).isEqualTo(first.plusDays(1));
     }
 
