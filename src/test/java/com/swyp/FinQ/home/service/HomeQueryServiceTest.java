@@ -14,6 +14,7 @@ import com.swyp.FinQ.user.domain.UserInterest;
 import com.swyp.FinQ.user.repository.UserInterestRepository;
 import com.swyp.FinQ.user.repository.UserRepository;
 import org.springframework.data.domain.Pageable;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -25,6 +26,7 @@ import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -35,6 +37,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
 class HomeQueryServiceTest {
@@ -62,6 +65,11 @@ class HomeQueryServiceTest {
 
     @Spy
     private ObjectMapper objectMapper = new ObjectMapper();
+
+    @BeforeEach
+    void setUp() {
+        ReflectionTestUtils.setField(homeQueryService, "timezone", "Asia/Seoul");
+    }
 
     @ParameterizedTest
     @CsvSource({
@@ -114,7 +122,7 @@ class HomeQueryServiceTest {
     @Test
     @DisplayName("같은 날이면 캐시된 질문 카드를 반환하고 캐시를 갱신하지 않는다")
     void returnsCachedCardsWhenSameDay() {
-        LocalDate today = LocalDate.now();
+        LocalDate today = LocalDate.now(ZoneId.of("Asia/Seoul"));
         Category category = Category.builder()
                 .id(2L)
                 .categoryCode(CategoryCode.SAL)
@@ -236,7 +244,7 @@ class HomeQueryServiceTest {
 
     @Test
     void rebuildsPartialCacheAndFillsThreeQuestions() {
-        LocalDate today = LocalDate.now();
+        LocalDate today = LocalDate.now(ZoneId.of("Asia/Seoul"));
         Category category = category(2L, CategoryCode.SAL, "월급 관리");
         Content cached = content(10L, "SAL-01", category, 1);
         Content fresh = content(20L, "SAL-02", category, 2);
@@ -313,7 +321,7 @@ class HomeQueryServiceTest {
                 UserInterest.builder().user(user).category(firstCategory).build(),
                 UserInterest.builder().user(user).category(secondCategory).build()
         );
-        boolean oddDay = LocalDate.now().getDayOfYear() % 2 == 1;
+        boolean oddDay = LocalDate.now(ZoneId.of("Asia/Seoul")).getDayOfYear() % 2 == 1;
         Category primary = oddDay ? firstCategory : secondCategory;
         Category secondary = oddDay ? secondCategory : firstCategory;
         List<Content> primaryContents = List.of(
@@ -348,7 +356,7 @@ class HomeQueryServiceTest {
     @Test
     @DisplayName("날짜가 다르면 새 질문 카드를 생성하고 캐시를 갱신한다")
     void rebuildsCardsWhenDateChanged() {
-        LocalDate yesterday = LocalDate.now().minusDays(1);
+        LocalDate yesterday = LocalDate.now(ZoneId.of("Asia/Seoul")).minusDays(1);
         Category category = Category.builder()
                 .id(2L)
                 .categoryCode(CategoryCode.SAL)
@@ -386,7 +394,7 @@ class HomeQueryServiceTest {
         HomeResponse response = homeQueryService.getHome(1L);
 
         assertThat(response.questions()).isNotEmpty();
-        verify(userRepository).updateHomeQuestionCache(eq(1L), eq(LocalDate.now()), any());
+        verify(userRepository).updateHomeQuestionCache(eq(1L), eq(LocalDate.now(ZoneId.of("Asia/Seoul"))), any());
     }
 
     @Test

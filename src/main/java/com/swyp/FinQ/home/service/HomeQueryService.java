@@ -18,11 +18,13 @@ import com.swyp.FinQ.user.repository.UserInterestRepository;
 import com.swyp.FinQ.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -48,6 +50,9 @@ public class HomeQueryService {
     private final CharacterImageUrlResolver characterImageUrlResolver;
     private final ObjectMapper objectMapper;
 
+    @Value("${app.timezone:Asia/Seoul}")
+    private String timezone;
+
     @Transactional
     public HomeResponse getHome(Long userId) {
         User user = userRepository.findById(userId)
@@ -68,7 +73,7 @@ public class HomeQueryService {
     }
 
     private List<HomeResponse.QuestionCard> getOrBuildQuestionCards(User user) {
-        LocalDate today = LocalDate.now();
+        LocalDate today = LocalDate.now(ZoneId.of(timezone));
 
         // 같은 날이면 캐시된 질문 반환
         if (today.equals(user.getHomeQuestionDate()) && user.getHomeQuestionIds() != null) {
@@ -150,7 +155,7 @@ public class HomeQueryService {
     }
 
     private List<Content> pickContentsForTwoCategories(Long userId, Long cat1, Long cat2, List<Long> excludeIds) {
-        int dayOfYear = LocalDate.now().getDayOfYear();
+        int dayOfYear = LocalDate.now(ZoneId.of(timezone)).getDayOfYear();
         boolean isOdd = dayOfYear % 2 == 1;
 
         // 홀수일: cat1 2장 + cat2 1장, 짝수일: cat2 2장 + cat1 1장

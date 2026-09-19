@@ -89,3 +89,6 @@ character-image:
 streak:
   statistics:
     enabled: ${STREAK_STATISTICS_ENABLED:false}
+
+app:
+  timezone: ${APP_TIMEZONE:Asia/Seoul}
