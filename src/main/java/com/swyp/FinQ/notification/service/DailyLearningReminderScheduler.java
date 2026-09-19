@@ -16,7 +16,7 @@ public class DailyLearningReminderScheduler {
     private final PushNotificationService pushNotificationService;
     private final AtomicBoolean running = new AtomicBoolean();
 
-    @Scheduled(cron = "0 0 10 * * *", zone = "Asia/Seoul")
+    @Scheduled(cron = "0 0 22 * * *", zone = "Asia/Seoul")
     public void sendDailyReminder() {
         if (!running.compareAndSet(false, true)) {
             log.warn("Daily learning reminder skipped: execution already running in this instance");
