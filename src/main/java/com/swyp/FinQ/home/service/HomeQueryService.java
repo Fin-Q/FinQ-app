@@ -40,6 +40,8 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class HomeQueryService {
 
+    private static final String GUEST_HOME_HEADER_MESSAGE = "로그인하고 나만의 캐릭터를 키워보세요";
+
     private static final int QUESTION_CARD_COUNT = 3;
     private static final int RANDOM_POOL_SIZE = 10;
 
@@ -80,7 +82,7 @@ public class HomeQueryService {
 
         return new HomeResponse(
                 HomeUserMode.GUEST,
-                "게스트",
+                GUEST_HOME_HEADER_MESSAGE,
                 level.getValue(),
                 level.getValue(),
                 characterImageUrlResolver.resolve(level),
