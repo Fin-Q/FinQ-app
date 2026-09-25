@@ -46,6 +46,20 @@ class LearningControllerTest {
     }
 
     @Test
+    void gradesContentAnswerForGuest() {
+        AnswerRequest request = new AnswerRequest("A");
+        ContentAnswerResponse response = ContentAnswerResponse.correct(
+                "해설", "A", "A", "CONTENT_COMPLETED", null
+        );
+        given(learningGradeService.gradeGuestContentAnswer(1L, 2L, "A"))
+                .willReturn(response);
+
+        learningController.gradeContentAnswer(null, 1L, 2L, request);
+
+        verify(learningGradeService).gradeGuestContentAnswer(1L, 2L, "A");
+    }
+
+    @Test
     void gradesQuizAnswerForAuthenticatedUser() {
         AnswerRequest request = new AnswerRequest("B");
         QuizAnswerResponse response = QuizAnswerResponse.correct(
