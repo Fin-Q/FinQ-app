@@ -19,5 +19,7 @@ public @interface ApiDocumentation {
 
     boolean secured() default true;
 
+    boolean optionalAuth() default false;
+
     String[] errors() default {};
 }

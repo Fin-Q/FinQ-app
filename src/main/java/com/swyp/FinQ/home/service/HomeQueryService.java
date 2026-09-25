@@ -7,6 +7,7 @@ import com.swyp.FinQ.content.domain.Content;
 import com.swyp.FinQ.content.dto.info.BodyBlockDataInfo;
 import com.swyp.FinQ.content.repository.ContentRepository;
 import com.swyp.FinQ.global.exception.BaseException;
+import com.swyp.FinQ.home.domain.HomeUserMode;
 import com.swyp.FinQ.home.dto.res.HomeResponse;
 import com.swyp.FinQ.learning.repository.UserContentCompletionRepository;
 import com.swyp.FinQ.reward.domain.Level;
@@ -62,6 +63,7 @@ public class HomeQueryService {
         List<HomeResponse.QuestionCard> questions = getOrBuildQuestionCards(user);
 
         return new HomeResponse(
+                HomeUserMode.MEMBER,
                 user.getNickname(),
                 level.getValue(),
                 level.getValue(),
@@ -69,6 +71,22 @@ public class HomeQueryService {
                 user.getTotalXp(),
                 streakQueryService.getCurrentStreak(userId),
                 questions
+        );
+    }
+
+    @Transactional(readOnly = true)
+    public HomeResponse getGuestHome() {
+        Level level = Level.LV1;
+
+        return new HomeResponse(
+                HomeUserMode.GUEST,
+                "게스트",
+                level.getValue(),
+                level.getValue(),
+                characterImageUrlResolver.resolve(level),
+                0,
+                0,
+                List.of()
         );
     }
 

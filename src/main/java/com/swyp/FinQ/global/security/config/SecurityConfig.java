@@ -37,6 +37,17 @@ public class SecurityConfig {
     "/api-docs/**"
   };
 
+  private static final String[] OPTIONAL_AUTH_GET_URLS = {
+    "/home",
+    "/knowledge-map",
+    "/categories/*",
+    "/contents/*"
+  };
+
+  private static final String[] OPTIONAL_AUTH_POST_URLS = {
+    "/contents/*/questions/*/answers"
+  };
+
   @Value("${cors.allowed-origins:http://localhost:3000}")
   private List<String> corsAllowedOrigins;
 
@@ -67,6 +78,8 @@ public class SecurityConfig {
 
       .authorizeHttpRequests(auth -> auth
         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+        .requestMatchers(HttpMethod.GET, OPTIONAL_AUTH_GET_URLS).permitAll()
+        .requestMatchers(HttpMethod.POST, OPTIONAL_AUTH_POST_URLS).permitAll()
         .requestMatchers(PUBLIC_URLS).permitAll()
         .anyRequest().authenticated()
       )

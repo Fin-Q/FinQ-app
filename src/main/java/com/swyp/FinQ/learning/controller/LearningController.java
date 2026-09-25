@@ -34,9 +34,23 @@ public class LearningController {
     private final LearningQueryService learningQueryService;
 
     @Operation(
-            description = "콘텐츠 학습 중 문제의 답안을 제출하고 채점합니다. 최초 정답 시 콘텐츠 완료 및 보상을 처리합니다."
+            description = "콘텐츠 학습 중 문제의 답안을 제출하고 채점합니다. "
+                    + "게스트는 채점과 해설만 제공하며 학습 완료, XP, 스트릭을 저장하지 않습니다. "
+                    + "인증 사용자가 최종 문제를 최초로 완료하면 콘텐츠 완료 및 보상을 처리합니다."
     )
-    @ApiDocumentation(id = "LEARNING-001", name = "문제 채점", owner = ApiOwner.YEZANEE)
+    @ApiDocumentation(
+            id = "LEARNING-001",
+            name = "문제 채점",
+            owner = ApiOwner.YEZANEE,
+            optionalAuth = true,
+            errors = {
+                    "CONTENT_NOT_FOUND",
+                    "PREMIUM_CONTENT_ACCESS_DENIED",
+                    "QUESTION_NOT_FOUND",
+                    "QUESTION_CONTENT_MISMATCH",
+                    "INVALID_OPTION"
+            }
+    )
     @PostMapping("/contents/{contentId}/questions/{questionId}/answers")
     public ResponseEntity<SuccessResponse<ContentAnswerResponse>> gradeContentAnswer(
             @AuthenticationPrincipal Jwt jwt,
@@ -44,8 +58,10 @@ public class LearningController {
             @Parameter(description = "문제 ID") @PathVariable Long questionId,
             @Valid @RequestBody AnswerRequest request
     ) {
-        ContentAnswerResponse response = learningGradeService.gradeContentAnswer(
-                Long.valueOf(jwt.getSubject()), contentId, questionId, request.selectedOptionId());
+        ContentAnswerResponse response = jwt == null
+                ? learningGradeService.gradeGuestContentAnswer(contentId, questionId, request.selectedOptionId())
+                : learningGradeService.gradeContentAnswer(
+                        Long.valueOf(jwt.getSubject()), contentId, questionId, request.selectedOptionId());
         return SuccessResponse.of(LearningSuccessCode.CONTENT_ANSWER_GRADED, response);
     }
 

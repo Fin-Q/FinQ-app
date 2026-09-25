@@ -31,6 +31,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class LearningGradeServiceTest {
@@ -220,6 +222,26 @@ class LearningGradeServiceTest {
 
             assertThat(response.correct()).isTrue();
             assertThat(response.contentResult()).isNull();
+        }
+
+        @Test
+        @DisplayName("게스트가 마지막 문제를 맞혀도 완료 기록과 보상을 저장하지 않는다")
+        void guest_final_stage_doesNotSaveCompletion() {
+            Content content = createContent(1L);
+            ContentQuestion question = createQuestion(1L, content, ContentStage.F,
+                    QuestionType.SINGLE_CHOICE, "A");
+
+            given(contentRepository.findById(1L)).willReturn(Optional.of(content));
+            given(contentQuestionRepository.findById(1L)).willReturn(Optional.of(question));
+
+            ContentAnswerResponse response = learningGradeService.gradeGuestContentAnswer(
+                    1L, 1L, "A");
+
+            assertThat(response.correct()).isTrue();
+            assertThat(response.nextAction()).isEqualTo("CONTENT_COMPLETED");
+            assertThat(response.contentResult()).isNull();
+            verify(userRepository, never()).findById(any());
+            verify(learningCompletionService, never()).handleContentCompletion(any(), any());
         }
 
         @Test

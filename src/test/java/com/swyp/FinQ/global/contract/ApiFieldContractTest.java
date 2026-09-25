@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.swyp.FinQ.content.dto.res.ContentDetailResponse;
 import com.swyp.FinQ.home.dto.res.HomeResponse;
+import com.swyp.FinQ.home.domain.HomeUserMode;
 import com.swyp.FinQ.learning.dto.res.QuizAnswerResponse;
 import com.swyp.FinQ.learning.dto.res.ContentAnswerResponse;
 import com.swyp.FinQ.notification.dto.req.PushTokenRegistrationRequest;
@@ -107,6 +108,7 @@ class ApiFieldContractTest {
     void serializesHomeCharacterImageUrl() {
         String imageUrl = "https://assets.example.com/character-images/character_02.png";
         HomeResponse response = new HomeResponse(
+                HomeUserMode.MEMBER,
                 "핀큐",
                 2,
                 2,
@@ -119,6 +121,7 @@ class ApiFieldContractTest {
         JsonNode json = objectMapper.valueToTree(response);
 
         assertThat(json.path("characterImageUrl").asText()).isEqualTo(imageUrl);
+        assertThat(json.path("userMode").asText()).isEqualTo("MEMBER");
         assertThat(json.path("level").asInt()).isEqualTo(2);
         assertThat(json.path("characterStage").asInt()).isEqualTo(2);
     }

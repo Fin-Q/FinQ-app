@@ -40,6 +40,16 @@ public class LearningGradeService {
      */
     public ContentAnswerResponse gradeContentAnswer(Long userId, Long contentId, Long questionId,
                                                      String selectedOptionId) {
+        return gradeContentAnswer(userId, contentId, questionId, selectedOptionId, true);
+    }
+
+    public ContentAnswerResponse gradeGuestContentAnswer(Long contentId, Long questionId,
+                                                          String selectedOptionId) {
+        return gradeContentAnswer(null, contentId, questionId, selectedOptionId, false);
+    }
+
+    private ContentAnswerResponse gradeContentAnswer(Long userId, Long contentId, Long questionId,
+                                                      String selectedOptionId, boolean saveCompletion) {
         Content content = contentRepository.findById(contentId)
                 .orElseThrow(() -> BaseException.of(ContentErrorCode.CONTENT_NOT_FOUND));
 
@@ -67,7 +77,7 @@ public class LearningGradeService {
         NextAction nextAction = determineNextAction(question);
         ContentResult contentResult = null;
 
-        if (question.getContentStage() == ContentStage.F) {
+        if (saveCompletion && question.getContentStage() == ContentStage.F) {
             User user = userRepository.findById(userId)
                     .orElseThrow(() -> BaseException.of(UserErrorCode.USER_NOT_FOUND));
             contentResult = learningCompletionService.handleContentCompletion(user, content).orElse(null);

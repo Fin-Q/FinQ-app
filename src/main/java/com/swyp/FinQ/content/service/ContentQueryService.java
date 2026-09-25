@@ -49,10 +49,22 @@ public class ContentQueryService {
     private final ObjectMapper objectMapper;
 
     public KnowledgeMapResponse getKnowledgeMap(Long userId) {
+        return getKnowledgeMap(userId, false);
+    }
+
+    public KnowledgeMapResponse getGuestKnowledgeMap() {
+        return getKnowledgeMap(null, true);
+    }
+
+    private KnowledgeMapResponse getKnowledgeMap(Long userId, boolean guest) {
         List<Category> categories = categoryRepository.findAllByOrderByDisplayOrder();
         Map<Long, Long> totalCountMap = toMap(contentRepository.countContentPerCategory());
-        Map<Long, Long> completedCountMap = toMap(contentRepository.countCompletedContentPerCategory(userId));
-        Set<Long> completedCategoryIds = learningProgressService.getCompletedCategoryIds(userId);
+        Map<Long, Long> completedCountMap = guest
+                ? Map.of()
+                : toMap(contentRepository.countCompletedContentPerCategory(userId));
+        Set<Long> completedCategoryIds = guest
+                ? Set.of()
+                : learningProgressService.getCompletedCategoryIds(userId);
 
         List<KnowledgeMapResponse.CategoryProgress> progresses = categories.stream()
                 .map(category -> {
@@ -75,13 +87,23 @@ public class ContentQueryService {
     }
 
     public CategoryDetailResponse getCategoryDetail(CategoryCode categoryCode, Long userId) {
+        return getCategoryDetail(categoryCode, userId, false);
+    }
+
+    public CategoryDetailResponse getGuestCategoryDetail(CategoryCode categoryCode) {
+        return getCategoryDetail(categoryCode, null, true);
+    }
+
+    private CategoryDetailResponse getCategoryDetail(CategoryCode categoryCode, Long userId, boolean guest) {
         Category category = categoryRepository.findByCategoryCode(categoryCode)
                 .orElseThrow(() -> BaseException.of(ContentErrorCode.CATEGORY_NOT_FOUND));
 
         List<Content> allContents = contentRepository.findByCategoryOrderByDisplayOrder(category);
         List<Content> freeContents = allContents.stream().filter(c -> !c.isPremium()).toList();
         List<Content> premiumContents = allContents.stream().filter(Content::isPremium).toList();
-        Set<Long> completedContentIds = learningProgressService.getCompletedContentIds(userId, allContents);
+        Set<Long> completedContentIds = guest
+                ? Set.of()
+                : learningProgressService.getCompletedContentIds(userId, allContents);
 
         List<CategoryDetailResponse.ContentSummary> contentSummaries = buildContentSummaries(freeContents, completedContentIds);
         List<CategoryDetailResponse.PremiumContentSummary> premiumSummaries = buildPremiumSummaries(premiumContents, completedContentIds);
@@ -90,7 +112,8 @@ public class ContentQueryService {
                 .filter(c -> completedContentIds.contains(c.getId()))
                 .count();
         int totalCount = freeContents.size();
-        boolean categoryCompleted = learningProgressService.isCategoryCompleted(userId, category.getId());
+        boolean categoryCompleted = !guest
+                && learningProgressService.isCategoryCompleted(userId, category.getId());
 
         return new CategoryDetailResponse(
                 category.getId(),
@@ -141,9 +164,24 @@ public class ContentQueryService {
                 .toList();
     }
 
-    public ContentDetailResponse getContentDetail(Long contentId, Long userId) {
+    public ContentDetailResponse getContentDetail(Long contentId) {
         Content content = contentRepository.findByIdWithCategory(contentId)
                 .orElseThrow(() -> BaseException.of(ContentErrorCode.CONTENT_NOT_FOUND));
+
+        return buildContentDetail(content);
+    }
+
+    public ContentDetailResponse getGuestContentDetail(Long contentId) {
+        Content content = contentRepository.findByIdWithCategory(contentId)
+                .orElseThrow(() -> BaseException.of(ContentErrorCode.CONTENT_NOT_FOUND));
+        if (content.isPremium()) {
+            throw BaseException.of(ContentErrorCode.PREMIUM_CONTENT_ACCESS_DENIED);
+        }
+
+        return buildContentDetail(content);
+    }
+
+    private ContentDetailResponse buildContentDetail(Content content) {
 
         Category category = content.getCategory();
         List<Content> freeContents = contentRepository.findByCategoryOrderByDisplayOrder(category)
