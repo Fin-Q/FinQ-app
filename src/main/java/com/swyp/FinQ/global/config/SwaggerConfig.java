@@ -81,7 +81,13 @@ public class SwaggerConfig {
         addCommonErrorResponse(operation, ErrorCodeCatalog.require(errorCode));
       }
 
-      if (documentation.secured()) {
+      if (documentation.optionalAuth()) {
+        operation.setSecurity(List.of(
+          new SecurityRequirement(),
+          new SecurityRequirement().addList(BEARER_AUTH_SCHEME)
+        ));
+        addCommonErrorResponse(operation, GlobalErrorCode.AUTH_UNAUTHORIZED);
+      } else if (documentation.secured()) {
         operation.setSecurity(List.of(new SecurityRequirement().addList(BEARER_AUTH_SCHEME)));
         addCommonErrorResponse(operation, GlobalErrorCode.AUTH_UNAUTHORIZED);
       } else {

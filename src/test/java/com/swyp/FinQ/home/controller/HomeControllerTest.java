@@ -62,12 +62,37 @@ class HomeControllerTest extends MySqlContainerSupport {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("SUCCESS"))
                 .andExpect(jsonPath("$.message").value("홈 화면 조회에 성공했습니다."))
+                .andExpect(jsonPath("$.data.userMode").value("MEMBER"))
                 .andExpect(jsonPath("$.data.questions").isArray())
                 .andExpect(jsonPath("$.data.questions.length()").value(3))
                 .andExpect(jsonPath("$.data.questions[0].contentId").isNumber())
                 .andExpect(jsonPath("$.data.questions[0].categoryCode").value("SAL"))
                 .andExpect(jsonPath("$.data.questions[0].title").isString())
                 .andExpect(jsonPath("$.data.questions[0].completionStatus").value("INCOMPLETE"));
+    }
+
+    @Test
+    void returnsGuestHomeWithoutAccessToken() throws Exception {
+        mockMvc.perform(get("/home"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("SUCCESS"))
+                .andExpect(jsonPath("$.data.userMode").value("GUEST"))
+                .andExpect(jsonPath("$.data.nickname").value("게스트"))
+                .andExpect(jsonPath("$.data.level").value(1))
+                .andExpect(jsonPath("$.data.characterStage").value(1))
+                .andExpect(jsonPath("$.data.characterImageUrl").isString())
+                .andExpect(jsonPath("$.data.totalXp").value(0))
+                .andExpect(jsonPath("$.data.currentStreak").value(0))
+                .andExpect(jsonPath("$.data.questions").isEmpty());
+    }
+
+    @Test
+    void rejectsInvalidAccessTokenInsteadOfFallingBackToGuest() throws Exception {
+        mockMvc.perform(get("/home")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer invalid-token"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.status").value("ERROR"))
+                .andExpect(jsonPath("$.errorCode").value("AUTH_UNAUTHORIZED"));
     }
 
     private String bearerToken(Long userId) {

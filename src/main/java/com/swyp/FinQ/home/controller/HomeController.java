@@ -24,14 +24,18 @@ public class HomeController {
     private final HomeQueryService homeQueryService;
 
     @Operation(
-            description = "사용자 정보, 현재 레벨의 캐릭터 이미지 URL, XP, 스트릭, 추천 질문 카드를 조회합니다."
+            description = "Authorization 헤더가 없으면 게스트 홈을, 유효한 Access Token이 있으면 "
+                    + "사용자 정보, 현재 레벨의 캐릭터 이미지 URL, XP, 스트릭, 추천 질문 카드를 조회합니다. "
+                    + "만료되었거나 잘못된 Access Token은 401을 반환합니다."
     )
-    @ApiDocumentation(id = "HOME-001", name = "홈 화면 조회", owner = ApiOwner.YEZANEE)
+    @ApiDocumentation(id = "HOME-001", name = "홈 화면 조회", owner = ApiOwner.YEZANEE, optionalAuth = true)
     @GetMapping("/home")
     public ResponseEntity<SuccessResponse<HomeResponse>> getHome(
             @AuthenticationPrincipal Jwt jwt
     ) {
-        HomeResponse response = homeQueryService.getHome(Long.valueOf(jwt.getSubject()));
+        HomeResponse response = jwt == null
+                ? homeQueryService.getGuestHome()
+                : homeQueryService.getHome(Long.valueOf(jwt.getSubject()));
         return SuccessResponse.of(HomeSuccessCode.HOME_RETRIEVED, response);
     }
 }

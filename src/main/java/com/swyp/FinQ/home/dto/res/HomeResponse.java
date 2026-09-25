@@ -1,11 +1,15 @@
 package com.swyp.FinQ.home.dto.res;
 
+import com.swyp.FinQ.home.domain.HomeUserMode;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.util.List;
 
 @Schema(description = "홈 화면 조회 응답")
 public record HomeResponse(
+        @Schema(description = "홈 조회 사용자 모드", example = "MEMBER",
+                allowableValues = {"GUEST", "MEMBER"})
+        HomeUserMode userMode,
         @Schema(description = "사용자 닉네임", example = "핀큐")
         String nickname,
         @Schema(description = "현재 레벨 (숫자). 레벨 체계: 1(0xp) → 2(80xp) → 3(180xp) → 4(300xp)", example = "2")

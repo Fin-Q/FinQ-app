@@ -6,6 +6,7 @@ import com.swyp.FinQ.content.domain.CategoryCode;
 import com.swyp.FinQ.content.domain.Content;
 import com.swyp.FinQ.content.repository.ContentRepository;
 import com.swyp.FinQ.home.dto.res.HomeResponse;
+import com.swyp.FinQ.home.domain.HomeUserMode;
 import com.swyp.FinQ.learning.repository.UserContentCompletionRepository;
 import com.swyp.FinQ.reward.domain.Level;
 import com.swyp.FinQ.streak.service.StreakQueryService;
@@ -100,6 +101,27 @@ class HomeQueryServiceTest {
         assertThat(response.level()).isEqualTo(expectedLevel);
         assertThat(response.characterStage()).isEqualTo(expectedLevel);
         assertThat(response.characterImageUrl()).isEqualTo(imageUrl);
+        assertThat(response.userMode()).isEqualTo(HomeUserMode.MEMBER);
+    }
+
+    @Test
+    void returnsGuestHomeWithoutLoadingMemberData() {
+        String imageUrl = "https://assets.example.com/character-images/character_01.png";
+        given(characterImageUrlResolver.resolve(Level.LV1)).willReturn(imageUrl);
+
+        HomeResponse response = homeQueryService.getGuestHome();
+
+        assertThat(response.userMode()).isEqualTo(HomeUserMode.GUEST);
+        assertThat(response.nickname()).isEqualTo("게스트");
+        assertThat(response.level()).isEqualTo(1);
+        assertThat(response.characterStage()).isEqualTo(1);
+        assertThat(response.characterImageUrl()).isEqualTo(imageUrl);
+        assertThat(response.totalXp()).isZero();
+        assertThat(response.currentStreak()).isZero();
+        assertThat(response.questions()).isEmpty();
+        verify(userRepository, never()).findById(any());
+        verify(userInterestRepository, never()).findAllWithCategoryByUserId(any());
+        verify(streakQueryService, never()).getCurrentStreak(any());
     }
 
     @Test

@@ -39,6 +39,10 @@ class SwaggerConfigTest extends MySqlContainerSupport {
             "post /auth/password-reset"
     );
 
+    private static final Set<String> OPTIONAL_AUTH_OPERATIONS = Set.of(
+            "get /home"
+    );
+
     private static final Set<String> EXPECTED_OPERATION_IDS = Set.of(
             "USER-001", "USER-002", "USER-003", "USER-004", "USER-005", "USER-006",
             "USER-007", "USER-008", "USER-009", "USER-010", "USER-011", "USER-012", "USER-013",
@@ -88,18 +92,26 @@ class SwaggerConfigTest extends MySqlContainerSupport {
     }
 
     @Test
-    void documentsOnlyProtectedOperationsWithBearerAuthentication() throws Exception {
+    void documentsAuthenticationRequirementForEachOperation() throws Exception {
         List<ApiOperation> operations = getOperations(getApiDocs());
 
         assertThat(operations).hasSize(34);
         for (ApiOperation operation : operations) {
-            boolean hasBearerSecurity = operation.document().path("security").isArray()
-                    && operation.document().path("security").size() == 1
-                    && operation.document().path("security").get(0).path("bearerAuth").isArray();
+            JsonNode security = operation.document().path("security");
+            if (OPTIONAL_AUTH_OPERATIONS.contains(operation.key())) {
+                assertThat(security.isArray()).as("optional security for %s", operation.key()).isTrue();
+                assertThat(security.size()).isEqualTo(2);
+                assertThat(security.get(0).isObject() && security.get(0).size() == 0).isTrue();
+                assertThat(security.get(1).path("bearerAuth").isArray()).isTrue();
+            } else {
+                boolean hasBearerSecurity = security.isArray()
+                        && security.size() == 1
+                        && security.get(0).path("bearerAuth").isArray();
 
-            assertThat(hasBearerSecurity)
-                    .as("Bearer security for %s", operation.key())
-                    .isEqualTo(!PUBLIC_OPERATIONS.contains(operation.key()));
+                assertThat(hasBearerSecurity)
+                        .as("Bearer security for %s", operation.key())
+                        .isEqualTo(!PUBLIC_OPERATIONS.contains(operation.key()));
+            }
         }
     }
 
@@ -311,8 +323,8 @@ class SwaggerConfigTest extends MySqlContainerSupport {
                     .as("500 error code for %s", operation.key())
                     .isEqualTo("COMMON_INTERNAL_SERVER_ERROR");
 
-            boolean shouldRequireAuthentication = !PUBLIC_OPERATIONS.contains(operation.key());
-            if (shouldRequireAuthentication) {
+            boolean shouldDocumentAuthenticationError = !PUBLIC_OPERATIONS.contains(operation.key());
+            if (shouldDocumentAuthenticationError) {
                 assertThat(errorCode(responses, "401", "AUTH_UNAUTHORIZED"))
                         .as("401 error code for %s", operation.key())
                         .isEqualTo("AUTH_UNAUTHORIZED");
