@@ -362,6 +362,13 @@ class SwaggerConfigTest extends MySqlContainerSupport {
         JsonNode guestContent = operation(apiDocs, "/contents/{contentId}", "get")
                 .path("responses");
         assertThat(exampleNames(guestContent, "403")).contains("PREMIUM_CONTENT_ACCESS_DENIED");
+        assertThat(exampleNames(guestContent, "404")).contains("CONTENT_NOT_FOUND");
+        assertThat(exampleNames(guestContent, "500"))
+                .contains("COMMON_INTERNAL_SERVER_ERROR", "BODY_DATA_PARSE_FAILED");
+
+        JsonNode guestCategory = operation(apiDocs, "/categories/{categoryCode}", "get")
+                .path("responses");
+        assertThat(exampleNames(guestCategory, "404")).contains("CATEGORY_NOT_FOUND");
 
         JsonNode guestAnswer = operation(apiDocs,
                 "/contents/{contentId}/questions/{questionId}/answers", "post").path("responses");

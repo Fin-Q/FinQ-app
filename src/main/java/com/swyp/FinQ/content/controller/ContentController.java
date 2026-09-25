@@ -47,7 +47,13 @@ public class ContentController {
             description = "카테고리별 콘텐츠 목록과 완료 상태를 조회합니다. "
                     + "Authorization 헤더가 없으면 게스트로 처리하여 완료 상태를 초기값으로 반환합니다."
     )
-    @ApiDocumentation(id = "CONTENT-002", name = "카테고리 상세 조회", owner = ApiOwner.YEZANEE, optionalAuth = true)
+    @ApiDocumentation(
+            id = "CONTENT-002",
+            name = "카테고리 상세 조회",
+            owner = ApiOwner.YEZANEE,
+            optionalAuth = true,
+            errors = {"CATEGORY_NOT_FOUND"}
+    )
     @GetMapping("/categories/{categoryCode}")
     public ResponseEntity<SuccessResponse<CategoryDetailResponse>> getCategoryDetail(
             @AuthenticationPrincipal Jwt jwt,
@@ -68,7 +74,11 @@ public class ContentController {
             name = "콘텐츠 상세 조회",
             owner = ApiOwner.YEZANEE,
             optionalAuth = true,
-            errors = {"PREMIUM_CONTENT_ACCESS_DENIED"}
+            errors = {
+                    "CONTENT_NOT_FOUND",
+                    "PREMIUM_CONTENT_ACCESS_DENIED",
+                    "BODY_DATA_PARSE_FAILED"
+            }
     )
     @GetMapping("/contents/{contentId}")
     public ResponseEntity<SuccessResponse<ContentDetailResponse>> getContentDetail(
