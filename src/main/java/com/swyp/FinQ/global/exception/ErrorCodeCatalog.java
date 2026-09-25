@@ -1,5 +1,6 @@
 package com.swyp.FinQ.global.exception;
 
+import com.swyp.FinQ.content.exception.ContentErrorCode;
 import com.swyp.FinQ.notification.exception.NotificationErrorCode;
 import com.swyp.FinQ.streak.exception.StreakErrorCode;
 import com.swyp.FinQ.user.exception.AuthErrorCode;
@@ -38,6 +39,7 @@ public final class ErrorCodeCatalog {
         register(errorCodes, GlobalErrorCode.values());
         register(errorCodes, AuthErrorCode.values());
         register(errorCodes, UserErrorCode.values());
+        register(errorCodes, ContentErrorCode.values());
         register(errorCodes, NotificationErrorCode.values());
         register(errorCodes, StreakErrorCode.values());
         return Map.copyOf(errorCodes);

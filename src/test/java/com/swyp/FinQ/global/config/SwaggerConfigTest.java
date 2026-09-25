@@ -40,7 +40,10 @@ class SwaggerConfigTest extends MySqlContainerSupport {
     );
 
     private static final Set<String> OPTIONAL_AUTH_OPERATIONS = Set.of(
-            "get /home"
+            "get /home",
+            "get /knowledge-map",
+            "get /categories/{categoryCode}",
+            "get /contents/{contentId}"
     );
 
     private static final Set<String> EXPECTED_OPERATION_IDS = Set.of(
@@ -354,6 +357,10 @@ class SwaggerConfigTest extends MySqlContainerSupport {
         JsonNode unregister = operation(apiDocs, "/users/me/push-tokens/{deviceId}", "delete")
                 .path("responses");
         assertThat(exampleNames(unregister, "404")).containsExactly("PUSH_TOKEN_NOT_FOUND");
+
+        JsonNode guestContent = operation(apiDocs, "/contents/{contentId}", "get")
+                .path("responses");
+        assertThat(exampleNames(guestContent, "403")).contains("PREMIUM_CONTENT_ACCESS_DENIED");
 
         JsonNode withdrawal = operation(apiDocs, "/users/me", "delete").path("responses");
         assertThat(exampleNames(withdrawal, "404")).containsExactly("USER_NOT_FOUND");

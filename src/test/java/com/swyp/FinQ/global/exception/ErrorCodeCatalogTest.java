@@ -1,5 +1,6 @@
 package com.swyp.FinQ.global.exception;
 
+import com.swyp.FinQ.content.exception.ContentErrorCode;
 import com.swyp.FinQ.notification.exception.NotificationErrorCode;
 import com.swyp.FinQ.streak.exception.StreakErrorCode;
 import com.swyp.FinQ.user.exception.AuthErrorCode;
@@ -20,6 +21,7 @@ class ErrorCodeCatalogTest {
                         GlobalErrorCode.values(),
                         AuthErrorCode.values(),
                         UserErrorCode.values(),
+                        ContentErrorCode.values(),
                         NotificationErrorCode.values(),
                         StreakErrorCode.values()
                 ).stream()

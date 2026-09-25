@@ -37,6 +37,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class ContentQueryServiceTest {
@@ -133,6 +135,27 @@ class ContentQueryServiceTest {
             assertThat(response.categories().get(0).progressRate()).isEqualTo(100);
         }
 
+        @Test
+        @DisplayName("게스트는 모든 카테고리의 진행 상태를 초기값으로 반환한다")
+        void getGuestKnowledgeMap_returnsInitialProgress() {
+            Category category = createCategory(1L, CategoryCode.SAL, "월급 관리");
+            given(categoryRepository.findAllByOrderByDisplayOrder()).willReturn(List.of(category));
+            given(contentRepository.countContentPerCategory()).willReturn(List.of(
+                    createCategoryContentCount(1L, 5L)
+            ));
+            given(learningProgressService.calculateProgressRate(0, 5)).willReturn(0);
+
+            KnowledgeMapResponse response = contentQueryService.getGuestKnowledgeMap();
+
+            KnowledgeMapResponse.CategoryProgress progress = response.categories().get(0);
+            assertThat(progress.completedContentCount()).isZero();
+            assertThat(progress.totalContentCount()).isEqualTo(5);
+            assertThat(progress.progressRate()).isZero();
+            assertThat(progress.categoryCompleted()).isFalse();
+            verify(contentRepository, never()).countCompletedContentPerCategory(any());
+            verify(learningProgressService, never()).getCompletedCategoryIds(any());
+        }
+
         private CategoryContentCount createCategoryContentCount(Long categoryId, Long count) {
             return new CategoryContentCount() {
                 @Override
@@ -198,6 +221,29 @@ class ContentQueryServiceTest {
         }
 
         @Test
+        @DisplayName("게스트는 카테고리 콘텐츠의 완료 상태를 초기값으로 반환한다")
+        void getGuestCategoryDetail_returnsInitialProgress() {
+            Category category = createCategory(1L, CategoryCode.SAL, "월급 관리");
+            Content content = createContent(1L, "SAL-01", "일반", category, false, 1);
+
+            given(categoryRepository.findByCategoryCode(CategoryCode.SAL)).willReturn(Optional.of(category));
+            given(contentRepository.findByCategoryOrderByDisplayOrder(category)).willReturn(List.of(content));
+            given(learningProgressService.calculateProgressRate(0, 1)).willReturn(0);
+
+            CategoryDetailResponse response = contentQueryService.getGuestCategoryDetail(CategoryCode.SAL);
+
+            assertThat(response.completedContentCount()).isZero();
+            assertThat(response.progressRate()).isZero();
+            assertThat(response.categoryCompleted()).isFalse();
+            assertThat(response.advancedQuizStatus()).isEqualTo("INCOMPLETE");
+            assertThat(response.contents()).singleElement()
+                    .extracting(CategoryDetailResponse.ContentSummary::completionStatus)
+                    .isEqualTo("INCOMPLETE");
+            verify(learningProgressService, never()).getCompletedContentIds(any(), any());
+            verify(learningProgressService, never()).isCategoryCompleted(any(), any());
+        }
+
+        @Test
         @DisplayName("존재하지 않는 카테고리 코드이면 예외가 발생한다")
         void getCategoryDetail_notFound() {
             given(categoryRepository.findByCategoryCode(CategoryCode.SAL)).willReturn(Optional.empty());
@@ -258,7 +304,7 @@ class ContentQueryServiceTest {
             given(contentRepository.findByCategoryOrderByDisplayOrder(category)).willReturn(List.of(content));
             given(contentQuestionRepository.findByContent(content)).willReturn(List.of(question));
 
-            ContentDetailResponse response = contentQueryService.getContentDetail(1L, 1L);
+            ContentDetailResponse response = contentQueryService.getContentDetail(1L);
 
             assertThat(response.blocks()).hasSize(3);
             assertThat(response.blocks().get(0).blockType()).isEqualTo("BODY");
@@ -292,7 +338,7 @@ class ContentQueryServiceTest {
             given(contentRepository.findByCategoryOrderByDisplayOrder(category)).willReturn(List.of(content));
             given(contentQuestionRepository.findByContent(content)).willReturn(List.of());
 
-            ContentDetailResponse response = contentQueryService.getContentDetail(1L, 1L);
+            ContentDetailResponse response = contentQueryService.getContentDetail(1L);
 
             assertThat(response.blocks()).hasSize(1);
             BlockResponse block = response.blocks().get(0);
@@ -325,7 +371,7 @@ class ContentQueryServiceTest {
             given(contentRepository.findByCategoryOrderByDisplayOrder(category)).willReturn(List.of(content));
             given(contentQuestionRepository.findByContent(content)).willReturn(List.of());
 
-            ContentDetailResponse response = contentQueryService.getContentDetail(1L, 1L);
+            ContentDetailResponse response = contentQueryService.getContentDetail(1L);
 
             ContentItemResponse boxItem = response.blocks().get(0).content().get(0);
             assertThat(boxItem.type()).isEqualTo("BOX");
@@ -357,7 +403,7 @@ class ContentQueryServiceTest {
             given(contentRepository.findByCategoryOrderByDisplayOrder(category)).willReturn(List.of(content));
             given(contentQuestionRepository.findByContent(content)).willReturn(List.of());
 
-            ContentDetailResponse response = contentQueryService.getContentDetail(1L, 1L);
+            ContentDetailResponse response = contentQueryService.getContentDetail(1L);
 
             ContentItemResponse imageItem = response.blocks().get(0).content().get(0);
             assertThat(imageItem.type()).isEqualTo("IMAGE");
@@ -384,7 +430,7 @@ class ContentQueryServiceTest {
             given(contentRepository.findByCategoryOrderByDisplayOrder(category)).willReturn(List.of(content));
             given(contentQuestionRepository.findByContent(content)).willReturn(List.of(oxQuestion));
 
-            ContentDetailResponse response = contentQueryService.getContentDetail(1L, 1L);
+            ContentDetailResponse response = contentQueryService.getContentDetail(1L);
 
             BlockResponse questionBlock = response.blocks().get(0);
             assertThat(questionBlock.questionType()).isEqualTo("OX");
@@ -414,7 +460,7 @@ class ContentQueryServiceTest {
             given(contentRepository.findByCategoryOrderByDisplayOrder(category)).willReturn(List.of(content));
             given(contentQuestionRepository.findByContent(content)).willReturn(List.of(scQuestion));
 
-            ContentDetailResponse response = contentQueryService.getContentDetail(1L, 1L);
+            ContentDetailResponse response = contentQueryService.getContentDetail(1L);
 
             BlockResponse questionBlock = response.blocks().get(0);
             assertThat(questionBlock.questionType()).isEqualTo("SINGLE_CHOICE");
@@ -441,8 +487,20 @@ class ContentQueryServiceTest {
             given(contentRepository.findByIdWithCategory(1L)).willReturn(Optional.of(content));
             given(contentRepository.findByCategoryOrderByDisplayOrder(category)).willReturn(List.of(content));
 
-            assertThatThrownBy(() -> contentQueryService.getContentDetail(1L, 1L))
+            assertThatThrownBy(() -> contentQueryService.getContentDetail(1L))
                     .isInstanceOf(BaseException.class);
+        }
+
+        @Test
+        @DisplayName("게스트의 프리미엄 콘텐츠 상세 조회를 차단한다")
+        void getGuestContentDetail_rejectsPremiumContent() {
+            Category category = createCategory(1L, CategoryCode.SAL, "월급 관리");
+            Content premium = createContent(1L, "SAL-P1", "프리미엄", category, true, 1);
+            given(contentRepository.findByIdWithCategory(1L)).willReturn(Optional.of(premium));
+
+            assertThatThrownBy(() -> contentQueryService.getGuestContentDetail(1L))
+                    .isInstanceOf(BaseException.class)
+                    .hasMessage("프리미엄 콘텐츠는 접근할 수 없습니다.");
         }
 
         @Test
@@ -450,7 +508,7 @@ class ContentQueryServiceTest {
         void getContentDetail_notFound() {
             given(contentRepository.findByIdWithCategory(999L)).willReturn(Optional.empty());
 
-            assertThatThrownBy(() -> contentQueryService.getContentDetail(999L, 1L))
+            assertThatThrownBy(() -> contentQueryService.getContentDetail(999L))
                     .isInstanceOf(BaseException.class);
         }
     }

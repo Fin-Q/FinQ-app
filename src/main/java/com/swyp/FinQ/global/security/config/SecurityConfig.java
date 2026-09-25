@@ -31,11 +31,17 @@ public class SecurityConfig {
     "/auth/social/**",
     "/auth/token/refresh",
     "/auth/password-reset/**",
-    "/home",
     "/actuator/health",
     "/swagger-ui/**",
     "/swagger-ui.html",
     "/api-docs/**"
+  };
+
+  private static final String[] OPTIONAL_AUTH_GET_URLS = {
+    "/home",
+    "/knowledge-map",
+    "/categories/*",
+    "/contents/*"
   };
 
   @Value("${cors.allowed-origins:http://localhost:3000}")
@@ -68,6 +74,7 @@ public class SecurityConfig {
 
       .authorizeHttpRequests(auth -> auth
         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+        .requestMatchers(HttpMethod.GET, OPTIONAL_AUTH_GET_URLS).permitAll()
         .requestMatchers(PUBLIC_URLS).permitAll()
         .anyRequest().authenticated()
       )

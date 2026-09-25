@@ -25,13 +25,11 @@ class SecurityConfigTest extends MySqlContainerSupport {
     private JwtTokenProvider tokenProvider;
 
     @Test
-    void returnsCommonErrorResponseWithoutAccessToken() throws Exception {
+    void allowsGuestKnowledgeMapWithoutAccessToken() throws Exception {
         mockMvc.perform(get("/knowledge-map"))
-                .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.status").value("ERROR"))
-                .andExpect(jsonPath("$.errorCode").value("AUTH_UNAUTHORIZED"))
-                .andExpect(jsonPath("$.details").isArray())
-                .andExpect(jsonPath("$.traceId").isString());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("SUCCESS"))
+                .andExpect(jsonPath("$.data.categories").isArray());
     }
 
     @Test
