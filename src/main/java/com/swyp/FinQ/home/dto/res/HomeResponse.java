@@ -10,7 +10,7 @@ public record HomeResponse(
         @Schema(description = "홈 조회 사용자 모드", example = "MEMBER",
                 allowableValues = {"GUEST", "MEMBER"})
         HomeUserMode userMode,
-        @Schema(description = "사용자 닉네임", example = "핀큐")
+        @Schema(description = "사용자 닉네임. 게스트 모드에서는 홈 상단 로그인 유도 문구", example = "핀큐")
         String nickname,
         @Schema(description = "현재 레벨 (숫자). 레벨 체계: 1(0xp) → 2(80xp) → 3(180xp) → 4(300xp)", example = "2")
         int level,

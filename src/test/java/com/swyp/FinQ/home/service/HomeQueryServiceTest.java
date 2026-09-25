@@ -112,7 +112,7 @@ class HomeQueryServiceTest {
         HomeResponse response = homeQueryService.getGuestHome();
 
         assertThat(response.userMode()).isEqualTo(HomeUserMode.GUEST);
-        assertThat(response.nickname()).isEqualTo("게스트");
+        assertThat(response.nickname()).isEqualTo("로그인하고 나만의 캐릭터를 키워보세요");
         assertThat(response.level()).isEqualTo(1);
         assertThat(response.characterStage()).isEqualTo(1);
         assertThat(response.characterImageUrl()).isEqualTo(imageUrl);
