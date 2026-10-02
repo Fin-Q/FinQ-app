@@ -22,6 +22,7 @@ public class BackofficeApiKeyAuthenticationFilter extends OncePerRequestFilter {
 
     public static final String HEADER_NAME = "X-Backoffice-Api-Key";
     private static final String BACKOFFICE_PATH = "/internal/backoffice";
+    private static final int MINIMUM_API_KEY_BYTES = 32;
 
     private final byte[] expectedApiKey;
 
@@ -44,7 +45,7 @@ public class BackofficeApiKeyAuthenticationFilter extends OncePerRequestFilter {
             HttpServletResponse response,
             FilterChain filterChain
     ) throws ServletException, IOException {
-        if (expectedApiKey.length == 0) {
+        if (expectedApiKey.length < MINIMUM_API_KEY_BYTES) {
             response.sendError(HttpStatus.SERVICE_UNAVAILABLE.value());
             return;
         }
