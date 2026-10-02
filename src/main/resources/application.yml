@@ -92,3 +92,6 @@ streak:
 
 app:
   timezone: ${APP_TIMEZONE:Asia/Seoul}
+
+backoffice:
+  api-key: ${BACKOFFICE_API_KEY:}
