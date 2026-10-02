@@ -1,5 +1,6 @@
 package com.swyp.FinQ.global.security.config;
 
+import com.swyp.FinQ.global.security.filter.BackofficeApiKeyAuthenticationFilter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
@@ -14,6 +15,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -53,13 +55,16 @@ public class SecurityConfig {
 
   private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
   private final JwtAccessDeniedHandler jwtAccessDeniedHandler;
+  private final BackofficeApiKeyAuthenticationFilter backofficeApiKeyAuthenticationFilter;
 
   public SecurityConfig(
     JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint,
-    JwtAccessDeniedHandler jwtAccessDeniedHandler
+    JwtAccessDeniedHandler jwtAccessDeniedHandler,
+    BackofficeApiKeyAuthenticationFilter backofficeApiKeyAuthenticationFilter
   ) {
     this.jwtAuthenticationEntryPoint = jwtAuthenticationEntryPoint;
     this.jwtAccessDeniedHandler = jwtAccessDeniedHandler;
+    this.backofficeApiKeyAuthenticationFilter = backofficeApiKeyAuthenticationFilter;
   }
 
   @Bean
@@ -81,8 +86,11 @@ public class SecurityConfig {
         .requestMatchers(HttpMethod.GET, OPTIONAL_AUTH_GET_URLS).permitAll()
         .requestMatchers(HttpMethod.POST, OPTIONAL_AUTH_POST_URLS).permitAll()
         .requestMatchers(PUBLIC_URLS).permitAll()
+        .requestMatchers("/internal/backoffice/**").hasRole("BACKOFFICE")
         .anyRequest().authenticated()
       )
+
+      .addFilterBefore(backofficeApiKeyAuthenticationFilter, BearerTokenAuthenticationFilter.class)
 
       .oauth2ResourceServer(oauth2 -> oauth2
         .jwt(jwt -> jwt.decoder(accessTokenDecoder))
