@@ -12,3 +12,21 @@ cors:
 streak:
   statistics:
     enabled: ${STREAK_STATISTICS_ENABLED:true}
+
+management:
+  server:
+    port: 9091
+
+  endpoints:
+    web:
+        exposure:
+          include: health,prometheus
+
+  endpoint:
+    health:
+      show-details: never
+
+  metrics:
+    tags:
+      application: ${spring.application.name}
+      environment: prod
